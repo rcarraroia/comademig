@@ -27,7 +27,7 @@ const Header = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3">
             <img 
-              src="/lovable-uploads/f2b96d9c-c99b-46b0-b500-eb38e23058fe.png" 
+              src="/lovable-uploads/efd9af7f-fef5-4cd0-b54d-d9f55a002a3b.png" 
               alt="COMADEMIG Logo" 
               className="h-12 w-auto"
             />

@@ -10,9 +10,9 @@ const Footer = () => {
           {/* Logo e Descrição */}
           <div className="space-y-4">
             <img 
-              src="/lovable-uploads/f2b96d9c-c99b-46b0-b500-eb38e23058fe.png" 
+              src="/lovable-uploads/cc23f58f-2f47-4114-9910-081739a7ea69.png" 
               alt="COMADEMIG Logo" 
-              className="h-16 w-auto filter brightness-0 invert"
+              className="h-16 w-auto"
             />
             <p className="font-inter text-gray-300 text-sm leading-relaxed">
               Convenção de Ministros das Assembleias de Deus em Minas Gerais. 
