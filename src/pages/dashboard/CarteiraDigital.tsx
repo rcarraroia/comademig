@@ -1,15 +1,12 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, QrCode, User, MapPin, Calendar } from "lucide-react";
-
 const CarteiraDigital = () => {
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-comademig-blue">Carteira Digital</h1>
-        <p className="text-gray-600">Sua carteirinha ministerial oficial da COMADEMIG</p>
+        <h1 className="text-2xl font-bold text-comademig-blue">Identificação Eclesiástica</h1>
+        <p className="text-gray-600">Identificação ministerial oficial da COMADEMIG</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -18,11 +15,7 @@ const CarteiraDigital = () => {
           <CardContent className="p-6">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
-              <img 
-                src="/lovable-uploads/efd9af7f-fef5-4cd0-b54d-d9f55a002a3b.png" 
-                alt="COMADEMIG" 
-                className="h-8 w-auto"
-              />
+              <img src="/lovable-uploads/efd9af7f-fef5-4cd0-b54d-d9f55a002a3b.png" alt="COMADEMIG" className="h-8 w-auto" />
               <span className="text-sm opacity-90">2024</span>
             </div>
 
@@ -85,7 +78,7 @@ const CarteiraDigital = () => {
           {/* Status */}
           <Card>
             <CardHeader>
-              <CardTitle>Status da Carteira</CardTitle>
+              <CardTitle>Status da Identificação</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -129,8 +122,6 @@ const CarteiraDigital = () => {
           </Card>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default CarteiraDigital;
