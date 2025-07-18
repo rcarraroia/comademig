@@ -17,7 +17,7 @@ import { Link } from "react-router-dom";
 const Dashboard = () => {
   const quickActions = [
     {
-      title: "Carteira Digital",
+      title: "Identificação Eclesiástica",
       description: "Acesse sua carteirinha ministerial",
       icon: CreditCard,
       link: "/dashboard/carteira-digital",
@@ -127,7 +127,7 @@ const Dashboard = () => {
 
         <Card className="border-0 shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Carteira Digital</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">Identificação Eclesiástica</CardTitle>
             <CreditCard className="h-5 w-5 text-comademig-gold" />
           </CardHeader>
           <CardContent>

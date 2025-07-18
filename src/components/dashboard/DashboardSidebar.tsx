@@ -14,7 +14,7 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
   const menuItems = [
     { path: "/dashboard", label: "Dashboard", icon: Home },
     { path: "/dashboard/meus-dados", label: "Meus Dados", icon: User },
-    { path: "/dashboard/carteira-digital", label: "Carteira Digital", icon: CreditCard },
+    { path: "/dashboard/carteira-digital", label: "Identificação Eclesiástica", icon: CreditCard },
     { path: "/dashboard/financeiro", label: "Financeiro", icon: FileText },
     { path: "/dashboard/certidoes", label: "Certidões", icon: FileText },
     { path: "/dashboard/eventos", label: "Eventos", icon: Calendar },
