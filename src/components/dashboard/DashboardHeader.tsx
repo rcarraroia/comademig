@@ -9,7 +9,7 @@ interface DashboardHeaderProps {
 
 const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm">
+    <header className="bg-white border-b border-gray-200 px-4 lg:px-8 py-4 flex items-center justify-between shadow-sm">
       {/* Left Section */}
       <div className="flex items-center space-x-4">
         <Button
@@ -22,17 +22,17 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
         </Button>
         
         <div>
-          <h1 className="text-xl font-semibold text-comademig-blue">
+          <h1 className="text-xl lg:text-2xl font-semibold text-comademig-blue">
             Portal COMADEMIG
           </h1>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 hidden sm:block">
             Bem-vindo, Pastor João Silva
           </p>
         </div>
       </div>
 
       {/* Right Section */}
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-3 lg:space-x-4">
         {/* Notifications */}
         <Button variant="ghost" size="icon" className="relative">
           <Bell size={20} />
@@ -43,7 +43,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
 
         {/* User Profile */}
         <div className="flex items-center space-x-3">
-          <Avatar className="h-8 w-8">
+          <Avatar className="h-8 w-8 lg:h-10 lg:w-10">
             <AvatarImage src="/placeholder-avatar.jpg" />
             <AvatarFallback className="bg-comademig-blue text-white text-sm">JS</AvatarFallback>
           </Avatar>

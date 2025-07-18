@@ -68,30 +68,30 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 lg:space-y-8">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-comademig-blue to-comademig-gold text-white p-8 rounded-xl shadow-lg">
-        <h1 className="text-3xl font-bold mb-2">Bem-vindo, Pastor João Silva!</h1>
-        <p className="text-blue-100 text-lg">
+      <div className="bg-gradient-to-r from-comademig-blue to-comademig-gold text-white p-6 lg:p-8 rounded-xl shadow-lg">
+        <h1 className="text-2xl lg:text-3xl xl:text-4xl font-bold mb-2">Bem-vindo, Pastor João Silva!</h1>
+        <p className="text-blue-100 text-base lg:text-lg">
           Igreja Assembleia de Deus - Campo Regional de Belo Horizonte
         </p>
       </div>
 
       {/* Quick Actions */}
       <div>
-        <h2 className="text-2xl font-semibold text-comademig-blue mb-6">Acesso Rápido</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <h2 className="text-xl lg:text-2xl font-semibold text-comademig-blue mb-4 lg:mb-6">Acesso Rápido</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
           {quickActions.map((action, index) => (
             <Link key={index} to={action.link}>
               <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer border-0 shadow-md hover:scale-105">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-4">
-                    <div className={`p-4 rounded-full ${action.color} text-white`}>
-                      <action.icon size={28} />
+                <CardContent className="p-4 lg:p-6">
+                  <div className="flex items-center space-x-3 lg:space-x-4">
+                    <div className={`p-3 lg:p-4 rounded-full ${action.color} text-white flex-shrink-0`}>
+                      <action.icon size={24} className="lg:w-7 lg:h-7" />
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-comademig-blue text-lg">{action.title}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{action.description}</p>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-comademig-blue text-base lg:text-lg truncate">{action.title}</h3>
+                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">{action.description}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -102,14 +102,14 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
         <Card className="border-0 shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Situação Financeira</CardTitle>
             <DollarSign className="h-5 w-5 text-comademig-gold" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">Em Dia</div>
+            <div className="text-2xl lg:text-3xl font-bold text-green-600">Em Dia</div>
             <p className="text-xs text-gray-500 mt-2">Última contribuição: Janeiro/2024</p>
           </CardContent>
         </Card>
@@ -120,7 +120,7 @@ const Dashboard = () => {
             <Calendar className="h-5 w-5 text-comademig-gold" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-comademig-blue">3</div>
+            <div className="text-2xl lg:text-3xl font-bold text-comademig-blue">3</div>
             <p className="text-xs text-gray-500 mt-2">Eventos disponíveis para inscrição</p>
           </CardContent>
         </Card>
@@ -131,7 +131,7 @@ const Dashboard = () => {
             <CreditCard className="h-5 w-5 text-comademig-gold" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">Ativa</div>
+            <div className="text-2xl lg:text-3xl font-bold text-green-600">Ativa</div>
             <p className="text-xs text-gray-500 mt-2">Válida até: Dezembro/2024</p>
           </CardContent>
         </Card>
@@ -139,7 +139,7 @@ const Dashboard = () => {
 
       {/* Notifications */}
       <div>
-        <h2 className="text-2xl font-semibold text-comademig-blue mb-6">Notificações Recentes</h2>
+        <h2 className="text-xl lg:text-2xl font-semibold text-comademig-blue mb-4 lg:mb-6">Notificações Recentes</h2>
         <div className="space-y-4">
           {notifications.map((notification, index) => (
             <Alert key={index} className={`border-0 shadow-md ${
@@ -151,12 +151,12 @@ const Dashboard = () => {
               {notification.type === 'success' && <CheckCircle className="h-5 w-5 text-green-600" />}
               {notification.type === 'info' && <Bell className="h-5 w-5 text-blue-600" />}
               <AlertDescription>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-semibold text-lg">{notification.title}</h4>
+                <div className="flex justify-between items-start gap-4">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-semibold text-base lg:text-lg">{notification.title}</h4>
                     <p className="text-sm mt-1">{notification.description}</p>
                   </div>
-                  <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full">{notification.date}</span>
+                  <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full whitespace-nowrap flex-shrink-0">{notification.date}</span>
                 </div>
               </AlertDescription>
             </Alert>

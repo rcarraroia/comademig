@@ -17,8 +17,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <div className="flex-1 flex flex-col lg:ml-64">
         <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
         
-        <main className="flex-1 p-6 lg:p-8">
-          {children}
+        <main className="flex-1 p-4 lg:p-8 xl:p-12">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
         </main>
       </div>
     </div>

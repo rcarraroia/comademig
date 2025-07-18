@@ -20,7 +20,6 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
     { path: "/dashboard/eventos", label: "Eventos", icon: Calendar },
     { path: "/dashboard/comunicacao", label: "Comunicação", icon: MessageSquare },
     { path: "/dashboard/suporte", label: "Suporte", icon: HelpCircle },
-    { path: "/dashboard/perfil", label: "Perfil", icon: Settings },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -37,12 +36,12 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
       
       {/* Sidebar */}
       <div className={`
-        fixed top-0 left-0 h-full w-64 bg-comademig-blue shadow-lg z-50 transform transition-transform duration-300
+        fixed top-0 left-0 h-full w-64 bg-comademig-blue shadow-lg z-50 transform transition-transform duration-300 flex flex-col
         lg:translate-x-0 lg:static lg:z-auto
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         {/* Header */}
-        <div className="p-6 border-b border-blue-600 flex items-center justify-between">
+        <div className="p-6 border-b border-blue-600 flex items-center justify-between flex-shrink-0">
           <img 
             src="/lovable-uploads/efd9af7f-fef5-4cd0-b54d-d9f55a002a3b.png" 
             alt="COMADEMIG" 
@@ -58,8 +57,8 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
           </Button>
         </div>
 
-        {/* Menu Items */}
-        <nav className="p-4 space-y-1">
+        {/* Menu Items - Scrollable area */}
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {menuItems.map((item) => (
             <Link
               key={item.path}
@@ -79,11 +78,27 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
           ))}
         </nav>
 
-        {/* Bottom Section */}
-        <div className="absolute bottom-6 left-4 right-4">
+        {/* Bottom Section - Fixed at bottom */}
+        <div className="p-4 space-y-3 border-t border-blue-600 flex-shrink-0">
+          <Link
+            to="/dashboard/perfil"
+            onClick={onClose}
+            className={`
+              flex items-center space-x-3 p-3 rounded-lg transition-colors duration-200 text-sm font-medium
+              ${isActive("/dashboard/perfil") 
+                ? 'bg-comademig-gold text-comademig-blue' 
+                : 'text-white hover:bg-blue-600'
+              }
+            `}
+          >
+            <Settings size={18} />
+            <span>Perfil</span>
+          </Link>
+          
           <Link
             to="/"
-            className="flex items-center justify-center space-x-2 p-3 text-white hover:bg-blue-600 rounded-lg transition-colors duration-200 text-sm"
+            onClick={onClose}
+            className="flex items-center space-x-3 p-3 text-white hover:bg-blue-600 rounded-lg transition-colors duration-200 text-sm font-medium"
           >
             <Globe size={18} />
             <span>Voltar ao Site</span>
