@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,6 +13,9 @@ import Noticias from "./pages/Noticias";
 import Multimidia from "./pages/Multimidia";
 import Contato from "./pages/Contato";
 import NotFound from "./pages/NotFound";
+import Filiacao from "./pages/Filiacao";
+import Checkout from "./pages/Checkout";
+import PagamentoSucesso from "./pages/PagamentoSucesso";
 
 // Dashboard Pages
 import Dashboard from "./pages/dashboard/Dashboard";
@@ -43,6 +45,9 @@ const App = () => (
           <Route path="/noticias" element={<Layout><Noticias /></Layout>} />
           <Route path="/multimidia" element={<Layout><Multimidia /></Layout>} />
           <Route path="/contato" element={<Layout><Contato /></Layout>} />
+          <Route path="/filiacao" element={<Layout><Filiacao /></Layout>} />
+          <Route path="/checkout" element={<Layout><Checkout /></Layout>} />
+          <Route path="/pagamento-sucesso" element={<Layout><PagamentoSucesso /></Layout>} />
           
           {/* Dashboard Routes */}
           <Route path="/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />

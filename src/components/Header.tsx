@@ -1,71 +1,144 @@
+
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Menu, X, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const location = useLocation();
-  const menuItems = [{
-    path: "/",
-    label: "Home"
-  }, {
-    path: "/sobre",
-    label: "Sobre a COMADEMIG"
-  }, {
-    path: "/lideranca",
-    label: "Liderança"
-  }, {
-    path: "/eventos",
-    label: "Eventos"
-  }, {
-    path: "/noticias",
-    label: "Notícias"
-  }, {
-    path: "/multimidia",
-    label: "Multimídia"
-  }, {
-    path: "/contato",
-    label: "Contato"
-  }];
-  const isActive = (path: string) => location.pathname === path;
-  return <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200">
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  return (
+    <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
       <nav className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3">
-            <img src="/lovable-uploads/efd9af7f-fef5-4cd0-b54d-d9f55a002a3b.png" alt="COMADEMIG Logo" className="h-12 w-auto" />
+          <Link to="/" className="flex-shrink-0">
+            <img 
+              src="/lovable-uploads/efd9af7f-fef5-4cd0-b54d-d9f55a002a3b.png" 
+              alt="COMADEMIG" 
+              className="h-12 w-auto"
+            />
           </Link>
 
           {/* Desktop Menu */}
           <div className="hidden lg:flex items-center space-x-8">
-            {menuItems.map(item => <Link key={item.path} to={item.path} className={`font-inter font-medium transition-colors duration-200 ${isActive(item.path) ? "text-comademig-blue border-b-2 border-comademig-gold" : "text-gray-700 hover:text-comademig-blue"}`}>
-                {item.label}
-              </Link>)}
-          </div>
-
-          {/* CTA Button */}
-          <div className="hidden lg:block">
-            <Button className="bg-comademig-gold hover:bg-comademig-gold/90 text-white font-montserrat font-semibold">Filie-se</Button>
+            <Link to="/" className="text-gray-700 hover:text-comademig-blue font-medium transition-colors">
+              Home
+            </Link>
+            <Link to="/sobre" className="text-gray-700 hover:text-comademig-blue font-medium transition-colors">
+              Sobre
+            </Link>
+            <Link to="/lideranca" className="text-gray-700 hover:text-comademig-blue font-medium transition-colors">
+              Liderança
+            </Link>
+            <Link to="/eventos" className="text-gray-700 hover:text-comademig-blue font-medium transition-colors">
+              Eventos
+            </Link>
+            <Link to="/noticias" className="text-gray-700 hover:text-comademig-blue font-medium transition-colors">
+              Notícias
+            </Link>
+            <Link to="/multimidia" className="text-gray-700 hover:text-comademig-blue font-medium transition-colors">
+              Multimídia
+            </Link>
+            <Link to="/contato" className="text-gray-700 hover:text-comademig-blue font-medium transition-colors">
+              Contato
+            </Link>
+            <Link to="/filiacao" className="text-gray-700 hover:text-comademig-blue font-medium transition-colors">
+              Filie-se
+            </Link>
+            <Button asChild className="bg-comademig-blue hover:bg-comademig-blue/90 text-white">
+              <Link to="/dashboard">
+                <User size={16} className="mr-2" />
+                Portal
+              </Link>
+            </Button>
           </div>
 
           {/* Mobile Menu Button */}
-          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="lg:hidden p-2 rounded-md hover:bg-gray-100">
+          <button
+            onClick={toggleMenu}
+            className="lg:hidden p-2 rounded-md text-gray-700 hover:text-comademig-blue hover:bg-gray-100"
+          >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
 
         {/* Mobile Menu */}
-        {isMenuOpen && <div className="lg:hidden mt-4 pb-4 border-t border-gray-200">
+        {isMenuOpen && (
+          <div className="lg:hidden mt-4 pb-4 border-t border-gray-200">
             <div className="flex flex-col space-y-4 pt-4">
-              {menuItems.map(item => <Link key={item.path} to={item.path} onClick={() => setIsMenuOpen(false)} className={`font-inter font-medium transition-colors duration-200 ${isActive(item.path) ? "text-comademig-blue" : "text-gray-700 hover:text-comademig-blue"}`}>
-                  {item.label}
-                </Link>)}
-              <Button className="bg-comademig-gold hover:bg-comademig-gold/90 text-white font-montserrat font-semibold w-full">
-                Doe Agora
+              <Link
+                to="/"
+                className="text-gray-700 hover:text-comademig-blue font-medium transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Home
+              </Link>
+              <Link
+                to="/sobre"
+                className="text-gray-700 hover:text-comademig-blue font-medium transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Sobre
+              </Link>
+              <Link
+                to="/lideranca"
+                className="text-gray-700 hover:text-comademig-blue font-medium transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Liderança
+              </Link>
+              <Link
+                to="/eventos"
+                className="text-gray-700 hover:text-comademig-blue font-medium transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Eventos
+              </Link>
+              <Link
+                to="/noticias"
+                className="text-gray-700 hover:text-comademig-blue font-medium transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Notícias
+              </Link>
+              <Link
+                to="/multimidia"
+                className="text-gray-700 hover:text-comademig-blue font-medium transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Multimídia
+              </Link>
+              <Link
+                to="/contato"
+                className="text-gray-700 hover:text-comademig-blue font-medium transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Contato
+              </Link>
+              <Link
+                to="/filiacao"
+                className="text-gray-700 hover:text-comademig-blue font-medium transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Filie-se
+              </Link>
+              <Button asChild className="bg-comademig-blue hover:bg-comademig-blue/90 text-white w-fit">
+                <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>
+                  <User size={16} className="mr-2" />
+                  Portal
+                </Link>
               </Button>
             </div>
-          </div>}
+          </div>
+        )}
       </nav>
-    </header>;
+    </header>
+  );
 };
+
 export default Header;
