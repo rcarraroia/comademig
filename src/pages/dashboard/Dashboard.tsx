@@ -68,30 +68,30 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-comademig-blue to-comademig-gold text-white p-6 rounded-lg">
-        <h1 className="text-2xl font-bold mb-2">Bem-vindo, Pastor João Silva!</h1>
-        <p className="text-blue-100">
+      <div className="bg-gradient-to-r from-comademig-blue to-comademig-gold text-white p-8 rounded-xl shadow-lg">
+        <h1 className="text-3xl font-bold mb-2">Bem-vindo, Pastor João Silva!</h1>
+        <p className="text-blue-100 text-lg">
           Igreja Assembleia de Deus - Campo Regional de Belo Horizonte
         </p>
       </div>
 
       {/* Quick Actions */}
       <div>
-        <h2 className="text-xl font-semibold text-comademig-blue mb-4">Acesso Rápido</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <h2 className="text-2xl font-semibold text-comademig-blue mb-6">Acesso Rápido</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {quickActions.map((action, index) => (
             <Link key={index} to={action.link}>
-              <Card className="hover:shadow-lg transition-shadow duration-200 cursor-pointer">
+              <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer border-0 shadow-md hover:scale-105">
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-4">
-                    <div className={`p-3 rounded-full ${action.color} text-white`}>
-                      <action.icon size={24} />
+                    <div className={`p-4 rounded-full ${action.color} text-white`}>
+                      <action.icon size={28} />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-comademig-blue">{action.title}</h3>
-                      <p className="text-sm text-gray-600">{action.description}</p>
+                      <h3 className="font-semibold text-comademig-blue text-lg">{action.title}</h3>
+                      <p className="text-sm text-gray-600 mt-1">{action.description}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -102,61 +102,61 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="border-0 shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Situação Financeira</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-600">Situação Financeira</CardTitle>
+            <DollarSign className="h-5 w-5 text-comademig-gold" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">Em Dia</div>
-            <p className="text-xs text-muted-foreground">Última contribuição: Janeiro/2024</p>
+            <div className="text-3xl font-bold text-green-600">Em Dia</div>
+            <p className="text-xs text-gray-500 mt-2">Última contribuição: Janeiro/2024</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-0 shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Próximos Eventos</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-600">Próximos Eventos</CardTitle>
+            <Calendar className="h-5 w-5 text-comademig-gold" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
-            <p className="text-xs text-muted-foreground">Eventos disponíveis para inscrição</p>
+            <div className="text-3xl font-bold text-comademig-blue">3</div>
+            <p className="text-xs text-gray-500 mt-2">Eventos disponíveis para inscrição</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-0 shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Carteira Digital</CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-600">Carteira Digital</CardTitle>
+            <CreditCard className="h-5 w-5 text-comademig-gold" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">Ativa</div>
-            <p className="text-xs text-muted-foreground">Válida até: Dezembro/2024</p>
+            <div className="text-3xl font-bold text-green-600">Ativa</div>
+            <p className="text-xs text-gray-500 mt-2">Válida até: Dezembro/2024</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Notifications */}
       <div>
-        <h2 className="text-xl font-semibold text-comademig-blue mb-4">Notificações Recentes</h2>
-        <div className="space-y-3">
+        <h2 className="text-2xl font-semibold text-comademig-blue mb-6">Notificações Recentes</h2>
+        <div className="space-y-4">
           {notifications.map((notification, index) => (
-            <Alert key={index} className={
-              notification.type === 'warning' ? 'border-orange-200 bg-orange-50' :
-              notification.type === 'success' ? 'border-green-200 bg-green-50' :
-              'border-blue-200 bg-blue-50'
-            }>
-              {notification.type === 'warning' && <AlertCircle className="h-4 w-4 text-orange-600" />}
-              {notification.type === 'success' && <CheckCircle className="h-4 w-4 text-green-600" />}
-              {notification.type === 'info' && <Bell className="h-4 w-4 text-blue-600" />}
+            <Alert key={index} className={`border-0 shadow-md ${
+              notification.type === 'warning' ? 'bg-orange-50 border-l-4 border-l-orange-400' :
+              notification.type === 'success' ? 'bg-green-50 border-l-4 border-l-green-400' :
+              'bg-blue-50 border-l-4 border-l-blue-400'
+            }`}>
+              {notification.type === 'warning' && <AlertCircle className="h-5 w-5 text-orange-600" />}
+              {notification.type === 'success' && <CheckCircle className="h-5 w-5 text-green-600" />}
+              {notification.type === 'info' && <Bell className="h-5 w-5 text-blue-600" />}
               <AlertDescription>
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="font-semibold">{notification.title}</h4>
-                    <p className="text-sm">{notification.description}</p>
+                    <h4 className="font-semibold text-lg">{notification.title}</h4>
+                    <p className="text-sm mt-1">{notification.description}</p>
                   </div>
-                  <span className="text-xs text-gray-500">{notification.date}</span>
+                  <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full">{notification.date}</span>
                 </div>
               </AlertDescription>
             </Alert>

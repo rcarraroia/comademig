@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -39,20 +40,19 @@ All colors MUST be HSL.
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* COMADEMIG Custom Colors */
+    --comademig-blue: 217 45% 23%;
+    --comademig-gold: 44 55% 53%;
+    --comademig-light: 225 25% 97%;
+    --comademig-gray: 220 14% 96%;
   }
 
   .dark {
@@ -102,4 +102,37 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Custom utility classes for COMADEMIG */
+.bg-comademig-blue {
+  background-color: hsl(var(--comademig-blue));
+}
+
+.bg-comademig-gold {
+  background-color: hsl(var(--comademig-gold));
+}
+
+.bg-comademig-light {
+  background-color: hsl(var(--comademig-light));
+}
+
+.bg-comademig-gray {
+  background-color: hsl(var(--comademig-gray));
+}
+
+.text-comademig-blue {
+  color: hsl(var(--comademig-blue));
+}
+
+.text-comademig-gold {
+  color: hsl(var(--comademig-gold));
+}
+
+.border-comademig-blue {
+  border-color: hsl(var(--comademig-blue));
+}
+
+.border-comademig-gold {
+  border-color: hsl(var(--comademig-gold));
 }
