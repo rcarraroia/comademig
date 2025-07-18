@@ -14,11 +14,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     <div className="min-h-screen bg-comademig-gray flex">
       <DashboardSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
-      <div className="flex-1 flex flex-col lg:ml-64">
+      <div className="flex-1 flex flex-col">
         <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
         
-        <main className="flex-1 p-4 lg:p-8 xl:p-12">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 p-4 lg:p-6 xl:p-8">
+          <div className="max-w-7xl mx-auto w-full">
             {children}
           </div>
         </main>
