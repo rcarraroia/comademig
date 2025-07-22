@@ -47,7 +47,7 @@ const Header = () => {
                 COMADEMIG
               </span>
               <span className="font-inter text-sm text-gray-600 -mt-1">
-                Convenção Mineira
+                Convenção Mineira das Assembleias de Deus
               </span>
             </div>
           </Link>
