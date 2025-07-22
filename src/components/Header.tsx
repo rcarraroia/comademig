@@ -38,18 +38,12 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-comademig-blue rounded-full flex items-center justify-center">
-              <span className="text-white font-montserrat font-bold text-lg">C</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="font-montserrat font-bold text-comademig-blue text-xl">
-                COMADEMIG
-              </span>
-              <span className="font-inter text-sm text-gray-600 -mt-1">
-                Convenção Mineira das Assembleias de Deus
-              </span>
-            </div>
+          <Link to="/" className="flex items-center">
+            <img 
+              src="/lovable-uploads/4d467a2d-b8c3-4aac-8b03-c365eb4f8fe9.png" 
+              alt="COMADEMIG - Convenção de Ministros das Assembleias de Deus em Minas Gerais"
+              className="h-14 w-auto"
+            />
           </Link>
 
           {/* Desktop Navigation */}
