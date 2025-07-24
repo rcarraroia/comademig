@@ -33,6 +33,8 @@ import Financeiro from "./pages/dashboard/Financeiro";
 import EventosDashboard from "./pages/dashboard/EventosDashboard";
 import Comunicacao from "./pages/dashboard/Comunicacao";
 import Suporte from "./pages/dashboard/Suporte";
+import Regularizacao from "./pages/dashboard/Regularizacao";
+import CheckoutRegularizacao from "./pages/dashboard/CheckoutRegularizacao";
 import Checkout from "./pages/Checkout";
 import PagamentoSucesso from "./pages/PagamentoSucesso";
 
@@ -95,6 +97,16 @@ const App = () => (
             <Route path="/dashboard/financeiro" element={
               <ProtectedRoute>
                 <DashboardLayout><Financeiro /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/regularizacao" element={
+              <ProtectedRoute>
+                <DashboardLayout><Regularizacao /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/checkout-regularizacao" element={
+              <ProtectedRoute>
+                <DashboardLayout><CheckoutRegularizacao /></DashboardLayout>
               </ProtectedRoute>
             } />
             <Route path="/dashboard/eventos" element={
