@@ -43,7 +43,7 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
         {/* Header */}
         <div className="p-4 lg:p-6 border-b border-blue-600 flex items-center justify-between flex-shrink-0">
           <img 
-            src="/lovable-uploads/efd9af7f-fef5-4cd0-b54d-d9f55a002a3b.png" 
+            src="/lovable-uploads/3b224a34-6b1d-42ce-9831-77c118c82d27.png" 
             alt="COMADEMIG" 
             className="h-8 w-auto"
           />

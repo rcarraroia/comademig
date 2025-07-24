@@ -1,8 +1,11 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, QrCode, User, MapPin, Calendar } from "lucide-react";
+
 const CarteiraDigital = () => {
-  return <div className="space-y-6">
+  return (
+    <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-comademig-blue">Identificação Eclesiástica</h1>
@@ -15,7 +18,7 @@ const CarteiraDigital = () => {
           <CardContent className="p-6">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
-              <img src="/lovable-uploads/efd9af7f-fef5-4cd0-b54d-d9f55a002a3b.png" alt="COMADEMIG" className="h-8 w-auto" />
+              <img src="/lovable-uploads/3b224a34-6b1d-42ce-9831-77c118c82d27.png" alt="COMADEMIG" className="h-8 w-auto" />
               <span className="text-sm opacity-90">2024</span>
             </div>
 
@@ -122,6 +125,8 @@ const CarteiraDigital = () => {
           </Card>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default CarteiraDigital;
