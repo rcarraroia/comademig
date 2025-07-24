@@ -8,12 +8,17 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CreditCard, Barcode, CheckCircle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const Checkout = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { signUp } = useAuth();
+  const { toast } = useToast();
   const { formData, taxa, cargoDisplay } = location.state || {};
   const [metodoPagamento, setMetodoPagamento] = useState("");
+  const [processandoPagamento, setProcessandoPagamento] = useState(false);
   const [dadosCartao, setDadosCartao] = useState({
     numero: "",
     nome: "",
@@ -36,9 +41,36 @@ const Checkout = () => {
     );
   }
 
-  const handlePagamento = () => {
-    // Simular processamento do pagamento
-    setTimeout(() => {
+  const handlePagamento = async () => {
+    setProcessandoPagamento(true);
+    
+    try {
+      // Simular processamento do pagamento
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Após pagamento bem-sucedido, criar conta do usuário
+      const { error } = await signUp(formData.email, formData.senha, {
+        nome_completo: formData.nomeCompleto,
+        cpf: formData.cpf,
+        telefone: formData.celular,
+        igreja: formData.nomeIgreja
+      });
+      
+      if (error) {
+        console.error('Erro ao criar conta:', error);
+        toast({
+          title: "Erro ao criar conta",
+          description: "Pagamento processado, mas houve um erro ao criar sua conta. Entre em contato conosco.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Conta criada com sucesso",
+          description: "Verifique seu email para confirmar a conta.",
+        });
+      }
+      
+      // Navegar para página de sucesso independentemente do resultado do signup
       navigate("/pagamento-sucesso", {
         state: {
           formData,
@@ -47,7 +79,17 @@ const Checkout = () => {
           metodoPagamento
         }
       });
-    }, 2000);
+      
+    } catch (error) {
+      console.error('Erro no processamento:', error);
+      toast({
+        title: "Erro no pagamento",
+        description: "Ocorreu um erro ao processar o pagamento. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setProcessandoPagamento(false);
+    }
   };
 
   return (
@@ -93,6 +135,15 @@ const Checkout = () => {
                       R$ {taxa.toFixed(2)}
                     </Badge>
                   </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                  <h4 className="font-semibold text-blue-800 mb-2">Após o Pagamento</h4>
+                  <ul className="text-blue-700 text-sm space-y-1">
+                    <li>• Sua conta será criada automaticamente</li>
+                    <li>• Você receberá um email de confirmação</li>
+                    <li>• Acesso imediato ao portal do membro</li>
+                  </ul>
                 </div>
               </CardContent>
             </Card>
@@ -206,15 +257,17 @@ const Checkout = () => {
                     variant="outline" 
                     onClick={() => navigate("/filiacao")}
                     className="flex-1"
+                    disabled={processandoPagamento}
                   >
                     Voltar
                   </Button>
                   <Button 
                     onClick={handlePagamento}
-                    disabled={!metodoPagamento}
+                    disabled={!metodoPagamento || processandoPagamento}
                     className="flex-1 bg-comademig-blue hover:bg-comademig-blue/90"
                   >
-                    {metodoPagamento === "boleto" ? "Gerar Boleto" : 
+                    {processandoPagamento ? "Processando..." : 
+                     metodoPagamento === "boleto" ? "Gerar Boleto" : 
                      metodoPagamento === "pix" ? "Gerar PIX" : "Finalizar Pagamento"}
                   </Button>
                 </div>

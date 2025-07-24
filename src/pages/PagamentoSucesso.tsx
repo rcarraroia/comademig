@@ -3,7 +3,7 @@ import { useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Download, Home } from "lucide-react";
+import { CheckCircle, Download, Home, LogIn } from "lucide-react";
 
 const PagamentoSucesso = () => {
   const location = useLocation();
@@ -36,10 +36,10 @@ const PagamentoSucesso = () => {
               <CheckCircle className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-comademig-blue mb-4">
-              Solicitação Enviada com Sucesso!
+              Filiação Concluída com Sucesso!
             </h1>
             <p className="text-gray-600">
-              Sua filiação à COMADEMIG foi solicitada e está em análise
+              Sua conta foi criada e sua filiação à COMADEMIG foi processada
             </p>
           </div>
 
@@ -47,7 +47,7 @@ const PagamentoSucesso = () => {
             <CardHeader>
               <CardTitle className="text-comademig-blue flex items-center">
                 <CheckCircle className="mr-2 h-5 w-5 text-green-500" />
-                Confirmação da Solicitação
+                Confirmação da Filiação
               </CardTitle>
               <CardDescription>
                 Protocolo: <strong>{numeroProtocolo}</strong> | Data: {dataProcessamento}
@@ -96,26 +96,25 @@ const PagamentoSucesso = () => {
                 </div>
               </div>
 
-              {/* Próximos Passos */}
+              {/* Conta Criada */}
               <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                <h3 className="font-semibold text-blue-800 mb-3">Próximos Passos</h3>
+                <h3 className="font-semibold text-blue-800 mb-3">Sua Conta foi Criada!</h3>
                 <ul className="text-blue-700 text-sm space-y-2">
-                  <li>✓ Sua solicitação será analisada pela diretoria da COMADEMIG</li>
-                  <li>✓ Você receberá um e-mail de confirmação em até 24 horas</li>
-                  <li>✓ A análise da documentação leva até 5 dias úteis</li>
-                  <li>✓ Após aprovação, sua carteira digital será liberada no portal</li>
-                  <li>✓ Você será notificado por e-mail quando a carteira estiver disponível</li>
+                  <li>✓ Conta criada com o email: <strong>{formData.email}</strong></li>
+                  <li>✓ Verifique sua caixa de entrada para confirmar o email</li>
+                  <li>✓ Após confirmação, você pode acessar o portal do membro</li>
+                  <li>✓ Sua carteira digital estará disponível em breve</li>
                 </ul>
               </div>
 
-              {/* Informações Importantes */}
+              {/* Próximos Passos */}
               <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-                <h3 className="font-semibold text-yellow-800 mb-2">Informações Importantes</h3>
-                <ul className="text-yellow-700 text-sm space-y-1">
-                  <li>• Guarde o número do protocolo para acompanhar sua solicitação</li>
-                  <li>• Verifique sua caixa de e-mail (inclusive spam)</li>
-                  <li>• Em caso de dúvidas, entre em contato pelo WhatsApp ou telefone</li>
-                  <li>• Acesse o portal para acompanhar o status da sua filiação</li>
+                <h3 className="font-semibold text-yellow-800 mb-3">Próximos Passos</h3>
+                <ul className="text-yellow-700 text-sm space-y-2">
+                  <li>1. Confirme seu email clicando no link enviado</li>
+                  <li>2. Faça login no portal com suas credenciais</li>
+                  <li>3. Aguarde a análise da documentação (até 5 dias úteis)</li>
+                  <li>4. Após aprovação, sua carteira digital será liberada</li>
                 </ul>
               </div>
 
@@ -126,8 +125,9 @@ const PagamentoSucesso = () => {
                   Baixar Comprovante
                 </Button>
                 <Button asChild className="flex-1 bg-comademig-blue hover:bg-comademig-blue/90">
-                  <Link to="/dashboard">
-                    Acessar Portal
+                  <Link to="/auth">
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Fazer Login
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="flex-1">

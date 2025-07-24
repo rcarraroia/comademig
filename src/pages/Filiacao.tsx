@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -26,6 +25,8 @@ const Filiacao = () => {
     telefone: "",
     celular: "",
     email: "",
+    senha: "",
+    confirmarSenha: "",
     endereco: "",
     numero: "",
     complemento: "",
@@ -88,6 +89,16 @@ const Filiacao = () => {
     
     if (!formData.declaracao) {
       alert("Por favor, aceite a declaração de veracidade das informações.");
+      return;
+    }
+
+    if (formData.senha !== formData.confirmarSenha) {
+      alert("As senhas não coincidem.");
+      return;
+    }
+
+    if (formData.senha.length < 6) {
+      alert("A senha deve ter pelo menos 6 caracteres.");
       return;
     }
 
@@ -272,13 +283,35 @@ const Filiacao = () => {
                         required
                       />
                     </div>
-                    <div className="md:col-span-2">
+                    <div>
                       <Label htmlFor="email">E-mail *</Label>
                       <Input
                         id="email"
                         type="email"
                         value={formData.email}
                         onChange={(e) => handleInputChange("email", e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="senha">Senha para Portal *</Label>
+                      <Input
+                        id="senha"
+                        type="password"
+                        value={formData.senha}
+                        onChange={(e) => handleInputChange("senha", e.target.value)}
+                        placeholder="Mínimo 6 caracteres"
+                        required
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="confirmarSenha">Confirmar Senha *</Label>
+                      <Input
+                        id="confirmarSenha"
+                        type="password"
+                        value={formData.confirmarSenha}
+                        onChange={(e) => handleInputChange("confirmarSenha", e.target.value)}
+                        placeholder="Confirme sua senha"
                         required
                       />
                     </div>
