@@ -41,7 +41,7 @@ export const useCertificadosEventos = () => {
 
   const { data: meusCertificados, isLoading, refetch } = useSupabaseQuery(
     ['certificados', user?.id],
-    async () => {
+    async (): Promise<CertificadoEvento[]> => {
       if (!user) return [];
       
       const { data, error } = await supabase
@@ -87,6 +87,12 @@ export const useCertificadosEventos = () => {
       .single();
     
     if (error) throw error;
+    
+    // Validate the structure before returning
+    if (!data?.profiles?.nome_completo) {
+      throw new Error('Dados do certificado incompletos');
+    }
+    
     return data as CertificadoValidacao;
   };
 
@@ -135,7 +141,7 @@ export const useCertificadosEventos = () => {
   );
 
   return {
-    meusCertificados: meusCertificados || [],
+    meusCertificados: (meusCertificados || []) as CertificadoEvento[],
     isLoading,
     validarCertificado,
     gerarCertificado,
