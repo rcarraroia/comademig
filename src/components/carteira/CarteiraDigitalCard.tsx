@@ -3,11 +3,13 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, User, MapPin, Phone, Mail, Download, QrCode } from "lucide-react";
+import { Calendar, User, MapPin, Phone, Mail, Download, QrCode, Camera, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import QRCodeDisplay from "./QRCodeDisplay";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { downloadCarteiraAsPDF } from "@/utils/carteiraDownloadUtils";
 
 interface CarteiraDigitalCardProps {
   carteira: {
@@ -31,10 +33,19 @@ interface CarteiraDigitalCardProps {
   };
   userEmail?: string;
   onUpdatePhoto?: (file: File) => void;
+  isUploadingPhoto?: boolean;
 }
 
-const CarteiraDigitalCard = ({ carteira, profile, userEmail, onUpdatePhoto }: CarteiraDigitalCardProps) => {
+const CarteiraDigitalCard = ({ 
+  carteira, 
+  profile, 
+  userEmail, 
+  onUpdatePhoto, 
+  isUploadingPhoto = false 
+}: CarteiraDigitalCardProps) => {
   const [showQRCode, setShowQRCode] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const { toast } = useToast();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -84,18 +95,53 @@ const CarteiraDigitalCard = ({ carteira, profile, userEmail, onUpdatePhoto }: Ca
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && onUpdatePhoto) {
+      // Validar tipo de arquivo
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Arquivo inválido",
+          description: "Por favor, selecione apenas arquivos de imagem",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validar tamanho do arquivo (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Arquivo muito grande",
+          description: "A imagem deve ter no máximo 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
       onUpdatePhoto(file);
     }
   };
 
-  const downloadCard = () => {
-    // Esta funcionalidade seria implementada para gerar PDF da carteira
-    console.log('Download da carteira solicitado');
+  const handleDownloadCard = async () => {
+    try {
+      setIsDownloading(true);
+      await downloadCarteiraAsPDF('carteira-digital-card', carteira.numero_carteira);
+      toast({
+        title: "Download concluído",
+        description: "Carteira digital baixada com sucesso",
+      });
+    } catch (error) {
+      console.error('Erro no download da carteira:', error);
+      toast({
+        title: "Erro no download",
+        description: "Não foi possível baixar a carteira. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   return (
     <div className="max-w-md mx-auto">
-      <Card className="bg-gradient-to-br from-comademig-blue to-comademig-blue/90 text-white shadow-2xl">
+      <Card id="carteira-digital-card" className="bg-gradient-to-br from-comademig-blue to-comademig-blue/90 text-white shadow-2xl">
         <CardHeader className="pb-4">
           <div className="flex justify-between items-start">
             <div className="flex items-center space-x-3">
@@ -127,12 +173,17 @@ const CarteiraDigitalCard = ({ carteira, profile, userEmail, onUpdatePhoto }: Ca
               </Avatar>
               {onUpdatePhoto && (
                 <label className="absolute -bottom-1 -right-1 bg-comademig-gold text-comademig-blue rounded-full p-1 cursor-pointer hover:bg-comademig-gold/90 transition-colors">
-                  <User className="h-3 w-3" />
+                  {isUploadingPhoto ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Camera className="h-3 w-3" />
+                  )}
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleFileUpload}
                     className="hidden"
+                    disabled={isUploadingPhoto}
                   />
                 </label>
               )}
@@ -210,11 +261,16 @@ const CarteiraDigitalCard = ({ carteira, profile, userEmail, onUpdatePhoto }: Ca
             <Button
               variant="secondary"
               size="sm"
-              onClick={downloadCard}
+              onClick={handleDownloadCard}
+              disabled={isDownloading}
               className="flex-1 bg-white/20 hover:bg-white/30 text-white border-white/30"
             >
-              <Download className="h-4 w-4 mr-1" />
-              Download
+              {isDownloading ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-1" />
+              )}
+              {isDownloading ? 'Baixando...' : 'Download'}
             </Button>
           </div>
         </CardContent>

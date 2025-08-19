@@ -58,11 +58,26 @@ export const useCarteiraDigital = () => {
     async () => {
       if (!user) throw new Error('Usuário não autenticado');
       
-      // Gerar número único da carteira
-      const numeroCarteira = `COMADEMIG-${Date.now()}`;
+      // Verificar se o usuário já possui uma carteira ativa
+      const { data: carteiraExistente } = await (supabase as any)
+        .from('carteira_digital')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'ativa')
+        .maybeSingle();
+      
+      if (carteiraExistente) {
+        throw new Error('Usuário já possui uma carteira digital ativa');
+      }
+      
+      // Gerar número único da carteira com timestamp mais preciso
+      const timestamp = Date.now();
+      const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      const numeroCarteira = `COMADEMIG-${timestamp}-${randomSuffix}`;
       
       // Gerar QR Code (URL que aponta para validação pública)
-      const qrCodeUrl = `${window.location.origin}/validar-carteira/${numeroCarteira}`;
+      const baseUrl = window.location.origin;
+      const qrCodeUrl = `${baseUrl}/validar-carteira/${numeroCarteira}`;
       
       // Data de validade (1 ano a partir da emissão)
       const dataValidade = new Date();
@@ -103,8 +118,13 @@ export const useCarteiraDigital = () => {
         .eq('id', (carteira as CarteiraDigital).id);
       
       // Gerar nova carteira
-      const numeroCarteira = `COMADEMIG-${Date.now()}`;
-      const qrCodeUrl = `${window.location.origin}/validar-carteira/${numeroCarteira}`;
+      const timestamp = Date.now();
+      const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      const numeroCarteira = `COMADEMIG-${timestamp}-${randomSuffix}`;
+      
+      const baseUrl = window.location.origin;
+      const qrCodeUrl = `${baseUrl}/validar-carteira/${numeroCarteira}`;
+      
       const dataValidade = new Date();
       dataValidade.setFullYear(dataValidade.getFullYear() + 1);
       
@@ -115,7 +135,9 @@ export const useCarteiraDigital = () => {
           numero_carteira: numeroCarteira,
           qr_code: qrCodeUrl,
           data_validade: dataValidade.toISOString(),
-          status: 'ativa'
+          status: 'ativa',
+          // Manter a foto da carteira anterior se existir
+          foto_url: (carteira as CarteiraDigital).foto_url
         })
         .select()
         .single();
@@ -155,6 +177,18 @@ export const useCarteiraDigital = () => {
     }
   );
 
+  // Função helper para verificar se o usuário pode gerar carteira
+  const podeGerarCarteira = () => {
+    if (!profile) return false;
+    
+    // Verificar se o perfil está completo o suficiente
+    const profileCompleto = profile.nome_completo && 
+                           profile.status === 'ativo' && 
+                           profile.tipo_membro;
+    
+    return profileCompleto && !carteira;
+  };
+
   return {
     carteira: carteira as CarteiraDigital | null,
     profile,
@@ -163,6 +197,7 @@ export const useCarteiraDigital = () => {
     gerarCarteira,
     renovarCarteira,
     atualizarFoto,
+    podeGerarCarteira,
     refetch
   };
 };

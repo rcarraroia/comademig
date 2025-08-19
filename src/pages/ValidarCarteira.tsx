@@ -1,10 +1,11 @@
 
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CheckCircle, XCircle, AlertCircle, User, MapPin, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CheckCircle, XCircle, AlertCircle, User, MapPin, Calendar, QrCode, Link as LinkIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -39,12 +40,33 @@ interface CarteiraValidacao {
 
 const ValidarCarteira = () => {
   const { numeroCarteira } = useParams<{ numeroCarteira: string }>();
+  const [searchParams] = useSearchParams();
+  const qrParam = searchParams.get('qr');
+  
   const [validacao, setValidacao] = useState<CarteiraValidacao | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [validationMethod, setValidationMethod] = useState<'url' | 'qr'>('url');
 
   useEffect(() => {
+    // Determinar método de validação
+    if (qrParam) {
+      setValidationMethod('qr');
+    } else if (numeroCarteira) {
+      setValidationMethod('url');
+    }
+
     const validarCarteira = async () => {
-      if (!numeroCarteira) {
+      let numeroParaValidar = numeroCarteira;
+
+      // Se veio do QR Code, extrair número da URL
+      if (qrParam && qrParam.includes('/validar-carteira/')) {
+        const matches = qrParam.match(/\/validar-carteira\/(.+)$/);
+        if (matches) {
+          numeroParaValidar = matches[1];
+        }
+      }
+
+      if (!numeroParaValidar) {
         setValidacao({
           carteira: null,
           profile: null,
@@ -56,11 +78,11 @@ const ValidarCarteira = () => {
       }
 
       try {
-        // First, get the carteira
+        // Buscar a carteira
         const { data: carteira, error: carteiraError } = await (supabase as any)
           .from('carteira_digital')
           .select('*')
-          .eq('numero_carteira', numeroCarteira)
+          .eq('numero_carteira', numeroParaValidar)
           .eq('status', 'ativa')
           .single();
 
@@ -75,7 +97,7 @@ const ValidarCarteira = () => {
           return;
         }
 
-        // Then get the profile
+        // Buscar o perfil do usuário
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('nome_completo, igreja, cargo, cidade, estado, tipo_membro')
@@ -93,7 +115,7 @@ const ValidarCarteira = () => {
           return;
         }
 
-        // Check if carteira is still valid (not expired)
+        // Verificar se a carteira ainda é válida (não expirada)
         const isValid = new Date(carteira.data_validade) > new Date();
 
         setValidacao({
@@ -117,12 +139,38 @@ const ValidarCarteira = () => {
     };
 
     validarCarteira();
-  }, [numeroCarteira]);
+  }, [numeroCarteira, qrParam]);
+
+  const shareValidation = async () => {
+    const currentUrl = window.location.href;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Validação de Carteira Digital COMADEMIG',
+          text: `Carteira ${validacao?.carteira?.numero_carteira} - Status: ${validacao?.isValid ? 'Válida' : 'Inválida'}`,
+          url: currentUrl,
+        });
+      } catch (error) {
+        console.log('Erro ao compartilhar:', error);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(currentUrl);
+        alert('Link de validação copiado para a área de transferência');
+      } catch (error) {
+        console.error('Erro ao copiar link:', error);
+      }
+    }
+  };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <LoadingSpinner size="lg" />
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-gray-600">Validando carteira digital...</p>
+        </div>
       </div>
     );
   }
@@ -184,6 +232,23 @@ const ValidarCarteira = () => {
             <p className="text-gray-600">
               Verificação de autenticidade da identificação eclesiástica
             </p>
+            
+            {/* Indicador do método de validação */}
+            <div className="mt-4 flex justify-center">
+              <Badge variant="outline" className="flex items-center space-x-1">
+                {validationMethod === 'qr' ? (
+                  <>
+                    <QrCode className="h-3 w-3" />
+                    <span>Validação via QR Code</span>
+                  </>
+                ) : (
+                  <>
+                    <LinkIcon className="h-3 w-3" />
+                    <span>Validação via URL</span>
+                  </>
+                )}
+              </Badge>
+            </div>
           </div>
 
           {/* Status Card */}
@@ -205,6 +270,15 @@ const ValidarCarteira = () => {
                   </p>
                 </div>
               )}
+
+              {/* Botão de compartilhamento */}
+              <Button 
+                variant="outline" 
+                onClick={shareValidation}
+                className="mt-4"
+              >
+                Compartilhar Validação
+              </Button>
             </CardContent>
           </Card>
 

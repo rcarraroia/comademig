@@ -12,6 +12,7 @@ import CarteiraDigitalCard from "@/components/carteira/CarteiraDigitalCard";
 import CarteiraStatus from "@/components/carteira/CarteiraStatus";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ErrorMessage } from "@/components/common/ErrorMessage";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProfileData {
   nome_completo: string;
@@ -26,6 +27,9 @@ interface ProfileData {
 
 const CarteiraDigital = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  
   const { 
     carteira, 
     profile: rawProfile, 
@@ -41,12 +45,33 @@ const CarteiraDigital = () => {
 
   const handleUpdatePhoto = async (file: File) => {
     try {
-      const photoUrl = await uploadFile(file, 'carteiras', `foto-${user?.id}-${Date.now()}`);
+      setIsUploadingPhoto(true);
+      
+      // Upload da foto para o storage
+      const photoUrl = await uploadFile(
+        file, 
+        'carteiras', 
+        `foto-${user?.id}-${Date.now()}`
+      );
+      
       if (photoUrl) {
-        atualizarFoto.mutate(photoUrl);
+        await atualizarFoto.mutateAsync(photoUrl);
+        toast({
+          title: "Foto atualizada",
+          description: "A foto da carteira foi atualizada com sucesso",
+        });
+      } else {
+        throw new Error('Falha no upload da imagem');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao fazer upload da foto:', error);
+      toast({
+        title: "Erro no upload",
+        description: error.message || "Não foi possível atualizar a foto. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingPhoto(false);
     }
   };
 
@@ -105,6 +130,7 @@ const CarteiraDigital = () => {
                   profile={profile}
                   userEmail={user?.email}
                   onUpdatePhoto={handleUpdatePhoto}
+                  isUploadingPhoto={isUploadingPhoto}
                 />
               </div>
               
@@ -235,7 +261,13 @@ const CarteiraDigital = () => {
                     <Button 
                       size="sm" 
                       variant="outline"
-                      onClick={() => navigator.clipboard.writeText(carteira.qr_code)}
+                      onClick={() => {
+                        navigator.clipboard.writeText(carteira.qr_code);
+                        toast({
+                          title: "URL copiada",
+                          description: "Link de validação copiado para a área de transferência",
+                        });
+                      }}
                     >
                       Copiar
                     </Button>
