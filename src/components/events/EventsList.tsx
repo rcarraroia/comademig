@@ -20,9 +20,18 @@ interface Evento {
   status: string;
 }
 
+interface InscricaoEvento {
+  id: string;
+  evento_id: string;
+  status: string;
+  valor_pago?: number;
+  data_pagamento?: string;
+  created_at: string;
+}
+
 interface EventsListProps {
   eventos: Evento[] | undefined;
-  inscricoes?: any[];
+  inscricoes?: InscricaoEvento[];
   isLoading: boolean;
   onInscrever: (eventoId: string) => void;
   onCancelar: (eventoId: string) => void;

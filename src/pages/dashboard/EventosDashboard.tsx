@@ -11,6 +11,37 @@ import { MyEventsList } from "@/components/events/MyEventsList";
 import { ErrorMessage } from "@/components/common/ErrorMessage";
 import { useToast } from "@/hooks/use-toast";
 
+interface Evento {
+  id: string;
+  titulo: string;
+  descricao?: string;
+  data_inicio: string;
+  data_fim: string;
+  local?: string;
+  endereco?: string;
+  cidade?: string;
+  estado?: string;
+  preco?: number;
+  vagas?: number;
+  imagem_url?: string;
+  status: string;
+}
+
+interface InscricaoEvento {
+  id: string;
+  status: string;
+  valor_pago?: number;
+  data_pagamento?: string;
+  created_at: string;
+  evento_id: string;
+  eventos: {
+    titulo: string;
+    data_inicio: string;
+    data_fim: string;
+    local?: string;
+  };
+}
+
 const EventosDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loadingInscricao, setLoadingInscricao] = useState<string | undefined>();
@@ -27,7 +58,7 @@ const EventosDashboard = () => {
     refetch
   } = useEventos();
 
-  const filteredEventos = eventos?.filter(evento =>
+  const filteredEventos = (eventos as Evento[] || []).filter(evento =>
     evento.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     evento.descricao?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -35,7 +66,7 @@ const EventosDashboard = () => {
   const handleInscrever = async (eventoId: string) => {
     try {
       setLoadingInscricao(eventoId);
-      const evento = eventos?.find(e => e.id === eventoId);
+      const evento = (eventos as Evento[] || []).find(e => e.id === eventoId);
       
       await inscreverEvento.mutateAsync({
         eventoId,
@@ -117,7 +148,7 @@ const EventosDashboard = () => {
 
               <EventsList
                 eventos={filteredEventos}
-                inscricoes={minhasInscricoes}
+                inscricoes={minhasInscricoes as InscricaoEvento[] || []}
                 isLoading={isLoading}
                 onInscrever={handleInscrever}
                 onCancelar={handleCancelar}
@@ -137,7 +168,7 @@ const EventosDashboard = () => {
             </CardHeader>
             <CardContent>
               <MyEventsList
-                inscricoes={minhasInscricoes}
+                inscricoes={minhasInscricoes as InscricaoEvento[] || []}
                 isLoading={isLoading}
                 onCancelar={handleCancelar}
                 loadingCancelamento={loadingCancelamento}
