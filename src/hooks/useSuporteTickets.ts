@@ -22,7 +22,16 @@ export interface SuporteMensagem {
   created_at: string;
 }
 
-export const useSuporteTickets = () => {
+interface UseSuporteTicketsReturn {
+  tickets: SuporteTicket[];
+  isLoading: boolean;
+  criarTicket: any;
+  getMensagens: (ticketId: string) => Promise<SuporteMensagem[]>;
+  enviarMensagem: any;
+  refetch: () => void;
+}
+
+export const useSuporteTickets = (): UseSuporteTicketsReturn => {
   const { user } = useAuth();
 
   const { data: tickets, isLoading, refetch } = useSupabaseQuery(
