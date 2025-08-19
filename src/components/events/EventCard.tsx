@@ -65,6 +65,7 @@ export const EventCard = ({
 
   const handleRegistrationSuccess = () => {
     onInscrever?.(evento.id);
+    setShowRegistrationModal(false);
   };
 
   const handleGerarCertificado = async () => {
@@ -190,7 +191,7 @@ export const EventCard = ({
               </Button>
             ) : (
               <div className="flex gap-2 flex-1">
-                <Badge variant="success" className="flex-1 justify-center py-2">
+                <Badge variant="default" className="flex-1 justify-center py-2 bg-green-600">
                   Inscrito
                 </Badge>
                 {podeGerarCertificado && (

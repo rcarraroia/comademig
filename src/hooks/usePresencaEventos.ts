@@ -26,7 +26,7 @@ export const usePresencaEventos = () => {
         .order('data_presenca', { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data || [];
     },
     { enabled: !!user }
   );
@@ -37,13 +37,11 @@ export const usePresencaEventos = () => {
       
       const { data, error } = await supabase
         .from('presenca_eventos')
-        .upsert({
+        .insert({
           user_id: user.id,
           evento_id: eventoId,
           tipo_presenca: tipoPresenca,
           data_presenca: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,evento_id,tipo_presenca'
         })
         .select()
         .single();
@@ -61,7 +59,7 @@ export const usePresencaEventos = () => {
   );
 
   return {
-    minhaPresenca,
+    minhaPresenca: minhaPresenca || [],
     registrarPresenca,
     refetch
   };

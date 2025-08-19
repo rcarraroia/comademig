@@ -29,7 +29,7 @@ export const CertificateGenerator = ({
   const { meusCertificados, gerarCertificado } = useCertificadosEventos();
   
   const certificadoExistente = meusCertificados.find(
-    cert => cert.eventos && cert.id === evento.id
+    cert => cert.eventos && cert.id && cert.id.includes(evento.id)
   );
 
   const podeGerarCertificado = 
@@ -48,11 +48,12 @@ export const CertificateGenerator = ({
 
   const handleDownloadCertificado = () => {
     // Simular download do certificado
-    // Em produção, seria gerado um PDF real
     const link = document.createElement('a');
     link.href = '#';
     link.download = `certificado-${evento.titulo.replace(/\s+/g, '-').toLowerCase()}.pdf`;
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
   };
 
   if (!evento.certificado_disponivel) {

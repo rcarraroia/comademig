@@ -23,9 +23,8 @@ export const PresenceScanner = ({ eventoId, eventoTitulo }: PresenceScannerProps
       setScanningType(type);
       setIsScanning(true);
 
-      // Simular escaneamento de QR Code
-      // Em produção, aqui seria integrado com uma biblioteca de QR Code scanner
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Simular escaneamento de QR Code - aguardar 1.5 segundos
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
       await registrarPresenca.mutateAsync({
         eventoId,
@@ -37,11 +36,11 @@ export const PresenceScanner = ({ eventoId, eventoTitulo }: PresenceScannerProps
         description: `${type === 'entrada' ? 'Entrada' : 'Saída'} registrada com sucesso!`,
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao registrar presença:', error);
       toast({
         title: "Erro",
-        description: "Erro ao registrar presença. Tente novamente.",
+        description: error?.message || "Erro ao registrar presença. Tente novamente.",
         variant: "destructive"
       });
     } finally {
@@ -99,7 +98,7 @@ export const PresenceScanner = ({ eventoId, eventoTitulo }: PresenceScannerProps
         )}
 
         <div className="text-xs text-gray-500 text-center">
-          * Em produção, seria integrado com scanner de QR Code real
+          * Simulação de scanner QR Code - em produção seria integrado com câmera
         </div>
       </CardContent>
     </Card>
