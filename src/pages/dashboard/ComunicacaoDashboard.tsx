@@ -1,19 +1,20 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Send, Search, Plus, Inbox, Send as SendIcon } from "lucide-react";
-import { useMensagens } from "@/hooks/useMensagens";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageList } from "@/components/communication/MessageList";
 import { MessageDetail } from "@/components/communication/MessageDetail";
 import { ComposeMessage } from "@/components/communication/ComposeMessage";
-import { ErrorMessage } from "@/components/common/ErrorMessage";
-import { useAuth } from "@/contexts/AuthContext";
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { ErrorMessage } from '@/components/common/ErrorMessage';
+import { useMensagens } from "@/hooks/useMensagens";
 import { useSupabaseQuery } from "@/hooks/useSupabaseQuery";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Mail, MailOpen, Send, Search, Users } from "lucide-react";
 
 interface Mensagem {
   id: string;
@@ -35,16 +36,26 @@ interface Mensagem {
   };
 }
 
-const ComunicacaoDashboard = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedMessage, setSelectedMessage] = useState<Mensagem | null>(null);
-  const [composeMode, setComposeMode] = useState(false);
-  const [replyData, setReplyData] = useState<{ destinatarioId: string; assunto: string } | null>(null);
-  
+interface Profile {
+  id: string;
+  nome_completo: string;
+  cargo?: string;
+  igreja?: string;
+}
+
+export default function ComunicacaoDashboard() {
   const { user } = useAuth();
-  
+  const [view, setView] = useState<'list' | 'detail' | 'compose'>('list');
+  const [selectedMessage, setSelectedMessage] = useState<Mensagem | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'received' | 'sent'>('all');
+  const [composeData, setComposeData] = useState<{
+    destinatarioId?: string;
+    assunto?: string;
+  }>({});
+
   const {
-    mensagens,
+    mensagens: mensagensData,
     mensagensNaoLidas,
     isLoading,
     error,
@@ -53,15 +64,14 @@ const ComunicacaoDashboard = () => {
     refetch
   } = useMensagens();
 
-  // Buscar membros para o select de destinatário
-  const { data: membros } = useSupabaseQuery(
-    ['membros-para-mensagens'],
+  // Fetch all members for compose message
+  const { data: membrosData, isLoading: membrosLoading } = useSupabaseQuery(
+    ['membros'],
     async () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, nome_completo, cargo, igreja')
         .neq('id', user?.id)
-        .eq('status', 'ativo')
         .order('nome_completo');
       
       if (error) throw error;
@@ -70,144 +80,176 @@ const ComunicacaoDashboard = () => {
     { enabled: !!user }
   );
 
-  const filteredMensagens = mensagens?.filter(mensagem => {
-    const contact = mensagem.remetente_id === user?.id ? mensagem.destinatario : mensagem.remetente;
-    return (
-      mensagem.assunto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mensagem.conteudo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact?.nome_completo.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  });
+  // Type guard and safe casting for messages
+  const mensagens = Array.isArray(mensagensData) ? mensagensData as Mensagem[] : [];
+  
+  // Filter messages based on search and filter type
+  const filteredMessages = mensagens.filter((mensagem) => {
+    const matchesSearch = mensagem.assunto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         mensagem.conteudo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (mensagem.remetente?.nome_completo || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (mensagem.destinatario?.nome_completo || '').toLowerCase().includes(searchTerm.toLowerCase());
 
-  const mensagensRecebidas = filteredMensagens?.filter(m => m.destinatario_id === user?.id) || [];
-  const mensagensEnviadas = filteredMensagens?.filter(m => m.remetente_id === user?.id) || [];
+    const matchesFilter = filterType === 'all' || 
+                         (filterType === 'received' && mensagem.destinatario_id === user?.id) ||
+                         (filterType === 'sent' && mensagem.remetente_id === user?.id);
+
+    return matchesSearch && matchesFilter;
+  });
 
   const handleSelectMessage = (mensagem: Mensagem) => {
     setSelectedMessage(mensagem);
-    setComposeMode(false);
+    setView('detail');
   };
 
-  const handleComposeNew = () => {
-    setComposeMode(true);
-    setSelectedMessage(null);
-    setReplyData(null);
+  const handleMarkAsRead = (mensagemId: string) => {
+    marcarComoLida.mutate(mensagemId);
   };
 
-  const handleReply = (destinatarioId: string, assuntoOriginal: string) => {
-    setComposeMode(true);
-    setSelectedMessage(null);
-    setReplyData({
-      destinatarioId,
-      assunto: assuntoOriginal.startsWith('Re: ') ? assuntoOriginal : `Re: ${assuntoOriginal}`
+  const handleCompose = (destinatarioId?: string, assunto?: string) => {
+    setComposeData({ destinatarioId, assunto });
+    setView('compose');
+  };
+
+  const handleSendMessage = (data: { destinatarioId: string; assunto: string; conteudo: string }) => {
+    enviarMensagem.mutate(data, {
+      onSuccess: () => {
+        setView('list');
+        setComposeData({});
+      }
     });
   };
 
-  const handleSendMessage = async (data: { destinatarioId: string; assunto: string; conteudo: string }) => {
-    try {
-      await enviarMensagem.mutateAsync(data);
-      setComposeMode(false);
-      setReplyData(null);
-    } catch (error) {
-      console.error('Erro ao enviar mensagem:', error);
-    }
+  const handleBack = () => {
+    setView('list');
+    setSelectedMessage(null);
+    setComposeData({});
   };
 
-  const handleBack = () => {
-    setSelectedMessage(null);
-    setComposeMode(false);
-    setReplyData(null);
+  const handleReply = (destinatarioId: string, assuntoOriginal: string) => {
+    const assunto = assuntoOriginal.startsWith('Re:') ? assuntoOriginal : `Re: ${assuntoOriginal}`;
+    handleCompose(destinatarioId, assunto);
   };
+
+  // Type guard and safe casting for members
+  const membros = Array.isArray(membrosData) ? membrosData as Profile[] : [];
+
+  if (isLoading) {
+    return <LoadingSpinner size="lg" className="py-12" />;
+  }
 
   if (error) {
     return (
-      <div className="container mx-auto p-6">
-        <ErrorMessage
-          message="Erro ao carregar mensagens. Tente novamente."
-          retry={refetch}
-        />
-      </div>
+      <ErrorMessage
+        title="Erro ao carregar mensagens"
+        message={error.message}
+        retry={refetch}
+      />
     );
   }
 
-  // Modo de composição ou detalhes da mensagem
-  if (composeMode) {
+  // Render compose message view
+  if (view === 'compose') {
     return (
-      <div className="container mx-auto p-6 space-y-6">
-        <ComposeMessage
-          onBack={handleBack}
-          onSend={handleSendMessage}
-          loading={enviarMensagem.isPending}
-          destinatarioInicial={replyData?.destinatarioId}
-          assuntoInicial={replyData?.assunto}
-          membros={membros}
-        />
-      </div>
+      <ComposeMessage
+        onBack={handleBack}
+        onSend={handleSendMessage}
+        loading={enviarMensagem.isPending}
+        destinatarioInicial={composeData.destinatarioId}
+        assuntoInicial={composeData.assunto}
+        membros={membros}
+      />
     );
   }
 
-  if (selectedMessage) {
+  // Render message detail view
+  if (view === 'detail' && selectedMessage) {
     return (
-      <div className="container mx-auto p-6 space-y-6">
-        <MessageDetail
-          mensagem={selectedMessage}
-          currentUserId={user?.id}
-          onBack={handleBack}
-          onReply={handleReply}
-        />
-      </div>
+      <MessageDetail
+        mensagem={selectedMessage}
+        currentUserId={user?.id}
+        onBack={handleBack}
+        onReply={handleReply}
+      />
     );
   }
 
+  // Render main messages list view
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Comunicação</h1>
-          <p className="text-gray-600">
-            Gerencie suas mensagens e comunicação com outros membros
-          </p>
+          <h1 className="text-2xl font-bold">Comunicação</h1>
+          <p className="text-gray-600">Gerencie suas mensagens e comunicações</p>
         </div>
         
         <div className="flex items-center gap-4">
-          {mensagensNaoLidas > 0 && (
-            <Badge variant="destructive" className="px-3 py-1">
+          {typeof mensagensNaoLidas === 'number' && mensagensNaoLidas > 0 && (
+            <Badge variant="destructive">
               {mensagensNaoLidas} não lidas
             </Badge>
           )}
           
-          <Button onClick={handleComposeNew}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button onClick={() => handleCompose()}>
+            <Send className="h-4 w-4 mr-2" />
             Nova Mensagem
           </Button>
         </div>
       </div>
 
-      <Tabs defaultValue="recebidas" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="recebidas" className="flex items-center gap-2">
-            <Inbox className="h-4 w-4" />
-            Recebidas
-            {mensagensNaoLidas > 0 && (
-              <Badge variant="destructive" className="ml-1 px-1.5 py-0.5 text-xs">
-                {mensagensNaoLidas}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="enviadas" className="flex items-center gap-2">
-            <SendIcon className="h-4 w-4" />
-            Enviadas
-          </TabsTrigger>
-          <TabsTrigger value="todas" className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            Todas
-          </TabsTrigger>
-        </TabsList>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Mail className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Total de Mensagens</p>
+                <p className="text-2xl font-bold">{typeof mensagens.length === 'number' && mensagens.length > 0 ? mensagens.length : 0}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
-          <CardHeader>
-            <div className="flex gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <MailOpen className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Não Lidas</p>
+                <p className="text-2xl font-bold">{typeof mensagensNaoLidas === 'number' ? mensagensNaoLidas : 0}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Users className="h-5 w-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Contatos</p>
+                <p className="text-2xl font-bold">{membrosLoading ? '...' : (typeof membros.length === 'number' && membros.length > 0 ? membros.length : 0)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search and Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   placeholder="Buscar mensagens..."
                   value={searchTerm}
@@ -216,43 +258,37 @@ const ComunicacaoDashboard = () => {
                 />
               </div>
             </div>
-          </CardHeader>
-          
-          <CardContent>
-            <TabsContent value="recebidas" className="mt-0">
-              <MessageList
-                mensagens={mensagensRecebidas}
-                isLoading={isLoading}
-                currentUserId={user?.id}
-                onSelectMessage={handleSelectMessage}
-                onMarkAsRead={(mensagemId) => marcarComoLida.mutateAsync(mensagemId)}
-              />
-            </TabsContent>
             
-            <TabsContent value="enviadas" className="mt-0">
-              <MessageList
-                mensagens={mensagensEnviadas}
-                isLoading={isLoading}
-                currentUserId={user?.id}
-                onSelectMessage={handleSelectMessage}
-                onMarkAsRead={() => {}}
-              />
-            </TabsContent>
-            
-            <TabsContent value="todas" className="mt-0">
-              <MessageList
-                mensagens={filteredMensagens}
-                isLoading={isLoading}
-                currentUserId={user?.id}
-                onSelectMessage={handleSelectMessage}
-                onMarkAsRead={(mensagemId) => marcarComoLida.mutateAsync(mensagemId)}
-              />
-            </TabsContent>
-          </CardContent>
-        </Card>
-      </Tabs>
+            <Tabs value={filterType} onValueChange={(value) => setFilterType(value as typeof filterType)}>
+              <TabsList>
+                <TabsTrigger value="all">Todas</TabsTrigger>
+                <TabsTrigger value="received">Recebidas</TabsTrigger>
+                <TabsTrigger value="sent">Enviadas</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Messages List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            {filterType === 'all' && 'Todas as Mensagens'}
+            {filterType === 'received' && 'Mensagens Recebidas'}
+            {filterType === 'sent' && 'Mensagens Enviadas'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MessageList
+            mensagens={filteredMessages}
+            isLoading={isLoading}
+            currentUserId={user?.id}
+            onSelectMessage={handleSelectMessage}
+            onMarkAsRead={handleMarkAsRead}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
-};
-
-export default ComunicacaoDashboard;
+}
