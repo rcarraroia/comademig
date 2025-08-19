@@ -163,7 +163,7 @@ export const EventRegistrationModal = ({
                     value: evento.preco || 0,
                     description: `Inscrição - ${evento.titulo}`,
                     tipoCobranca: "evento",
-                    eventoId: evento.id
+                    referenciaId: evento.id
                   }}
                   onSuccess={handlePaymentSuccess}
                 />
