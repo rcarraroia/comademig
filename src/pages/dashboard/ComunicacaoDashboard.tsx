@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -153,6 +152,9 @@ export default function ComunicacaoDashboard() {
   // Type guard and safe casting for members
   const membros = Array.isArray(membrosData) ? membrosData as Profile[] : [];
 
+  // Safe casting for mensagensNaoLidas
+  const unreadCount = typeof mensagensNaoLidas === 'number' ? mensagensNaoLidas : 0;
+
   if (isLoading) {
     return <LoadingSpinner size="lg" className="py-12" />;
   }
@@ -206,9 +208,9 @@ export default function ComunicacaoDashboard() {
         <div className="flex items-center gap-4">
           <NotificationSystem />
           
-          {typeof mensagensNaoLidas === 'number' && mensagensNaoLidas > 0 && (
+          {unreadCount > 0 && (
             <Badge variant="destructive">
-              {mensagensNaoLidas} não lidas
+              {unreadCount} não lidas
             </Badge>
           )}
           
@@ -245,7 +247,7 @@ export default function ComunicacaoDashboard() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Não Lidas</p>
-                <p className="text-2xl font-bold">{mensagensNaoLidas || 0}</p>
+                <p className="text-2xl font-bold">{unreadCount}</p>
               </div>
             </div>
           </CardContent>

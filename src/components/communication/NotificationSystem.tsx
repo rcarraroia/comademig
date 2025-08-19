@@ -23,8 +23,9 @@ export const NotificationSystem = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
 
-  const notificationsList = (notifications || []) as Notification[];
-  const unreadTotal = (unreadCount || 0) as number;
+  // Type-safe variables with proper fallbacks
+  const notificationsList: Notification[] = Array.isArray(notifications) ? notifications : [];
+  const unreadTotal: number = typeof unreadCount === 'number' ? unreadCount : 0;
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -77,7 +78,7 @@ export const NotificationSystem = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => markAllAsRead.mutate()}
+                  onClick={() => markAllAsRead.mutate(undefined)}
                   className="text-xs"
                 >
                   Marcar todas como lidas
