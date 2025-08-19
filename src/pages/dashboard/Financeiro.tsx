@@ -1,67 +1,94 @@
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, DollarSign, CreditCard, AlertCircle, CheckCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Download, DollarSign, CreditCard, AlertCircle, CheckCircle, Plus, RefreshCw } from "lucide-react";
+import { useAsaasPayments } from "@/hooks/useAsaasPayments";
+import { PaymentForm } from "@/components/payments/PaymentForm";
+import { PaymentResult } from "@/components/payments/PaymentResult";
+import { useAuthState } from "@/hooks/useAuthState";
 
 const Financeiro = () => {
-  const payments = [
-    {
-      id: "001",
-      description: "Taxa Anual 2024",
-      value: "R$ 120,00",
-      dueDate: "2024-02-15",
-      status: "Pendente",
-      type: "taxa"
-    },
-    {
-      id: "002",
-      description: "Contribuição Janeiro 2024",
-      value: "R$ 50,00",
-      dueDate: "2024-01-31",
-      status: "Pago",
-      type: "contribuicao"
-    },
-    {
-      id: "003",
-      description: "Certificação Ministerial",
-      value: "R$ 80,00",
-      dueDate: "2023-12-15",
-      status: "Pago",
-      type: "certificacao"
-    },
-    {
-      id: "004",
-      description: "Taxa de Renovação",
-      value: "R$ 45,00",
-      dueDate: "2023-11-30",
-      status: "Pago",
-      type: "renovacao"
-    }
-  ];
+  const [payments, setPayments] = useState<any[]>([]);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [showPaymentResult, setShowPaymentResult] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<any>(null);
+  const { getUserPayments, checkPaymentStatus, loading } = useAsaasPayments();
+  const { profile } = useAuthState();
 
-  const getStatusBadge = (status: string) => {
-    if (status === "Pago") {
-      return <Badge className="bg-green-100 text-green-800">Pago</Badge>;
-    } else if (status === "Pendente") {
-      return <Badge className="bg-orange-100 text-orange-800">Pendente</Badge>;
-    } else {
-      return <Badge className="bg-red-100 text-red-800">Vencido</Badge>;
+  const loadPayments = async () => {
+    const data = await getUserPayments();
+    setPayments(data || []);
+  };
+
+  useEffect(() => {
+    loadPayments();
+  }, []);
+
+  const handleCreatePayment = (cobranca: any) => {
+    setSelectedPayment(cobranca);
+    setShowPaymentForm(false);
+    setShowPaymentResult(true);
+    loadPayments(); // Recarregar lista
+  };
+
+  const handleCheckStatus = async (paymentId: string) => {
+    try {
+      await checkPaymentStatus(paymentId);
+      loadPayments(); // Recarregar após verificar status
+    } catch (error) {
+      console.error('Erro ao verificar status:', error);
     }
   };
 
-  const pendingPayments = payments.filter(p => p.status === "Pendente");
-  const totalPending = pendingPayments.reduce((sum, p) => {
-    return sum + parseFloat(p.value.replace("R$ ", "").replace(",", "."));
-  }, 0);
+  const getStatusBadge = (status: string) => {
+    const statusMap: Record<string, { label: string; className: string }> = {
+      'PENDING': { label: 'Pendente', className: 'bg-orange-100 text-orange-800' },
+      'CONFIRMED': { label: 'Confirmado', className: 'bg-blue-100 text-blue-800' },
+      'RECEIVED': { label: 'Pago', className: 'bg-green-100 text-green-800' },
+      'OVERDUE': { label: 'Vencido', className: 'bg-red-100 text-red-800' }
+    };
+
+    const statusInfo = statusMap[status] || { label: status, className: 'bg-gray-100 text-gray-800' };
+    return <Badge className={statusInfo.className}>{statusInfo.label}</Badge>;
+  };
+
+  const getPaymentTypeLabel = (type: string) => {
+    const typeMap: Record<string, string> = {
+      'filiacao': 'Filiação',
+      'taxa_anual': 'Taxa Anual',
+      'certidao': 'Certidão',
+      'evento': 'Evento',
+      'outros': 'Outros'
+    };
+    return typeMap[type] || type;
+  };
+
+  const pendingPayments = payments.filter(p => p.status === 'PENDING');
+  const totalPending = pendingPayments.reduce((sum, p) => sum + parseFloat(p.valor), 0);
+  const lastPayment = payments.find(p => p.status === 'RECEIVED');
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-comademig-blue">Financeiro</h1>
-        <p className="text-gray-600">Consulte seus pagamentos e mantenha suas contribuições em dia</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-comademig-blue">Financeiro</h1>
+          <p className="text-gray-600">Gerencie seus pagamentos e cobranças</p>
+        </div>
+        <div className="space-x-2">
+          <Button onClick={loadPayments} variant="outline" disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+          <Button onClick={() => setShowPaymentForm(true)} className="bg-comademig-blue hover:bg-comademig-blue/90">
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Cobrança
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -72,8 +99,12 @@ const Financeiro = () => {
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">Em Dia</div>
-            <p className="text-xs text-muted-foreground">Nenhum débito vencido</p>
+            <div className="text-2xl font-bold text-green-600">
+              {pendingPayments.length === 0 ? 'Em Dia' : 'Pendências'}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {pendingPayments.length === 0 ? 'Nenhuma pendência' : `${pendingPayments.length} pendência(s)`}
+            </p>
           </CardContent>
         </Card>
 
@@ -96,8 +127,12 @@ const Financeiro = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R$ 50,00</div>
-            <p className="text-xs text-muted-foreground">Janeiro 2024</p>
+            <div className="text-2xl font-bold">
+              {lastPayment ? `R$ ${parseFloat(lastPayment.valor).toFixed(2).replace(".", ",")}` : 'Nenhum'}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {lastPayment ? new Date(lastPayment.data_pagamento).toLocaleDateString('pt-BR') : 'Nenhum pagamento'}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -112,18 +147,8 @@ const Financeiro = () => {
                 <h3 className="font-semibold text-orange-800">Atenção: Pagamentos Pendentes</h3>
                 <p className="text-sm text-orange-700 mt-1">
                   Você possui {pendingPayments.length} pagamento(s) pendente(s). 
-                  Mantenha suas contribuições em dia para continuar usufruindo dos benefícios da COMADEMIG.
+                  Clique em "Ver Detalhes" para acessar as formas de pagamento.
                 </p>
-                <div className="mt-3 space-x-2">
-                  <Button size="sm" className="bg-orange-600 hover:bg-orange-700">
-                    <CreditCard size={16} className="mr-2" />
-                    Pagar Agora
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <Download size={16} className="mr-2" />
-                    Gerar Boleto
-                  </Button>
-                </div>
               </div>
             </div>
           </CardContent>
@@ -133,13 +158,14 @@ const Financeiro = () => {
       {/* Payments Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Histórico de Pagamentos</CardTitle>
+          <CardTitle>Histórico de Cobranças</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Descrição</TableHead>
+                <TableHead>Tipo</TableHead>
                 <TableHead>Valor</TableHead>
                 <TableHead>Vencimento</TableHead>
                 <TableHead>Status</TableHead>
@@ -147,80 +173,106 @@ const Financeiro = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {payments.map((payment) => (
-                <TableRow key={payment.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{payment.description}</div>
-                      <div className="text-sm text-gray-500">#{payment.id}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium">{payment.value}</TableCell>
-                  <TableCell>
-                    {new Date(payment.dueDate).toLocaleDateString('pt-BR')}
-                  </TableCell>
-                  <TableCell>{getStatusBadge(payment.status)}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      {payment.status === "Pendente" ? (
-                        <>
-                          <Button size="sm" className="bg-comademig-blue hover:bg-comademig-blue/90">
-                            Pagar
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            Boleto
-                          </Button>
-                        </>
-                      ) : (
-                        <Button size="sm" variant="outline">
-                          <Download size={16} className="mr-1" />
-                          Comprovante
-                        </Button>
-                      )}
-                    </div>
+              {payments.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-4">
+                    Nenhuma cobrança encontrada
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                payments.map((payment) => (
+                  <TableRow key={payment.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{payment.descricao}</div>
+                        <div className="text-sm text-gray-500">ID: {payment.asaas_id}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{getPaymentTypeLabel(payment.tipo_cobranca)}</TableCell>
+                    <TableCell className="font-medium">
+                      R$ {parseFloat(payment.valor).toFixed(2).replace(".", ",")}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(payment.data_vencimento).toLocaleDateString('pt-BR')}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(payment.status)}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        {payment.status === 'PENDING' || payment.status === 'CONFIRMED' ? (
+                          <Button 
+                            size="sm" 
+                            onClick={() => {
+                              setSelectedPayment(payment);
+                              setShowPaymentResult(true);
+                            }}
+                            className="bg-comademig-blue hover:bg-comademig-blue/90"
+                          >
+                            Ver Detalhes
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="outline" disabled>
+                            <Download size={16} className="mr-1" />
+                            Pago
+                          </Button>
+                        )}
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleCheckStatus(payment.asaas_id)}
+                          disabled={loading}
+                        >
+                          <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
 
-      {/* Payment Methods */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Formas de Pagamento</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center space-x-3 mb-3">
-                <CreditCard className="h-6 w-6 text-comademig-blue" />
-                <h3 className="font-semibold">Cartão de Crédito/Débito</h3>
-              </div>
-              <p className="text-sm text-gray-600 mb-3">
-                Pagamento instantâneo com aprovação imediata
-              </p>
-              <Button className="w-full bg-comademig-blue hover:bg-comademig-blue/90">
-                Pagar com Cartão
-              </Button>
-            </div>
-            
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center space-x-3 mb-3">
-                <Download className="h-6 w-6 text-comademig-gold" />
-                <h3 className="font-semibold">Boleto Bancário</h3>
-              </div>
-              <p className="text-sm text-gray-600 mb-3">
-                Gere um boleto para pagamento em bancos ou internet banking
-              </p>
-              <Button variant="outline" className="w-full">
-                Gerar Boleto
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Payment Form Dialog */}
+      <Dialog open={showPaymentForm} onOpenChange={setShowPaymentForm}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Nova Cobrança</DialogTitle>
+          </DialogHeader>
+          <PaymentForm
+            defaultData={{
+              customer: {
+                name: profile?.nome_completo || '',
+                email: profile?.id || '', // será pego do user
+                cpfCnpj: profile?.cpf || '',
+                phone: profile?.telefone || '',
+                city: profile?.cidade || '',
+                province: profile?.estado || ''
+              },
+              tipoCobranca: 'outros',
+              value: 50.00,
+              description: 'Cobrança gerada pelo sistema'
+            }}
+            onSuccess={handleCreatePayment}
+            onCancel={() => setShowPaymentForm(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Result Dialog */}
+      <Dialog open={showPaymentResult} onOpenChange={setShowPaymentResult}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Pagamento</DialogTitle>
+          </DialogHeader>
+          {selectedPayment && (
+            <PaymentResult
+              cobranca={selectedPayment}
+              onClose={() => setShowPaymentResult(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

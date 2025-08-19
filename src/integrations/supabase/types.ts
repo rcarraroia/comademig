@@ -14,6 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
+      asaas_cobrancas: {
+        Row: {
+          asaas_id: string
+          created_at: string
+          customer_id: string | null
+          data_pagamento: string | null
+          data_vencimento: string
+          descricao: string
+          forma_pagamento: string | null
+          id: string
+          linha_digitavel: string | null
+          qr_code_pix: string | null
+          referencia_id: string | null
+          status: string
+          tipo_cobranca: string
+          updated_at: string
+          url_pagamento: string | null
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          asaas_id: string
+          created_at?: string
+          customer_id?: string | null
+          data_pagamento?: string | null
+          data_vencimento: string
+          descricao: string
+          forma_pagamento?: string | null
+          id?: string
+          linha_digitavel?: string | null
+          qr_code_pix?: string | null
+          referencia_id?: string | null
+          status?: string
+          tipo_cobranca: string
+          updated_at?: string
+          url_pagamento?: string | null
+          user_id: string
+          valor: number
+        }
+        Update: {
+          asaas_id?: string
+          created_at?: string
+          customer_id?: string | null
+          data_pagamento?: string | null
+          data_vencimento?: string
+          descricao?: string
+          forma_pagamento?: string | null
+          id?: string
+          linha_digitavel?: string | null
+          qr_code_pix?: string | null
+          referencia_id?: string | null
+          status?: string
+          tipo_cobranca?: string
+          updated_at?: string
+          url_pagamento?: string | null
+          user_id?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      asaas_webhooks: {
+        Row: {
+          asaas_payment_id: string
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          processed: boolean | null
+        }
+        Insert: {
+          asaas_payment_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          payload: Json
+          processed?: boolean | null
+        }
+        Update: {
+          asaas_payment_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          processed?: boolean | null
+        }
+        Relationships: []
+      }
       carteira_digital: {
         Row: {
           created_at: string
