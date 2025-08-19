@@ -41,7 +41,7 @@ export const BulkMessageModal = ({ trigger }: BulkMessageModalProps) => {
 
   const { data: profiles = [], isLoading } = useSupabaseQuery(
     ['profiles-bulk'],
-    async () => {
+    async (): Promise<Profile[]> => {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, nome_completo, cargo, igreja, tipo_membro, status')
@@ -49,7 +49,7 @@ export const BulkMessageModal = ({ trigger }: BulkMessageModalProps) => {
         .order('nome_completo');
       
       if (error) throw error;
-      return data as Profile[];
+      return (data || []) as Profile[];
     },
     { enabled: open && !!user }
   );
@@ -98,7 +98,9 @@ export const BulkMessageModal = ({ trigger }: BulkMessageModalProps) => {
     }
   );
 
-  const filteredProfiles = profiles.filter(profile => {
+  const profilesList = (profiles || []) as Profile[];
+  
+  const filteredProfiles = profilesList.filter(profile => {
     if (filterType === 'all') return true;
     
     const value = filterValue.toLowerCase();
@@ -156,13 +158,13 @@ export const BulkMessageModal = ({ trigger }: BulkMessageModalProps) => {
     });
   };
 
-  const getFilterOptions = () => {
+  const getFilterOptions = (): string[] => {
     if (filterType === 'cargo') {
-      const cargos = [...new Set(profiles.map(p => p.cargo).filter(Boolean))];
+      const cargos = [...new Set(profilesList.map(p => p.cargo).filter(Boolean))] as string[];
       return cargos;
     }
     if (filterType === 'igreja') {
-      const igrejas = [...new Set(profiles.map(p => p.igreja).filter(Boolean))];
+      const igrejas = [...new Set(profilesList.map(p => p.igreja).filter(Boolean))] as string[];
       return igrejas;
     }
     if (filterType === 'status') {
@@ -258,7 +260,9 @@ export const BulkMessageModal = ({ trigger }: BulkMessageModalProps) => {
                   >
                     <option value="">Selecione...</option>
                     {getFilterOptions().map(option => (
-                      <option key={option} value={option || ''}>{option}</option>
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
                     ))}
                   </select>
                 )}

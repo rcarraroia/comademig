@@ -8,9 +8,23 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useNotifications } from '@/hooks/useNotifications';
 
+interface Notification {
+  id: string;
+  user_id: string;
+  type: 'info' | 'warning' | 'success' | 'error';
+  title: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+  action_url?: string;
+}
+
 export const NotificationSystem = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+
+  const notificationsList = (notifications || []) as Notification[];
+  const unreadTotal = (unreadCount || 0) as number;
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -44,12 +58,12 @@ export const NotificationSystem = () => {
         className="relative"
       >
         <Bell className="h-4 w-4" />
-        {unreadCount > 0 && (
+        {unreadTotal > 0 && (
           <Badge
             variant="destructive"
             className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
           >
-            {unreadCount > 99 ? '99+' : unreadCount}
+            {unreadTotal > 99 ? '99+' : unreadTotal}
           </Badge>
         )}
       </Button>
@@ -59,7 +73,7 @@ export const NotificationSystem = () => {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Notificações</CardTitle>
             <div className="flex items-center gap-2">
-              {unreadCount > 0 && (
+              {unreadTotal > 0 && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -81,9 +95,9 @@ export const NotificationSystem = () => {
           
           <CardContent className="p-0">
             <ScrollArea className="h-80">
-              {notifications.length > 0 ? (
+              {notificationsList.length > 0 ? (
                 <div className="space-y-0">
-                  {notifications.map((notification, index) => (
+                  {notificationsList.map((notification, index) => (
                     <div key={notification.id}>
                       <div
                         className={`p-4 cursor-pointer hover:bg-gray-50 ${
@@ -113,7 +127,7 @@ export const NotificationSystem = () => {
                           </div>
                         </div>
                       </div>
-                      {index < notifications.length - 1 && <Separator />}
+                      {index < notificationsList.length - 1 && <Separator />}
                     </div>
                   ))}
                 </div>

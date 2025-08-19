@@ -19,7 +19,7 @@ export const useNotifications = () => {
 
   const { data: notifications = [], isLoading, error, refetch } = useSupabaseQuery(
     ['notifications', user?.id],
-    async () => {
+    async (): Promise<Notification[]> => {
       if (!user) return [];
       
       const { data, error } = await supabase
@@ -29,14 +29,14 @@ export const useNotifications = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Notification[];
+      return (data || []) as Notification[];
     },
     { enabled: !!user }
   );
 
   const { data: unreadCount = 0 } = useSupabaseQuery(
     ['notifications-unread', user?.id],
-    async () => {
+    async (): Promise<number> => {
       if (!user) return 0;
       
       const { count, error } = await supabase
@@ -107,8 +107,8 @@ export const useNotifications = () => {
   );
 
   return {
-    notifications,
-    unreadCount,
+    notifications: notifications as Notification[],
+    unreadCount: unreadCount as number,
     isLoading,
     error,
     markAsRead,
