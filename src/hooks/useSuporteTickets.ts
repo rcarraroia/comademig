@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseMutation } from './useSupabaseQuery';
 import { useToast } from '@/hooks/use-toast';
 
-interface SuporteTicket {
+export interface SuporteTicket {
   id: string;
   user_id: string;
   assunto: string;
@@ -16,7 +16,7 @@ interface SuporteTicket {
   updated_at: string;
 }
 
-interface SuporteMensagem {
+export interface SuporteMensagem {
   id: string;
   suporte_id: string;
   user_id: string;
