@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      carteira_digital: {
+        Row: {
+          created_at: string
+          data_emissao: string
+          data_validade: string
+          foto_url: string | null
+          id: string
+          numero_carteira: string
+          qr_code: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_emissao?: string
+          data_validade: string
+          foto_url?: string | null
+          id?: string
+          numero_carteira: string
+          qr_code: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_emissao?: string
+          data_validade?: string
+          foto_url?: string | null
+          id?: string
+          numero_carteira?: string
+          qr_code?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       certidoes: {
         Row: {
           created_at: string | null

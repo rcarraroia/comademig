@@ -24,12 +24,12 @@ export const useCarteiraDigital = () => {
     async () => {
       if (!user) return null;
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('carteira_digital')
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'ativa')
-        .single();
+        .maybeSingle();
       
       if (error && error.code !== 'PGRST116') throw error;
       return data;
@@ -68,7 +68,7 @@ export const useCarteiraDigital = () => {
       const dataValidade = new Date();
       dataValidade.setFullYear(dataValidade.getFullYear() + 1);
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('carteira_digital')
         .insert({
           user_id: user.id,
@@ -97,10 +97,10 @@ export const useCarteiraDigital = () => {
       if (!user || !carteira) throw new Error('Dados inválidos');
       
       // Marcar carteira atual como expirada
-      await supabase
+      await (supabase as any)
         .from('carteira_digital')
         .update({ status: 'expirada' })
-        .eq('id', carteira.id);
+        .eq('id', (carteira as CarteiraDigital).id);
       
       // Gerar nova carteira
       const numeroCarteira = `COMADEMIG-${Date.now()}`;
@@ -108,7 +108,7 @@ export const useCarteiraDigital = () => {
       const dataValidade = new Date();
       dataValidade.setFullYear(dataValidade.getFullYear() + 1);
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('carteira_digital')
         .insert({
           user_id: user.id,
@@ -136,10 +136,10 @@ export const useCarteiraDigital = () => {
     async (fotoUrl: string) => {
       if (!user || !carteira) throw new Error('Dados inválidos');
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('carteira_digital')
         .update({ foto_url: fotoUrl })
-        .eq('id', carteira.id)
+        .eq('id', (carteira as CarteiraDigital).id)
         .select()
         .single();
       
