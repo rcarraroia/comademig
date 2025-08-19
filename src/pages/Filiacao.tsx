@@ -1,611 +1,170 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { Layout } from '@/components/Layout';
+import { PaymentForm } from '@/components/payments/PaymentForm';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CheckCircle, Users, Info } from 'lucide-react';
+import { useAsaasPayments } from '@/hooks/useAsaasPayments';
 
-const Filiacao = () => {
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    nomeCompleto: "",
-    cpf: "",
-    rg: "",
-    orgaoExpedidor: "",
-    dataNascimento: "",
-    sexo: "",
-    estadoCivil: "",
-    naturalidade: "",
-    nacionalidade: "Brasileira",
-    profissao: "",
-    escolaridade: "",
-    telefone: "",
-    celular: "",
-    email: "",
-    senha: "",
-    confirmarSenha: "",
-    endereco: "",
-    numero: "",
-    complemento: "",
-    bairro: "",
-    cidade: "",
-    estado: "",
-    cep: "",
-    nomeConjuge: "",
-    telefoneConjuge: "",
-    nomeIgreja: "",
-    enderecoIgreja: "",
-    cidadeIgreja: "",
-    estadoIgreja: "",
-    telefoneIgreja: "",
-    nomePastor: "",
-    cargoMinisterial: "",
-    dataConversao: "",
-    dataBatismo: "",
-    localBatismo: "",
-    dataOrdenacao: "",
-    localOrdenacao: "",
-    tempoMinisterio: "",
-    declaracao: false
-  });
+export default function Filiacao() {
+  const location = useLocation();
+  const [affiliateInfo, setAffiliateInfo] = useState<any>(null);
+  const { getAffiliateByReferralCode } = useAsaasPayments();
 
-  const cargosMinisteriais = {
-    masculino: {
-      Pastor: "Pastor",
-      Presbitero: "Presbítero", 
-      Diacono: "Diácono",
-      Missionario: "Missionário"
-    },
-    feminino: {
-      Pastor: "Pastora",
-      Presbitero: "Presbítera",
-      Diacono: "Diaconisa", 
-      Missionario: "Missionária"
+  useEffect(() => {
+    // Verificar se há código de referral na URL
+    const params = new URLSearchParams(location.search);
+    const referralCode = params.get('ref');
+    
+    if (referralCode) {
+      loadAffiliateInfo(referralCode);
+    }
+  }, [location]);
+
+  const loadAffiliateInfo = async (referralCode: string) => {
+    const affiliate = await getAffiliateByReferralCode(referralCode);
+    if (affiliate) {
+      setAffiliateInfo({ id: affiliate.id, referralCode });
     }
   };
 
-  const getTaxaPorCargo = (cargo: string) => {
-    const taxas = {
-      Pastor: 250.00,
-      Presbitero: 150.00,
-      Diacono: 100.00,
-      Missionario: 200.00
+  const handlePaymentData = (baseData: any) => {
+    // Adicionar affiliate_id se houver indicação
+    if (affiliateInfo?.id) {
+      return {
+        ...baseData,
+        affiliateId: affiliateInfo.id,
+        tipoCobranca: 'filiacao'
+      };
+    }
+    return {
+      ...baseData,
+      tipoCobranca: 'filiacao'
     };
-    return taxas[cargo as keyof typeof taxas] || 0;
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.declaracao) {
-      alert("Por favor, aceite a declaração de veracidade das informações.");
-      return;
-    }
-
-    if (formData.senha !== formData.confirmarSenha) {
-      alert("As senhas não coincidem.");
-      return;
-    }
-
-    if (formData.senha.length < 6) {
-      alert("A senha deve ter pelo menos 6 caracteres.");
-      return;
-    }
-
-    const taxa = getTaxaPorCargo(formData.cargoMinisterial);
-    const cargoDisplay = formData.sexo === "masculino" 
-      ? cargosMinisteriais.masculino[formData.cargoMinisterial as keyof typeof cargosMinisteriais.masculino]
-      : cargosMinisteriais.feminino[formData.cargoMinisterial as keyof typeof cargosMinisteriais.feminino];
-
-    // Navegar para checkout com dados do formulário
-    navigate("/checkout", { 
-      state: { 
-        formData,
-        taxa,
-        cargoDisplay
-      } 
-    });
-  };
-
-  const getCargosOptions = () => {
-    if (!formData.sexo) return [];
-    
-    const cargos = formData.sexo === "masculino" ? cargosMinisteriais.masculino : cargosMinisteriais.feminino;
-    return Object.entries(cargos).map(([key, label]) => ({ key, label }));
   };
 
   return (
-    <div className="min-h-screen bg-comademig-light py-8">
-      <div className="container mx-auto px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-comademig-blue mb-4">
-              Ficha de Filiação - COMADEMIG
-            </h1>
-            <p className="text-gray-600">
-              Preencha todos os campos para solicitar sua filiação à Convenção
+    <Layout>
+      <div className="container mx-auto py-8 px-4">
+        <div className="max-w-4xl mx-auto space-y-8">
+          <div className="text-center space-y-4">
+            <h1 className="text-4xl font-bold">Filiação COMADEMIG</h1>
+            <p className="text-xl text-muted-foreground">
+              Faça parte da Convenção dos Ministros das Assembléias de Deus do Estado de Minas Gerais
             </p>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-comademig-blue">Dados Pessoais</CardTitle>
-              <CardDescription>Informações básicas do solicitante</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Dados Pessoais */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="nomeCompleto">Nome Completo *</Label>
-                    <Input
-                      id="nomeCompleto"
-                      value={formData.nomeCompleto}
-                      onChange={(e) => handleInputChange("nomeCompleto", e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="cpf">CPF *</Label>
-                    <Input
-                      id="cpf"
-                      value={formData.cpf}
-                      onChange={(e) => handleInputChange("cpf", e.target.value)}
-                      placeholder="000.000.000-00"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="rg">RG *</Label>
-                    <Input
-                      id="rg"
-                      value={formData.rg}
-                      onChange={(e) => handleInputChange("rg", e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="orgaoExpedidor">Órgão Expedidor *</Label>
-                    <Input
-                      id="orgaoExpedidor"
-                      value={formData.orgaoExpedidor}
-                      onChange={(e) => handleInputChange("orgaoExpedidor", e.target.value)}
-                      placeholder="Ex: SSP/MG"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="dataNascimento">Data de Nascimento *</Label>
-                    <Input
-                      id="dataNascimento"
-                      type="date"
-                      value={formData.dataNascimento}
-                      onChange={(e) => handleInputChange("dataNascimento", e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label>Sexo *</Label>
-                    <RadioGroup
-                      value={formData.sexo}
-                      onValueChange={(value) => handleInputChange("sexo", value)}
-                      className="flex flex-row space-x-6 mt-2"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="masculino" id="masculino" />
-                        <Label htmlFor="masculino">Masculino</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="feminino" id="feminino" />
-                        <Label htmlFor="feminino">Feminino</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                  <div>
-                    <Label htmlFor="estadoCivil">Estado Civil *</Label>
-                    <Select onValueChange={(value) => handleInputChange("estadoCivil", value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="solteiro">Solteiro(a)</SelectItem>
-                        <SelectItem value="casado">Casado(a)</SelectItem>
-                        <SelectItem value="divorciado">Divorciado(a)</SelectItem>
-                        <SelectItem value="viuvo">Viúvo(a)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="naturalidade">Naturalidade *</Label>
-                    <Input
-                      id="naturalidade"
-                      value={formData.naturalidade}
-                      onChange={(e) => handleInputChange("naturalidade", e.target.value)}
-                      placeholder="Ex: Belo Horizonte/MG"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="profissao">Profissão *</Label>
-                    <Input
-                      id="profissao"
-                      value={formData.profissao}
-                      onChange={(e) => handleInputChange("profissao", e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="escolaridade">Escolaridade *</Label>
-                    <Select onValueChange={(value) => handleInputChange("escolaridade", value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="fundamental">Ensino Fundamental</SelectItem>
-                        <SelectItem value="medio">Ensino Médio</SelectItem>
-                        <SelectItem value="superior">Ensino Superior</SelectItem>
-                        <SelectItem value="pos">Pós-Graduação</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+          {/* Indicação de Afiliado */}
+          {affiliateInfo && (
+            <Alert className="border-green-200 bg-green-50">
+              <Users className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                <strong>Você foi indicado por um afiliado!</strong> 
+                <br />
+                Código de indicação: <Badge variant="secondary">{affiliateInfo.referralCode}</Badge>
+                <br />
+                <small>O afiliado receberá uma comissão pela sua filiação.</small>
+              </AlertDescription>
+            </Alert>
+          )}
 
-                {/* Contato */}
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold text-comademig-blue mb-4">Contato</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Informações da Filiação */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  Benefícios da Filiação
+                </CardTitle>
+                <CardDescription>
+                  Vantagens exclusivas para membros da COMADEMIG
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
                     <div>
-                      <Label htmlFor="telefone">Telefone</Label>
-                      <Input
-                        id="telefone"
-                        value={formData.telefone}
-                        onChange={(e) => handleInputChange("telefone", e.target.value)}
-                        placeholder="(31) 3000-0000"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="celular">Celular *</Label>
-                      <Input
-                        id="celular"
-                        value={formData.celular}
-                        onChange={(e) => handleInputChange("celular", e.target.value)}
-                        placeholder="(31) 99000-0000"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="email">E-mail *</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => handleInputChange("email", e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="senha">Senha para Portal *</Label>
-                      <Input
-                        id="senha"
-                        type="password"
-                        value={formData.senha}
-                        onChange={(e) => handleInputChange("senha", e.target.value)}
-                        placeholder="Mínimo 6 caracteres"
-                        required
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label htmlFor="confirmarSenha">Confirmar Senha *</Label>
-                      <Input
-                        id="confirmarSenha"
-                        type="password"
-                        value={formData.confirmarSenha}
-                        onChange={(e) => handleInputChange("confirmarSenha", e.target.value)}
-                        placeholder="Confirme sua senha"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Endereço */}
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold text-comademig-blue mb-4">Endereço</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div className="lg:col-span-2">
-                      <Label htmlFor="endereco">Endereço *</Label>
-                      <Input
-                        id="endereco"
-                        value={formData.endereco}
-                        onChange={(e) => handleInputChange("endereco", e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="numero">Número *</Label>
-                      <Input
-                        id="numero"
-                        value={formData.numero}
-                        onChange={(e) => handleInputChange("numero", e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="complemento">Complemento</Label>
-                      <Input
-                        id="complemento"
-                        value={formData.complemento}
-                        onChange={(e) => handleInputChange("complemento", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="bairro">Bairro *</Label>
-                      <Input
-                        id="bairro"
-                        value={formData.bairro}
-                        onChange={(e) => handleInputChange("bairro", e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cep">CEP *</Label>
-                      <Input
-                        id="cep"
-                        value={formData.cep}
-                        onChange={(e) => handleInputChange("cep", e.target.value)}
-                        placeholder="00000-000"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cidade">Cidade *</Label>
-                      <Input
-                        id="cidade"
-                        value={formData.cidade}
-                        onChange={(e) => handleInputChange("cidade", e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="estado">Estado *</Label>
-                      <Select onValueChange={(value) => handleInputChange("estado", value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="UF" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="MG">MG</SelectItem>
-                          <SelectItem value="SP">SP</SelectItem>
-                          <SelectItem value="RJ">RJ</SelectItem>
-                          <SelectItem value="ES">ES</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Dados do Cônjuge */}
-                {formData.estadoCivil === "casado" && (
-                  <div className="border-t pt-6">
-                    <h3 className="text-lg font-semibold text-comademig-blue mb-4">Dados do Cônjuge</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="nomeConjuge">Nome Completo do Cônjuge</Label>
-                        <Input
-                          id="nomeConjuge"
-                          value={formData.nomeConjuge}
-                          onChange={(e) => handleInputChange("nomeConjuge", e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="telefoneConjuge">Telefone do Cônjuge</Label>
-                        <Input
-                          id="telefoneConjuge"
-                          value={formData.telefoneConjuge}
-                          onChange={(e) => handleInputChange("telefoneConjuge", e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Dados da Igreja */}
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold text-comademig-blue mb-4">Dados da Igreja</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="md:col-span-2">
-                      <Label htmlFor="nomeIgreja">Nome da Igreja *</Label>
-                      <Input
-                        id="nomeIgreja"
-                        value={formData.nomeIgreja}
-                        onChange={(e) => handleInputChange("nomeIgreja", e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label htmlFor="enderecoIgreja">Endereço da Igreja *</Label>
-                      <Input
-                        id="enderecoIgreja"
-                        value={formData.enderecoIgreja}
-                        onChange={(e) => handleInputChange("enderecoIgreja", e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cidadeIgreja">Cidade *</Label>
-                      <Input
-                        id="cidadeIgreja"
-                        value={formData.cidadeIgreja}
-                        onChange={(e) => handleInputChange("cidadeIgreja", e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="estadoIgreja">Estado *</Label>
-                      <Input
-                        id="estadoIgreja"
-                        value={formData.estadoIgreja}
-                        onChange={(e) => handleInputChange("estadoIgreja", e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="telefoneIgreja">Telefone da Igreja</Label>
-                      <Input
-                        id="telefoneIgreja"
-                        value={formData.telefoneIgreja}
-                        onChange={(e) => handleInputChange("telefoneIgreja", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="nomePastor">Nome do Pastor Presidente *</Label>
-                      <Input
-                        id="nomePastor"
-                        value={formData.nomePastor}
-                        onChange={(e) => handleInputChange("nomePastor", e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Dados Ministeriais */}
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold text-comademig-blue mb-4">Dados Ministeriais</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="cargoMinisterial">Cargo Ministerial *</Label>
-                      <Select 
-                        onValueChange={(value) => handleInputChange("cargoMinisterial", value)}
-                        disabled={!formData.sexo}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={!formData.sexo ? "Selecione o sexo primeiro" : "Selecione o cargo"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {getCargosOptions().map(({ key, label }) => (
-                            <SelectItem key={key} value={key}>
-                              {label} - R$ {getTaxaPorCargo(key).toFixed(2)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="tempoMinisterio">Tempo de Ministério (anos)</Label>
-                      <Input
-                        id="tempoMinisterio"
-                        type="number"
-                        value={formData.tempoMinisterio}
-                        onChange={(e) => handleInputChange("tempoMinisterio", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="dataConversao">Data de Conversão</Label>
-                      <Input
-                        id="dataConversao"
-                        type="date"
-                        value={formData.dataConversao}
-                        onChange={(e) => handleInputChange("dataConversao", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="dataBatismo">Data do Batismo</Label>
-                      <Input
-                        id="dataBatismo"
-                        type="date"
-                        value={formData.dataBatismo}
-                        onChange={(e) => handleInputChange("dataBatismo", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="localBatismo">Local do Batismo</Label>
-                      <Input
-                        id="localBatismo"
-                        value={formData.localBatismo}
-                        onChange={(e) => handleInputChange("localBatismo", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="dataOrdenacao">Data da Ordenação</Label>
-                      <Input
-                        id="dataOrdenacao"
-                        type="date"
-                        value={formData.dataOrdenacao}
-                        onChange={(e) => handleInputChange("dataOrdenacao", e.target.value)}
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label htmlFor="localOrdenacao">Local da Ordenação</Label>
-                      <Input
-                        id="localOrdenacao"
-                        value={formData.localOrdenacao}
-                        onChange={(e) => handleInputChange("localOrdenacao", e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Declaração */}
-                <div className="border-t pt-6">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="declaracao"
-                      checked={formData.declaracao}
-                      onCheckedChange={(checked) => handleInputChange("declaracao", checked.toString())}
-                    />
-                    <Label htmlFor="declaracao" className="text-sm">
-                      Declaro que todas as informações prestadas são verdadeiras e estou ciente de que informações falsas podem acarretar no cancelamento da filiação.
-                    </Label>
-                  </div>
-                </div>
-
-                {/* Resumo da Taxa */}
-                {formData.cargoMinisterial && (
-                  <div className="border-t pt-6">
-                    <div className="bg-comademig-light p-4 rounded-lg">
-                      <h4 className="font-semibold text-comademig-blue mb-2">Resumo da Taxa</h4>
-                      <p className="text-gray-700">
-                        Cargo: {formData.sexo === "masculino" 
-                          ? cargosMinisteriais.masculino[formData.cargoMinisterial as keyof typeof cargosMinisteriais.masculino]
-                          : cargosMinisteriais.feminino[formData.cargoMinisterial as keyof typeof cargosMinisteriais.feminino]
-                        }
-                      </p>
-                      <p className="text-lg font-bold text-comademig-blue">
-                        Taxa: R$ {getTaxaPorCargo(formData.cargoMinisterial).toFixed(2)}
+                      <h4 className="font-medium">Carteira Digital</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Identificação oficial reconhecida em todo território nacional
                       </p>
                     </div>
                   </div>
-                )}
 
-                <div className="flex justify-end space-x-4 pt-6">
-                  <Button type="button" variant="outline" onClick={() => window.history.back()}>
-                    Voltar
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    className="bg-comademig-blue hover:bg-comademig-blue/90"
-                    disabled={!formData.declaracao || !formData.cargoMinisterial}
-                  >
-                    Prosseguir para Pagamento
-                  </Button>
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium">Eventos e Congressos</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Acesso a eventos, congressos e capacitações exclusivas
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium">Rede de Contatos</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Conexão com ministros e líderes de todo o estado
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium">Suporte Jurídico</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Orientações jurídicas e documentação eclesiástica
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </form>
-            </CardContent>
-          </Card>
+
+                <div className="pt-4 border-t">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-primary">R$ 250,00</p>
+                    <p className="text-sm text-muted-foreground">Taxa única de filiação</p>
+                  </div>
+                </div>
+
+                {/* Informação sobre PIX com desconto */}
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Desconto de 5% no PIX!</strong>
+                    <br />
+                    Pagando via PIX você paga apenas <strong>R$ 237,50</strong>
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+
+            {/* Formulário de Pagamento */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Dados para Filiação</CardTitle>
+                <CardDescription>
+                  Preencha seus dados e escolha a forma de pagamento
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PaymentForm 
+                  defaultValue={250}
+                  defaultDescription="Taxa de Filiação - COMADEMIG"
+                  tipoCobranca="filiacao"
+                  onPaymentData={handlePaymentData}
+                  showValueField={false}
+                />
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
-};
-
-export default Filiacao;
+}

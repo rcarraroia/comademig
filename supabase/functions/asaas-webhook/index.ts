@@ -21,19 +21,29 @@ serve(async (req) => {
     const webhookData = await req.json()
     console.log('Webhook recebido:', webhookData)
 
-    // Salvar webhook para auditoria
-    const { error: webhookError } = await supabaseClient
-      .from('asaas_webhooks')
+    const eventId = webhookData.id || webhookData.payment?.id || `${Date.now()}-${Math.random()}`
+
+    // Verificar idempotência
+    const { data: existing } = await supabaseClient
+      .from('webhook_events')
+      .select('id')
+      .eq('event_id', eventId)
+      .maybeSingle()
+
+    if (existing) {
+      return new Response(JSON.stringify({ success: true, message: 'Event already processed' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Salvar evento para auditoria
+    await supabaseClient
+      .from('webhook_events')
       .insert({
-        asaas_payment_id: webhookData.payment?.id || webhookData.id,
-        event_type: webhookData.event,
+        event_id: eventId,
         payload: webhookData,
         processed: false
       })
-
-    if (webhookError) {
-      console.error('Erro ao salvar webhook:', webhookError)
-    }
 
     // Processar eventos de pagamento
     if (webhookData.event === 'PAYMENT_CONFIRMED' || 
@@ -41,9 +51,70 @@ serve(async (req) => {
         webhookData.event === 'PAYMENT_CREDITED') {
       
       const paymentId = webhookData.payment?.id || webhookData.id
-      
+      const externalReference = webhookData.payment?.externalReference || ''
+      const totalAmount = parseFloat(webhookData.payment?.value || 0)
+
+      // Processar referral se existir
+      if (externalReference.startsWith('referral:')) {
+        const affiliateId = externalReference.replace('referral:', '')
+        
+        // Verificar se afiliado existe e está ativo
+        const { data: affiliate } = await supabaseClient
+          .from('affiliates')
+          .select('*')
+          .eq('id', affiliateId)
+          .eq('status', 'active')
+          .eq('is_adimplent', true)
+          .maybeSingle()
+
+        if (affiliate) {
+          // Calcular valores do split (40% + 40% + 20%)
+          const affiliateAmount = totalAmount * 0.2
+          const conventionAmount = totalAmount * 0.4
+          const renumAmount = totalAmount * 0.4
+
+          // Registrar transação
+          await supabaseClient
+            .from('transactions')
+            .insert({
+              asaas_payment_id: paymentId,
+              charge_id: paymentId,
+              affiliate_id: affiliateId,
+              total_amount: totalAmount,
+              affiliate_amount: affiliateAmount,
+              convention_amount: conventionAmount,
+              renum_amount: renumAmount,
+              status: 'paid',
+              raw_payload: webhookData
+            })
+
+          // Atualizar referral
+          await supabaseClient
+            .from('referrals')
+            .update({
+              status: 'paid',
+              charge_id: paymentId
+            })
+            .eq('affiliate_id', affiliateId)
+            .eq('status', 'pending')
+
+          console.log('Split processado para afiliado:', affiliateId)
+        }
+      }
+
+      // Processar ações específicas baseadas no tipo de cobrança (código existente)
+      const { data: cobranca } = await supabaseClient
+        .from('asaas_cobrancas')
+        .select('*')
+        .eq('asaas_id', paymentId)
+        .maybeSingle()
+
+      if (cobranca) {
+        await processPaymentActions(supabaseClient, cobranca)
+      }
+
       // Atualizar status da cobrança
-      const { error: updateError } = await supabaseClient
+      await supabaseClient
         .from('asaas_cobrancas')
         .update({
           status: 'RECEIVED',
@@ -52,29 +123,11 @@ serve(async (req) => {
         })
         .eq('asaas_id', paymentId)
 
-      if (updateError) {
-        console.error('Erro ao atualizar cobrança:', updateError)
-      } else {
-        console.log('Pagamento confirmado para:', paymentId)
-
-        // Buscar a cobrança para processar ações específicas
-        const { data: cobranca } = await supabaseClient
-          .from('asaas_cobrancas')
-          .select('*')
-          .eq('asaas_id', paymentId)
-          .single()
-
-        if (cobranca) {
-          // Processar ações específicas baseadas no tipo de cobrança
-          await processPaymentActions(supabaseClient, cobranca)
-        }
-      }
-
       // Marcar webhook como processado
       await supabaseClient
-        .from('asaas_webhooks')
+        .from('webhook_events')
         .update({ processed: true })
-        .eq('asaas_payment_id', paymentId)
+        .eq('event_id', eventId)
     }
 
     return new Response(JSON.stringify({ success: true }), {

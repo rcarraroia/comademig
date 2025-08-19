@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -37,6 +36,7 @@ import Regularizacao from "./pages/dashboard/Regularizacao";
 import CheckoutRegularizacao from "./pages/dashboard/CheckoutRegularizacao";
 import Checkout from "./pages/Checkout";
 import PagamentoSucesso from "./pages/PagamentoSucesso";
+import Afiliados from '@/pages/dashboard/Afiliados';
 
 const queryClient = new QueryClient();
 
@@ -122,6 +122,11 @@ const App = () => (
             <Route path="/dashboard/suporte" element={
               <ProtectedRoute>
                 <DashboardLayout><Suporte /></DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/afiliados" element={
+              <ProtectedRoute>
+                <Afiliados />
               </ProtectedRoute>
             } />
             

@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      affiliates: {
+        Row: {
+          asaas_wallet_id: string
+          contact_email: string | null
+          cpf_cnpj: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string
+          is_adimplent: boolean
+          phone: string | null
+          referral_code: string | null
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          asaas_wallet_id: string
+          contact_email?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          is_adimplent?: boolean
+          phone?: string | null
+          referral_code?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          asaas_wallet_id?: string
+          contact_email?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          is_adimplent?: boolean
+          phone?: string | null
+          referral_code?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       asaas_cobrancas: {
         Row: {
           asaas_id: string
@@ -639,6 +684,50 @@ export type Database = {
         }
         Relationships: []
       }
+      referrals: {
+        Row: {
+          affiliate_id: string
+          amount: number | null
+          charge_id: string | null
+          created_at: string | null
+          id: string
+          referred_email: string | null
+          referred_name: string | null
+          referred_user_id: string | null
+          status: string
+        }
+        Insert: {
+          affiliate_id: string
+          amount?: number | null
+          charge_id?: string | null
+          created_at?: string | null
+          id?: string
+          referred_email?: string | null
+          referred_name?: string | null
+          referred_user_id?: string | null
+          status?: string
+        }
+        Update: {
+          affiliate_id?: string
+          amount?: number | null
+          charge_id?: string | null
+          created_at?: string | null
+          id?: string
+          referred_email?: string | null
+          referred_name?: string | null
+          referred_user_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       solicitacoes_certidoes: {
         Row: {
           arquivo_pdf: string | null
@@ -767,6 +856,56 @@ export type Database = {
           },
         ]
       }
+      transactions: {
+        Row: {
+          affiliate_amount: number | null
+          affiliate_id: string | null
+          asaas_payment_id: string
+          charge_id: string | null
+          convention_amount: number | null
+          created_at: string | null
+          id: string
+          raw_payload: Json | null
+          renum_amount: number | null
+          status: string
+          total_amount: number | null
+        }
+        Insert: {
+          affiliate_amount?: number | null
+          affiliate_id?: string | null
+          asaas_payment_id: string
+          charge_id?: string | null
+          convention_amount?: number | null
+          created_at?: string | null
+          id?: string
+          raw_payload?: Json | null
+          renum_amount?: number | null
+          status: string
+          total_amount?: number | null
+        }
+        Update: {
+          affiliate_amount?: number | null
+          affiliate_id?: string | null
+          asaas_payment_id?: string
+          charge_id?: string | null
+          convention_amount?: number | null
+          created_at?: string | null
+          id?: string
+          raw_payload?: Json | null
+          renum_amount?: number | null
+          status?: string
+          total_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -788,11 +927,42 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_events: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          id: string
+          payload: Json
+          processed: boolean | null
+          received_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          id?: string
+          payload: Json
+          processed?: boolean | null
+          received_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          payload?: Json
+          processed?: boolean | null
+          received_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      generate_referral_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

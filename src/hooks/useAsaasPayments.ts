@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +21,7 @@ export interface PaymentData {
   description: string;
   tipoCobranca: string;
   referenciaId?: string;
+  affiliateId?: string;
 }
 
 export const useAsaasPayments = () => {
@@ -31,7 +31,10 @@ export const useAsaasPayments = () => {
   const createPayment = async (paymentData: PaymentData) => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('asaas-create-payment', {
+      // Verificar se há split de afiliado
+      const functionName = paymentData.affiliateId ? 'asaas-create-payment-with-split' : 'asaas-create-payment';
+      
+      const { data, error } = await supabase.functions.invoke(functionName, {
         body: paymentData
       });
 
@@ -45,7 +48,7 @@ export const useAsaasPayments = () => {
 
       toast({
         title: "Cobrança criada com sucesso",
-        description: `${paymentData.billingType === 'PIX' ? 'PIX' : 'Boleto'} gerado com sucesso`,
+        description: `${paymentData.billingType === 'PIX' ? 'PIX' : 'Boleto'} gerado com sucesso${data.split_configured ? ' (com comissão de afiliado)' : ''}`,
       });
 
       return data.cobranca;
@@ -110,10 +113,33 @@ export const useAsaasPayments = () => {
     }
   };
 
+  const getAffiliateByReferralCode = async (referralCode: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('affiliates')
+        .select('id, status, is_adimplent')
+        .eq('referral_code', referralCode)
+        .eq('status', 'active')
+        .eq('is_adimplent', true)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Erro ao buscar afiliado:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erro ao buscar afiliado:', error);
+      return null;
+    }
+  };
+
   return {
     createPayment,
     checkPaymentStatus,
     getUserPayments,
+    getAffiliateByReferralCode,
     loading
   };
 };
