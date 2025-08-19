@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -191,7 +190,8 @@ const MeusDados = () => {
             {isEditing && (
               <FileUpload
                 bucket="avatars"
-                onUploadComplete={(url) => {
+                path={`${user?.id}/avatar`}
+                onUpload={(url) => {
                   console.log('Avatar uploaded:', url);
                   toast({
                     title: "Foto atualizada",
