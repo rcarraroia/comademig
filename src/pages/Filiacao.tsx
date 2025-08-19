@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Layout } from '@/components/Layout';
+import Layout from '@/components/Layout';
 import { PaymentForm } from '@/components/payments/PaymentForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -154,11 +155,10 @@ export default function Filiacao() {
               </CardHeader>
               <CardContent>
                 <PaymentForm 
-                  defaultValue={250}
-                  defaultDescription="Taxa de Filiação - COMADEMIG"
+                  value={250}
+                  description="Taxa de Filiação - COMADEMIG"
                   tipoCobranca="filiacao"
                   onPaymentData={handlePaymentData}
-                  showValueField={false}
                 />
               </CardContent>
             </Card>

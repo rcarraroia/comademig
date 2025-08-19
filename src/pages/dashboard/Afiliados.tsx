@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { AffiliateRegistration } from '@/components/affiliates/AffiliateRegistration';
 import { AffiliateDashboard } from '@/components/affiliates/AffiliateDashboard';
