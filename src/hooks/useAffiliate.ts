@@ -84,7 +84,10 @@ export const useAffiliate = () => {
   const getAffiliate = async (): Promise<Affiliate | null> => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('affiliates-management/me');
+      const { data, error } = await supabase.functions.invoke('affiliates-management', {
+        body: {},
+        method: 'GET'
+      });
 
       if (error) throw error;
 
@@ -100,7 +103,7 @@ export const useAffiliate = () => {
   const updateAffiliate = async (data: AffiliateData) => {
     setLoading(true);
     try {
-      const { data: result, error } = await supabase.functions.invoke('affiliates-management/update', {
+      const { data: result, error } = await supabase.functions.invoke('affiliates-management', {
         body: data,
         method: 'PUT'
       });
@@ -129,7 +132,10 @@ export const useAffiliate = () => {
   const getReferrals = async (): Promise<Referral[]> => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('affiliates-management/referrals');
+      const { data, error } = await supabase.functions.invoke('affiliates-management', {
+        body: {},
+        method: 'GET'
+      });
 
       if (error) throw error;
 
@@ -145,7 +151,10 @@ export const useAffiliate = () => {
   const getTransactions = async (): Promise<Transaction[]> => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('affiliates-management/transactions');
+      const { data, error } = await supabase.functions.invoke('affiliates-management', {
+        body: {},
+        method: 'GET'
+      });
 
       if (error) throw error;
 

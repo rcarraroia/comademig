@@ -29,26 +29,40 @@ serve(async (req) => {
 
     const url = new URL(req.url)
     const method = req.method
-    const pathSegments = url.pathname.split('/').filter(segment => segment !== '')
+    const pathname = url.pathname
     
     console.log('Full URL:', req.url)
-    console.log('Path segments:', pathSegments)
+    console.log('Pathname:', pathname)
     console.log('Method:', method)
 
-    // Determinar o endpoint baseado nos segmentos do path
-    let endpoint = 'affiliates-management' // default
-    if (pathSegments.length > 1) {
-      endpoint = pathSegments[pathSegments.length - 1]
+    // Determinar o endpoint baseado no pathname
+    let endpoint = 'create' // default para POST na raiz
+    
+    if (pathname.includes('/me')) {
+      endpoint = 'me'
+    } else if (pathname.includes('/update')) {
+      endpoint = 'update'
+    } else if (pathname.includes('/referrals')) {
+      endpoint = 'referrals'
+    } else if (pathname.includes('/transactions')) {
+      endpoint = 'transactions'
     }
 
     console.log('Determined endpoint:', endpoint)
 
-    // POST para criar afiliado
-    if (method === 'POST' && endpoint === 'affiliates-management') {
+    // POST para criar afiliado (endpoint raiz)
+    if (method === 'POST' && endpoint === 'create') {
       const body = await req.json()
       console.log('Creating affiliate with data:', body)
       
       const { display_name, cpf_cnpj, asaas_wallet_id, contact_email, phone } = body
+
+      if (!asaas_wallet_id) {
+        return new Response(JSON.stringify({ error: 'Wallet ID é obrigatório' }), { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
 
       // Validar se já existe afiliado para este usuário
       const { data: existing } = await supabaseClient
