@@ -15,11 +15,22 @@ import CarteiraStatus from "@/components/carteira/CarteiraStatus";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ErrorMessage } from "@/components/common/ErrorMessage";
 
+interface ProfileData {
+  nome_completo: string;
+  cpf?: string;
+  igreja?: string;
+  cargo?: string;
+  telefone?: string;
+  cidade?: string;
+  estado?: string;
+  tipo_membro?: string;
+}
+
 const CarteiraDigital = () => {
   const { user } = useAuth();
   const { 
     carteira, 
-    profile, 
+    profile: rawProfile, 
     isLoading, 
     error, 
     gerarCarteira, 
@@ -27,6 +38,9 @@ const CarteiraDigital = () => {
     atualizarFoto 
   } = useCarteiraDigital();
   const { uploadFile } = useStorage();
+
+  // Type the profile data properly
+  const profile = rawProfile as ProfileData | null;
 
   const handleUpdatePhoto = async (file: File) => {
     try {
@@ -163,7 +177,7 @@ const CarteiraDigital = () => {
                   Você ainda não possui uma carteira digital ativa.
                 </p>
                 <Button 
-                  onClick={() => gerarCarteira.mutate()}
+                  onClick={() => gerarCarteira.mutate(undefined)}
                   disabled={gerarCarteira.isPending}
                   className="bg-comademig-blue hover:bg-comademig-blue/90"
                 >
@@ -183,8 +197,8 @@ const CarteiraDigital = () => {
           <TabsContent value="status">
             <CarteiraStatus
               carteira={carteira}
-              onGerar={() => gerarCarteira.mutate()}
-              onRenovar={() => renovarCarteira.mutate()}
+              onGerar={() => gerarCarteira.mutate(undefined)}
+              onRenovar={() => renovarCarteira.mutate(undefined)}
               isLoading={gerarCarteira.isPending || renovarCarteira.isPending}
             />
           </TabsContent>
