@@ -26,9 +26,13 @@ serve(async (req) => {
 
     const url = new URL(req.url)
     const method = req.method
-    const path = url.pathname.split('/').pop()
+    const pathSegments = url.pathname.split('/').filter(segment => segment !== '')
+    const endpoint = pathSegments[pathSegments.length - 1] // Pega o último segmento
 
-    if (method === 'POST' && path === 'create') {
+    console.log('Method:', method, 'Endpoint:', endpoint, 'Full path:', url.pathname)
+
+    // POST para criar afiliado (sem endpoint específico ou com 'create')
+    if (method === 'POST' && (endpoint === 'affiliates-management' || endpoint === 'create')) {
       const body = await req.json()
       const { display_name, cpf_cnpj, asaas_wallet_id, contact_email, phone } = body
 
@@ -40,7 +44,7 @@ serve(async (req) => {
         .maybeSingle()
 
       if (existing) {
-        return new Response('Usuário já possui cadastro de afiliado', { 
+        return new Response(JSON.stringify({ error: 'Usuário já possui cadastro de afiliado' }), { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
@@ -73,7 +77,8 @@ serve(async (req) => {
       })
     }
 
-    if (method === 'GET' && path === 'me') {
+    // GET para buscar dados do afiliado (endpoint 'me')
+    if (method === 'GET' && endpoint === 'me') {
       const { data: affiliate, error } = await supabaseClient
         .from('affiliates')
         .select('*')
@@ -92,7 +97,8 @@ serve(async (req) => {
       })
     }
 
-    if (method === 'PUT' && path === 'update') {
+    // PUT para atualizar afiliado (endpoint 'update')
+    if (method === 'PUT' && endpoint === 'update') {
       const body = await req.json()
       const { display_name, cpf_cnpj, asaas_wallet_id, contact_email, phone } = body
 
@@ -121,14 +127,25 @@ serve(async (req) => {
       })
     }
 
-    if (method === 'GET' && path === 'referrals') {
+    // GET para buscar indicações (endpoint 'referrals')
+    if (method === 'GET' && endpoint === 'referrals') {
+      // Primeiro busca o afiliado
+      const { data: affiliate } = await supabaseClient
+        .from('affiliates')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (!affiliate) {
+        return new Response(JSON.stringify({ referrals: [] }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
       const { data: referrals, error } = await supabaseClient
         .from('referrals')
-        .select(`
-          *,
-          affiliate:affiliates(display_name, referral_code)
-        `)
-        .eq('affiliates.user_id', user.id)
+        .select('*')
+        .eq('affiliate_id', affiliate.id)
 
       if (error) {
         return new Response(JSON.stringify({ error: error.message }), { 
@@ -142,14 +159,25 @@ serve(async (req) => {
       })
     }
 
-    if (method === 'GET' && path === 'transactions') {
+    // GET para buscar transações (endpoint 'transactions')
+    if (method === 'GET' && endpoint === 'transactions') {
+      // Primeiro busca o afiliado
+      const { data: affiliate } = await supabaseClient
+        .from('affiliates')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (!affiliate) {
+        return new Response(JSON.stringify({ transactions: [] }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
       const { data: transactions, error } = await supabaseClient
         .from('transactions')
-        .select(`
-          *,
-          affiliate:affiliates(display_name, referral_code)
-        `)
-        .eq('affiliates.user_id', user.id)
+        .select('*')
+        .eq('affiliate_id', affiliate.id)
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -164,7 +192,10 @@ serve(async (req) => {
       })
     }
 
-    return new Response('Endpoint não encontrado', { status: 404, headers: corsHeaders })
+    return new Response(JSON.stringify({ error: 'Endpoint não encontrado' }), { 
+      status: 404, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
 
   } catch (error) {
     console.error('Erro na função de afiliados:', error)

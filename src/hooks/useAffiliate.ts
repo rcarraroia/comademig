@@ -57,8 +57,7 @@ export const useAffiliate = () => {
     setLoading(true);
     try {
       const { data: result, error } = await supabase.functions.invoke('affiliates-management', {
-        body: data,
-        method: 'POST'
+        body: data
       });
 
       if (error) throw error;
