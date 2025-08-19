@@ -97,9 +97,58 @@ export type Database = {
           },
         ]
       }
+      certificados_eventos: {
+        Row: {
+          created_at: string
+          data_emissao: string
+          documento_url: string | null
+          evento_id: string
+          id: string
+          numero_certificado: string
+          qr_code: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_emissao?: string
+          documento_url?: string | null
+          evento_id: string
+          id?: string
+          numero_certificado: string
+          qr_code: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_emissao?: string
+          documento_url?: string | null
+          evento_id?: string
+          id?: string
+          numero_certificado?: string
+          qr_code?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificados_eventos_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       eventos: {
         Row: {
+          carga_horaria: number | null
           cep: string | null
+          certificado_disponivel: boolean | null
           cidade: string | null
           created_at: string | null
           data_fim: string
@@ -110,14 +159,19 @@ export type Database = {
           id: string
           imagem_url: string | null
           local: string | null
+          organizador_id: string | null
           preco: number | null
+          requer_presenca: boolean | null
           status: string | null
+          tipo_evento: string | null
           titulo: string
           updated_at: string | null
           vagas: number | null
         }
         Insert: {
+          carga_horaria?: number | null
           cep?: string | null
+          certificado_disponivel?: boolean | null
           cidade?: string | null
           created_at?: string | null
           data_fim: string
@@ -128,14 +182,19 @@ export type Database = {
           id?: string
           imagem_url?: string | null
           local?: string | null
+          organizador_id?: string | null
           preco?: number | null
+          requer_presenca?: boolean | null
           status?: string | null
+          tipo_evento?: string | null
           titulo: string
           updated_at?: string | null
           vagas?: number | null
         }
         Update: {
+          carga_horaria?: number | null
           cep?: string | null
+          certificado_disponivel?: boolean | null
           cidade?: string | null
           created_at?: string | null
           data_fim?: string
@@ -146,8 +205,11 @@ export type Database = {
           id?: string
           imagem_url?: string | null
           local?: string | null
+          organizador_id?: string | null
           preco?: number | null
+          requer_presenca?: boolean | null
           status?: string | null
+          tipo_evento?: string | null
           titulo?: string
           updated_at?: string | null
           vagas?: number | null
@@ -208,9 +270,11 @@ export type Database = {
         Row: {
           comprovante_url: string | null
           created_at: string | null
+          data_inscricao: string | null
           data_pagamento: string | null
           evento_id: string
           id: string
+          observacoes: string | null
           status: string | null
           updated_at: string | null
           user_id: string
@@ -219,9 +283,11 @@ export type Database = {
         Insert: {
           comprovante_url?: string | null
           created_at?: string | null
+          data_inscricao?: string | null
           data_pagamento?: string | null
           evento_id: string
           id?: string
+          observacoes?: string | null
           status?: string | null
           updated_at?: string | null
           user_id: string
@@ -230,9 +296,11 @@ export type Database = {
         Update: {
           comprovante_url?: string | null
           created_at?: string | null
+          data_inscricao?: string | null
           data_pagamento?: string | null
           evento_id?: string
           id?: string
+          observacoes?: string | null
           status?: string | null
           updated_at?: string | null
           user_id?: string
@@ -385,6 +453,41 @@ export type Database = {
             columns: ["autor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presenca_eventos: {
+        Row: {
+          created_at: string
+          data_presenca: string
+          evento_id: string
+          id: string
+          tipo_presenca: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_presenca?: string
+          evento_id: string
+          id?: string
+          tipo_presenca?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_presenca?: string
+          evento_id?: string
+          id?: string
+          tipo_presenca?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presenca_eventos_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "eventos"
             referencedColumns: ["id"]
           },
         ]

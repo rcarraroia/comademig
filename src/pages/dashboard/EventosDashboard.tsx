@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar, Search, Plus } from "lucide-react";
+import { Calendar, Search, Plus, Award } from "lucide-react";
 import { useEventos } from "@/hooks/useEventos";
 import { EventsList } from "@/components/events/EventsList";
 import { MyEventsList } from "@/components/events/MyEventsList";
+import { MeusCertificados } from "@/components/events/MeusCertificados";
 import { ErrorMessage } from "@/components/common/ErrorMessage";
 import { useToast } from "@/hooks/use-toast";
 
@@ -25,6 +26,10 @@ interface Evento {
   vagas?: number;
   imagem_url?: string;
   status: string;
+  certificado_disponivel?: boolean;
+  requer_presenca?: boolean;
+  carga_horaria?: number;
+  tipo_evento?: string;
 }
 
 interface InscricaoEvento {
@@ -39,6 +44,7 @@ interface InscricaoEvento {
     data_inicio: string;
     data_fim: string;
     local?: string;
+    certificado_disponivel?: boolean;
   };
 }
 
@@ -120,9 +126,10 @@ const EventosDashboard = () => {
       </div>
 
       <Tabs defaultValue="todos" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="todos">Todos os Eventos</TabsTrigger>
           <TabsTrigger value="minhas">Minhas Inscrições</TabsTrigger>
+          <TabsTrigger value="certificados">Meus Certificados</TabsTrigger>
         </TabsList>
 
         <TabsContent value="todos" className="space-y-6">
@@ -173,6 +180,20 @@ const EventosDashboard = () => {
                 onCancelar={handleCancelar}
                 loadingCancelamento={loadingCancelamento}
               />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="certificados" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5" />
+                Meus Certificados
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <MeusCertificados />
             </CardContent>
           </Card>
         </TabsContent>
