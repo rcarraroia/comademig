@@ -2,7 +2,7 @@
 import { createContext, useContext, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { useAuthState, Profile } from '@/hooks/useAuthState';
-import { useAuthActionsImpl } from '@/hooks/useAuthActions';
+import { useAuthActions } from '@/hooks/useAuthActions';
 import { useAuthPermissions } from '@/hooks/useAuthPermissions';
 
 interface AuthContextType {
@@ -24,7 +24,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { session, user, profile, loading, setProfile, refreshProfile } = useAuthState();
-  const { signIn, signUp, signOut, resetPassword, updateProfile: updateProfileImpl } = useAuthActionsImpl();
+  const { signIn, signUp, signOut, resetPassword, updateProfile: updateProfileImpl } = useAuthActions();
   const { isAdmin, hasPermission } = useAuthPermissions(profile);
 
   const updateProfile = (data: Partial<Profile>) => {
