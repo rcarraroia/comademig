@@ -1,11 +1,7 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -13,23 +9,25 @@ import {
   MessageSquare, 
   Phone, 
   Mail, 
-  Clock,
-  CheckCircle,
   Search,
   FileText,
   User,
   CreditCard,
   Calendar,
-  Send
+  Plus,
+  Ticket
 } from "lucide-react";
+import { useSuporteTickets } from "@/hooks/useSuporteTickets";
+import { TicketCard } from "@/components/suporte/TicketCard";
+import { TicketDetail } from "@/components/suporte/TicketDetail";
+import { NovoTicketModal } from "@/components/suporte/NovoTicketModal";
 
 const Suporte = () => {
-  const [ticketForm, setTicketForm] = useState({
-    subject: "",
-    category: "",
-    priority: "",
-    description: ""
-  });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [showNovoTicket, setShowNovoTicket] = useState(false);
+  
+  const { tickets, isLoading } = useSuporteTickets();
 
   const faqs = [
     {
@@ -76,58 +74,25 @@ const Suporte = () => {
     }
   ];
 
-  const tickets = [
-    {
-      id: "T001",
-      subject: "Problema na emissão da carteira digital",
-      category: "Técnico",
-      status: "Em Andamento",
-      priority: "Alta",
-      date: "2024-01-20",
-      response: "Nossa equipe está analisando o problema..."
-    },
-    {
-      id: "T002",
-      subject: "Dúvida sobre pagamento de taxa",
-      category: "Financeiro",
-      status: "Resolvido",
-      priority: "Média",
-      date: "2024-01-18",
-      response: "Questão esclarecida via e-mail"
-    }
-  ];
+  const filteredFaqs = faqs.filter(faq => 
+    faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    faq.answer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    faq.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "Resolvido":
-        return <Badge className="bg-green-100 text-green-800"><CheckCircle size={12} className="mr-1" />Resolvido</Badge>;
-      case "Em Andamento":
-        return <Badge className="bg-yellow-100 text-yellow-800"><Clock size={12} className="mr-1" />Em Andamento</Badge>;
-      case "Aberto":
-        return <Badge className="bg-blue-100 text-blue-800">Aberto</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
-  };
+  const filteredTickets = tickets.filter(ticket =>
+    ticket.assunto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    ticket.descricao.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const getPriorityBadge = (priority: string) => {
-    switch (priority) {
-      case "Alta":
-        return <Badge className="bg-red-100 text-red-800">Alta</Badge>;
-      case "Média":
-        return <Badge className="bg-yellow-100 text-yellow-800">Média</Badge>;
-      case "Baixa":
-        return <Badge className="bg-green-100 text-green-800">Baixa</Badge>;
-      default:
-        return <Badge>{priority}</Badge>;
-    }
-  };
-
-  const handleSubmitTicket = () => {
-    console.log("Ticket enviado:", ticketForm);
-    // Reset form
-    setTicketForm({ subject: "", category: "", priority: "", description: "" });
-  };
+  if (selectedTicket) {
+    return (
+      <TicketDetail 
+        ticket={selectedTicket} 
+        onBack={() => setSelectedTicket(null)} 
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -177,12 +142,17 @@ const Suporte = () => {
             </CardTitle>
             <div className="relative">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-              <Input placeholder="Buscar nas perguntas..." className="pl-9" />
+              <Input 
+                placeholder="Buscar nas perguntas..." 
+                className="pl-9" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
           </CardHeader>
           <CardContent>
             <Accordion type="single" collapsible className="w-full">
-              {faqs.map((faq) => (
+              {filteredFaqs.map((faq) => (
                 <AccordionItem key={faq.id} value={faq.id}>
                   <AccordionTrigger className="text-left">
                     <div className="flex items-center space-x-2">
@@ -202,111 +172,56 @@ const Suporte = () => {
           </CardContent>
         </Card>
 
-        {/* New Ticket Form */}
+        {/* Tickets Section */}
         <Card>
           <CardHeader>
-            <CardTitle>Abrir Chamado</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Ticket className="h-5 w-5" />
+                Meus Tickets
+              </CardTitle>
+              <Button
+                onClick={() => setShowNovoTicket(true)}
+                className="bg-comademig-blue hover:bg-comademig-blue/90"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Ticket
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="subject">Assunto</Label>
-              <Input
-                id="subject"
-                placeholder="Descreva brevemente o problema"
-                value={ticketForm.subject}
-                onChange={(e) => setTicketForm(prev => ({ ...prev, subject: e.target.value }))}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="category">Categoria</Label>
-                <Select value={ticketForm.category} onValueChange={(value) => setTicketForm(prev => ({ ...prev, category: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="tecnico">Técnico</SelectItem>
-                    <SelectItem value="financeiro">Financeiro</SelectItem>
-                    <SelectItem value="documentos">Documentos</SelectItem>
-                    <SelectItem value="eventos">Eventos</SelectItem>
-                    <SelectItem value="geral">Geral</SelectItem>
-                  </SelectContent>
-                </Select>
+            {isLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-comademig-blue mx-auto"></div>
+                <p className="text-sm text-muted-foreground mt-2">Carregando tickets...</p>
               </div>
-
-              <div>
-                <Label htmlFor="priority">Prioridade</Label>
-                <Select value={ticketForm.priority} onValueChange={(value) => setTicketForm(prev => ({ ...prev, priority: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="baixa">Baixa</SelectItem>
-                    <SelectItem value="media">Média</SelectItem>
-                    <SelectItem value="alta">Alta</SelectItem>
-                  </SelectContent>
-                </Select>
+            ) : filteredTickets.length > 0 ? (
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {filteredTickets.map((ticket) => (
+                  <TicketCard
+                    key={ticket.id}
+                    ticket={ticket}
+                    onClick={() => setSelectedTicket(ticket)}
+                  />
+                ))}
               </div>
-            </div>
-
-            <div>
-              <Label htmlFor="description">Descrição</Label>
-              <Textarea
-                id="description"
-                placeholder="Descreva o problema em detalhes..."
-                rows={4}
-                value={ticketForm.description}
-                onChange={(e) => setTicketForm(prev => ({ ...prev, description: e.target.value }))}
-              />
-            </div>
-
-            <Button 
-              onClick={handleSubmitTicket}
-              className="w-full bg-comademig-blue hover:bg-comademig-blue/90"
-              disabled={!ticketForm.subject || !ticketForm.category || !ticketForm.description}
-            >
-              <Send size={16} className="mr-2" />
-              Enviar Chamado
-            </Button>
+            ) : (
+              <div className="text-center py-8">
+                <Ticket className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground mb-3">
+                  {searchTerm ? 'Nenhum ticket encontrado' : 'Nenhum ticket ainda'}
+                </p>
+                <Button
+                  onClick={() => setShowNovoTicket(true)}
+                  variant="outline"
+                >
+                  Criar Primeiro Ticket
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
-
-      {/* My Tickets */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Meus Chamados</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {tickets.map((ticket) => (
-              <div key={ticket.id} className="border rounded-lg p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="font-semibold text-comademig-blue">{ticket.subject}</h3>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <Badge variant="outline">#{ticket.id}</Badge>
-                      <Badge variant="outline">{ticket.category}</Badge>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center space-x-2 mb-1">
-                      {getStatusBadge(ticket.status)}
-                      {getPriorityBadge(ticket.priority)}
-                    </div>
-                    <p className="text-sm text-gray-500">
-                      {new Date(ticket.date).toLocaleDateString('pt-BR')}
-                    </p>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600 mb-3">{ticket.response}</p>
-                <Button size="sm" variant="outline">Ver Detalhes</Button>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Tips */}
       <Card className="border-blue-200 bg-blue-50">
@@ -325,6 +240,11 @@ const Suporte = () => {
           </div>
         </CardContent>
       </Card>
+
+      <NovoTicketModal 
+        open={showNovoTicket} 
+        onOpenChange={setShowNovoTicket} 
+      />
     </div>
   );
 };
