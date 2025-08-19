@@ -4,20 +4,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Edit, Eye, MoreHorizontal } from "lucide-react";
+import { Search, Plus, UserPlus } from "lucide-react";
 import { useAdminData, AdminProfile } from "@/hooks/useAdminData";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { UserActionsMenu } from "./UserActionsMenu";
+import { EditUserModal } from "./EditUserModal";
+import { ViewUserModal } from "./ViewUserModal";
 
 const UserManagement = () => {
-  const { profiles, isLoading } = useAdminData();
+  const { profiles, isLoading, refetchProfiles } = useAdminData();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedUser, setSelectedUser] = useState<AdminProfile | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -53,11 +53,66 @@ const UserManagement = () => {
     }
   };
 
+  const handleEditUser = (user: AdminProfile) => {
+    setSelectedUser(user);
+    setIsEditModalOpen(true);
+  };
+
+  const handleViewUser = (user: AdminProfile) => {
+    setSelectedUser(user);
+    setIsViewModalOpen(true);
+  };
+
+  const handleSuccess = () => {
+    refetchProfiles();
+  };
+
+  const statusStats = {
+    total: profiles.length,
+    ativo: profiles.filter(p => p.status === 'ativo').length,
+    pendente: profiles.filter(p => p.status === 'pendente').length,
+    suspenso: profiles.filter(p => p.status === 'suspenso').length,
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Gerenciamento de Usuários</h1>
-        <p className="text-gray-600">Gerencie todos os usuários do sistema</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Gerenciamento de Usuários</h1>
+          <p className="text-gray-600">Gerencie todos os usuários do sistema</p>
+        </div>
+        <Button className="bg-comademig-blue hover:bg-comademig-blue/90">
+          <UserPlus className="h-4 w-4 mr-2" />
+          Novo Usuário
+        </Button>
+      </div>
+
+      {/* Estatísticas rápidas */}
+      <div className="grid grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-blue-600">{statusStats.total}</div>
+            <div className="text-sm text-gray-600">Total de Usuários</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-green-600">{statusStats.ativo}</div>
+            <div className="text-sm text-gray-600">Usuários Ativos</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-yellow-600">{statusStats.pendente}</div>
+            <div className="text-sm text-gray-600">Usuários Pendentes</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-red-600">{statusStats.suspenso}</div>
+            <div className="text-sm text-gray-600">Usuários Suspensos</div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
@@ -84,6 +139,7 @@ const UserManagement = () => {
               <option value="ativo">Ativo</option>
               <option value="pendente">Pendente</option>
               <option value="suspenso">Suspenso</option>
+              <option value="inativo">Inativo</option>
             </select>
           </div>
         </CardContent>
@@ -130,23 +186,12 @@ const UserManagement = () => {
                       </Badge>
                     </td>
                     <td className="py-3 px-4">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Eye className="h-4 w-4 mr-2" />
-                            Visualizar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <UserActionsMenu
+                        user={profile}
+                        onEdit={handleEditUser}
+                        onView={handleViewUser}
+                        onSuccess={handleSuccess}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -160,6 +205,20 @@ const UserManagement = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modais */}
+      <EditUserModal
+        user={selectedUser}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSuccess={handleSuccess}
+      />
+
+      <ViewUserModal
+        user={selectedUser}
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+      />
     </div>
   );
 };
