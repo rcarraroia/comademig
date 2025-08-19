@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar, Download, RefreshCw, QrCode } from 'lucide-react';
 import { UserAvatar } from '@/components/common/UserAvatar';
-import { QRCodeDisplay } from './QRCodeDisplay';
+import QRCodeDisplay from './QRCodeDisplay';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';

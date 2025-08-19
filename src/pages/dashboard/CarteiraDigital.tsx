@@ -8,7 +8,7 @@ import { CreditCard, User, RefreshCw, AlertCircle, CheckCircle, QrCode } from "l
 import { useCarteiraDigital } from "@/hooks/useCarteiraDigital";
 import { useStorage } from "@/hooks/useStorage";
 import { useAuth } from "@/contexts/AuthContext";
-import CarteiraDigitalCard from "@/components/carteira/CarteiraDigitalCard";
+import { CarteiraDigitalCard } from "@/components/carteira/CarteiraDigitalCard";
 import CarteiraStatus from "@/components/carteira/CarteiraStatus";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ErrorMessage } from "@/components/common/ErrorMessage";
@@ -127,10 +127,9 @@ const CarteiraDigital = () => {
               <div>
                 <CarteiraDigitalCard
                   carteira={carteira}
-                  profile={profile}
-                  userEmail={user?.email}
-                  onUpdatePhoto={handleUpdatePhoto}
-                  isUploadingPhoto={isUploadingPhoto}
+                  onRenovar={() => renovarCarteira.mutate(undefined)}
+                  onDownload={() => {}}
+                  renovandoCarteira={renovarCarteira.isPending}
                 />
               </div>
               

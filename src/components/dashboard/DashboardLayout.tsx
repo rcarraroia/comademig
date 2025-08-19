@@ -15,7 +15,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <DashboardSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
       <div className="flex-1 flex flex-col">
-        <DashboardHeader onMenuClick={() => setSidebarOpen(true)} />
+        <DashboardHeader onMenuToggle={() => setSidebarOpen(true)} />
         
         <main className="flex-1 p-4 lg:p-6 xl:p-8">
           <div className="max-w-7xl mx-auto w-full">
