@@ -5,11 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { AdminProfile } from "@/hooks/useAdminData";
 import { useSupabaseMutation } from "@/hooks/useSupabaseQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { Badge } from "@/components/ui/badge";
 
 interface EditUserModalProps {
   user: AdminProfile | null;
@@ -17,6 +15,8 @@ interface EditUserModalProps {
   onClose: () => void;
   onSuccess: () => void;
 }
+
+type UserRole = "membro" | "admin" | "moderador" | "tesoureiro";
 
 export const EditUserModal = ({ user, isOpen, onClose, onSuccess }: EditUserModalProps) => {
   const [formData, setFormData] = useState({
@@ -50,7 +50,7 @@ export const EditUserModal = ({ user, isOpen, onClose, onSuccess }: EditUserModa
   );
 
   const updateUserRoleMutation = useSupabaseMutation(
-    async (role: string) => {
+    async (role: UserRole) => {
       // Primeiro remove todas as roles do usuário
       await supabase
         .from('user_roles')
@@ -62,7 +62,7 @@ export const EditUserModal = ({ user, isOpen, onClose, onSuccess }: EditUserModa
         .from('user_roles')
         .insert({
           user_id: user?.id,
-          role: role
+          role: role as UserRole
         });
       
       if (error) throw error;
@@ -87,7 +87,7 @@ export const EditUserModal = ({ user, isOpen, onClose, onSuccess }: EditUserModa
     
     // Atualiza a role se mudou
     if (tipo_membro !== user?.tipo_membro) {
-      updateUserRoleMutation.mutate(tipo_membro);
+      updateUserRoleMutation.mutate(tipo_membro as UserRole);
     }
   };
 
