@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { X, Home, User, CreditCard, FileText, Calendar, MessageSquare, HelpCircle, Settings, Globe, Building } from "lucide-react";
+import { X, Home, User, CreditCard, FileText, Calendar, MessageSquare, HelpCircle, Settings, Globe, Building, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface DashboardSidebarProps {
@@ -19,6 +19,7 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
     { path: "/dashboard/certidoes", label: "Certidões", icon: FileText },
     { path: "/dashboard/regularizacao", label: "Regularização", icon: Building },
     { path: "/dashboard/eventos", label: "Eventos", icon: Calendar },
+    { path: "/dashboard/afiliados", label: "Afiliados", icon: Users },
     { path: "/dashboard/comunicacao", label: "Comunicação", icon: MessageSquare },
     { path: "/dashboard/suporte", label: "Suporte", icon: HelpCircle },
   ];

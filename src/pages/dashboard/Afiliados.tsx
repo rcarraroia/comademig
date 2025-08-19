@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { AffiliateRegistration } from '@/components/affiliates/AffiliateRegistration';
-import { AffiliateDashboard } from '@/components/affiliates/AffiliateDashboard';
+import { AffiliatePanel } from '@/components/affiliates/AffiliatePanel';
 import { useAffiliate, type Affiliate } from '@/hooks/useAffiliate';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
@@ -64,7 +64,7 @@ export default function Afiliados() {
 
         {canParticipate && (
           affiliate ? (
-            <AffiliateDashboard affiliate={affiliate} />
+            <AffiliatePanel affiliate={affiliate} />
           ) : (
             <AffiliateRegistration onSuccess={handleRegistrationSuccess} />
           )
