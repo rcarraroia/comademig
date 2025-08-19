@@ -4,90 +4,231 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, Save, Edit } from "lucide-react";
+import { Upload, Save, Edit, User, MapPin, Church } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useResponsive } from "@/hooks/useResponsive";
+import { useLoadingState } from "@/hooks/useLoadingState";
+import { useAccessibility } from "@/hooks/useAccessibility";
+import { FileUpload } from "@/components/forms/FileUpload";
+import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import { ProgressBar } from "@/components/feedback/ProgressBar";
+import { useToast } from "@/hooks/use-toast";
 
 const MeusDados = () => {
+  const { user, profile, updateProfile, loading: authLoading } = useAuth();
+  const { isMobile, isTablet } = useResponsive();
+  const { setLoading, isLoading } = useLoadingState();
+  const { announceToScreenReader } = useAccessibility();
+  const { toast } = useToast();
+  
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    nome: "João Silva Santos",
-    cpf: "123.456.789-00",
-    rg: "MG-12.345.678",
-    dataNascimento: "1975-03-15",
-    telefone: "(31) 99999-9999",
-    email: "joao.silva@email.com",
-    endereco: "Rua das Flores, 123",
-    bairro: "Centro",
-    cidade: "Belo Horizonte",
-    cep: "30000-000",
-    igreja: "Assembleia de Deus - Central",
-    campo: "Campo Regional de Belo Horizonte",
-    ministerio: "Pastor Presidente",
-    dataOrdenacao: "2005-08-20"
+    nome_completo: profile?.nome_completo || "",
+    cpf: profile?.cpf || "",
+    rg: profile?.rg || "",
+    data_nascimento: profile?.data_nascimento || "",
+    telefone: profile?.telefone || "",
+    endereco: profile?.endereco || "",
+    cidade: profile?.cidade || "",
+    estado: profile?.estado || "",
+    cep: profile?.cep || "",
+    igreja: profile?.igreja || "",
+    cargo: profile?.cargo || "",
+    data_ordenacao: profile?.data_ordenacao || "",
   });
+
+  // Calculate completion percentage
+  const calculateCompletionPercentage = () => {
+    const requiredFields = [
+      'nome_completo', 'cpf', 'telefone', 'endereco', 
+      'cidade', 'estado', 'cep', 'igreja'
+    ];
+    const completedFields = requiredFields.filter(field => formData[field as keyof typeof formData]);
+    return (completedFields.length / requiredFields.length) * 100;
+  };
+
+  const completionPercentage = calculateCompletionPercentage();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
-    // Simulação de salvamento
-    setIsEditing(false);
-    console.log("Dados salvos:", formData);
+  const handleSave = async () => {
+    setLoading('save', true);
+    
+    try {
+      const { error } = await updateProfile(formData);
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      setIsEditing(false);
+      announceToScreenReader("Dados salvos com sucesso");
+      
+      toast({
+        title: "Dados atualizados",
+        description: "Suas informações foram salvas com sucesso",
+      });
+      
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading('save', false);
+    }
   };
+
+  const handleCancel = () => {
+    // Reset form data to original profile data
+    if (profile) {
+      setFormData({
+        nome_completo: profile.nome_completo || "",
+        cpf: profile.cpf || "",
+        rg: profile.rg || "",
+        data_nascimento: profile.data_nascimento || "",
+        telefone: profile.telefone || "",
+        endereco: profile.endereco || "",
+        cidade: profile.cidade || "",
+        estado: profile.estado || "",
+        cep: profile.cep || "",
+        igreja: profile.igreja || "",
+        cargo: profile.cargo || "",
+        data_ordenacao: profile.data_ordenacao || "",
+      });
+    }
+    setIsEditing(false);
+    announceToScreenReader("Edição cancelada");
+  };
+
+  if (authLoading) {
+    return <LoadingSpinner />;
+  }
+
+  const gridCols = isMobile ? 1 : isTablet ? 2 : 3;
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-comademig-blue">Meus Dados</h1>
           <p className="text-gray-600">Mantenha suas informações sempre atualizadas</p>
         </div>
-        <Button 
-          onClick={() => setIsEditing(!isEditing)}
-          className="bg-comademig-blue hover:bg-comademig-blue/90"
-        >
-          <Edit size={16} className="mr-2" />
-          {isEditing ? 'Cancelar' : 'Editar'}
-        </Button>
+        
+        <div className="flex flex-col sm:flex-row gap-2">
+          {isEditing ? (
+            <>
+              <Button 
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isLoading('save')}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleSave}
+                disabled={isLoading('save')}
+                className="bg-comademig-gold hover:bg-comademig-gold/90"
+              >
+                {isLoading('save') ? (
+                  <>
+                    <LoadingSpinner size="sm" className="mr-2" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Save size={16} className="mr-2" />
+                    Salvar
+                  </>
+                )}
+              </Button>
+            </>
+          ) : (
+            <Button 
+              onClick={() => setIsEditing(true)}
+              className="bg-comademig-blue hover:bg-comademig-blue/90"
+            >
+              <Edit size={16} className="mr-2" />
+              Editar
+            </Button>
+          )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Progress Bar */}
+      <Card>
+        <CardContent className="pt-6">
+          <ProgressBar
+            value={completionPercentage}
+            showLabel
+            label="Completude do Perfil"
+            variant={completionPercentage >= 80 ? 'success' : completionPercentage >= 50 ? 'warning' : 'error'}
+          />
+        </CardContent>
+      </Card>
+
+      <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'}`}>
         {/* Photo Section */}
-        <Card>
+        <Card className={isMobile ? '' : 'lg:col-span-1'}>
           <CardHeader>
-            <CardTitle>Foto do Perfil</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <User size={20} />
+              Foto do Perfil
+            </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center space-y-4">
             <Avatar className="w-32 h-32">
               <AvatarImage src="/placeholder-avatar.jpg" />
-              <AvatarFallback className="bg-comademig-blue text-white text-2xl">JS</AvatarFallback>
+              <AvatarFallback className="bg-comademig-blue text-white text-2xl">
+                {profile?.nome_completo?.split(' ').map(n => n[0]).join('').substring(0, 2) || 'U'}
+              </AvatarFallback>
             </Avatar>
             {isEditing && (
-              <Button variant="outline" className="w-full">
-                <Upload size={16} className="mr-2" />
-                Alterar Foto
-              </Button>
+              <FileUpload
+                bucket="avatars"
+                onUploadComplete={(url) => {
+                  console.log('Avatar uploaded:', url);
+                  toast({
+                    title: "Foto atualizada",
+                    description: "Sua foto de perfil foi atualizada com sucesso",
+                  });
+                }}
+                accept="image/*"
+                className="w-full"
+              >
+                <Button variant="outline" className="w-full">
+                  <Upload size={16} className="mr-2" />
+                  Alterar Foto
+                </Button>
+              </FileUpload>
             )}
           </CardContent>
         </Card>
 
         {/* Personal Data */}
-        <Card className="lg:col-span-2">
+        <Card className={isMobile ? '' : 'lg:col-span-2'}>
           <CardHeader>
-            <CardTitle>Dados Pessoais</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <User size={20} />
+              Dados Pessoais
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="nome">Nome Completo</Label>
+                <Label htmlFor="nome_completo">Nome Completo *</Label>
                 <Input
-                  id="nome"
-                  value={formData.nome}
-                  onChange={(e) => handleInputChange('nome', e.target.value)}
+                  id="nome_completo"
+                  value={formData.nome_completo}
+                  onChange={(e) => handleInputChange('nome_completo', e.target.value)}
                   disabled={!isEditing}
+                  required
+                  aria-describedby="nome_completo-help"
                 />
               </div>
               <div>
@@ -97,6 +238,7 @@ const MeusDados = () => {
                   value={formData.cpf}
                   onChange={(e) => handleInputChange('cpf', e.target.value)}
                   disabled={!isEditing}
+                  placeholder="000.000.000-00"
                 />
               </div>
               <div>
@@ -109,22 +251,24 @@ const MeusDados = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="dataNascimento">Data de Nascimento</Label>
+                <Label htmlFor="data_nascimento">Data de Nascimento</Label>
                 <Input
-                  id="dataNascimento"
+                  id="data_nascimento"
                   type="date"
-                  value={formData.dataNascimento}
-                  onChange={(e) => handleInputChange('dataNascimento', e.target.value)}
+                  value={formData.data_nascimento}
+                  onChange={(e) => handleInputChange('data_nascimento', e.target.value)}
                   disabled={!isEditing}
                 />
               </div>
               <div>
-                <Label htmlFor="telefone">Telefone</Label>
+                <Label htmlFor="telefone">Telefone *</Label>
                 <Input
                   id="telefone"
                   value={formData.telefone}
                   onChange={(e) => handleInputChange('telefone', e.target.value)}
                   disabled={!isEditing}
+                  required
+                  placeholder="(11) 99999-9999"
                 />
               </div>
               <div>
@@ -132,10 +276,13 @@ const MeusDados = () => {
                 <Input
                   id="email"
                   type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  disabled={!isEditing}
+                  value={user?.email || ''}
+                  disabled
+                  className="bg-gray-100"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Para alterar o email, entre em contato com o suporte
+                </p>
               </div>
             </div>
           </CardContent>
@@ -144,44 +291,52 @@ const MeusDados = () => {
         {/* Address */}
         <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle>Endereço</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin size={20} />
+              Endereço
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="md:col-span-2">
-                <Label htmlFor="endereco">Endereço</Label>
+                <Label htmlFor="endereco">Endereço *</Label>
                 <Input
                   id="endereco"
                   value={formData.endereco}
                   onChange={(e) => handleInputChange('endereco', e.target.value)}
                   disabled={!isEditing}
+                  required
                 />
               </div>
               <div>
-                <Label htmlFor="bairro">Bairro</Label>
-                <Input
-                  id="bairro"
-                  value={formData.bairro}
-                  onChange={(e) => handleInputChange('bairro', e.target.value)}
-                  disabled={!isEditing}
-                />
-              </div>
-              <div>
-                <Label htmlFor="cep">CEP</Label>
-                <Input
-                  id="cep"
-                  value={formData.cep}
-                  onChange={(e) => handleInputChange('cep', e.target.value)}
-                  disabled={!isEditing}
-                />
-              </div>
-              <div>
-                <Label htmlFor="cidade">Cidade</Label>
+                <Label htmlFor="cidade">Cidade *</Label>
                 <Input
                   id="cidade"
                   value={formData.cidade}
                   onChange={(e) => handleInputChange('cidade', e.target.value)}
                   disabled={!isEditing}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="cep">CEP *</Label>
+                <Input
+                  id="cep"
+                  value={formData.cep}
+                  onChange={(e) => handleInputChange('cep', e.target.value)}
+                  disabled={!isEditing}
+                  required
+                  placeholder="00000-000"
+                />
+              </div>
+              <div>
+                <Label htmlFor="estado">Estado *</Label>
+                <Input
+                  id="estado"
+                  value={formData.estado}
+                  onChange={(e) => handleInputChange('estado', e.target.value)}
+                  disabled={!isEditing}
+                  required
                 />
               </div>
             </div>
@@ -191,44 +346,39 @@ const MeusDados = () => {
         {/* Ministry Data */}
         <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle>Dados Ministeriais</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Church size={20} />
+              Dados Ministeriais
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="igreja">Igreja Local</Label>
+                <Label htmlFor="igreja">Igreja Local *</Label>
                 <Input
                   id="igreja"
                   value={formData.igreja}
                   onChange={(e) => handleInputChange('igreja', e.target.value)}
                   disabled={!isEditing}
+                  required
                 />
               </div>
               <div>
-                <Label htmlFor="campo">Campo Regional</Label>
+                <Label htmlFor="cargo">Cargo/Ministério</Label>
                 <Input
-                  id="campo"
-                  value={formData.campo}
-                  onChange={(e) => handleInputChange('campo', e.target.value)}
+                  id="cargo"
+                  value={formData.cargo}
+                  onChange={(e) => handleInputChange('cargo', e.target.value)}
                   disabled={!isEditing}
                 />
               </div>
               <div>
-                <Label htmlFor="ministerio">Ministério</Label>
+                <Label htmlFor="data_ordenacao">Data de Ordenação</Label>
                 <Input
-                  id="ministerio"
-                  value={formData.ministerio}
-                  onChange={(e) => handleInputChange('ministerio', e.target.value)}
-                  disabled={!isEditing}
-                />
-              </div>
-              <div>
-                <Label htmlFor="dataOrdenacao">Data de Ordenação</Label>
-                <Input
-                  id="dataOrdenacao"
+                  id="data_ordenacao"
                   type="date"
-                  value={formData.dataOrdenacao}
-                  onChange={(e) => handleInputChange('dataOrdenacao', e.target.value)}
+                  value={formData.data_ordenacao}
+                  onChange={(e) => handleInputChange('data_ordenacao', e.target.value)}
                   disabled={!isEditing}
                 />
               </div>
@@ -237,18 +387,15 @@ const MeusDados = () => {
         </Card>
       </div>
 
-      {/* Save Button */}
-      {isEditing && (
-        <div className="flex justify-end">
-          <Button 
-            onClick={handleSave}
-            className="bg-comademig-gold hover:bg-comademig-gold/90"
-          >
-            <Save size={16} className="mr-2" />
-            Salvar Alterações
-          </Button>
-        </div>
-      )}
+      {/* Helper Text */}
+      <Card className="border-l-4 border-l-blue-500 bg-blue-50">
+        <CardContent className="pt-6">
+          <p className="text-sm text-blue-700">
+            <strong>Dica:</strong> Campos marcados com * são obrigatórios. 
+            Mantenha seus dados atualizados para aproveitarmos melhor os recursos da plataforma.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 };
