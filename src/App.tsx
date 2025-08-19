@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { BrowserRouter as Router, Route, Routes, Outlet } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from '@/components/ui/toaster';
 
 // Public Pages
 import Index from '@/pages/Index';
@@ -45,7 +45,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { AuthProvider } from '@/contexts/AuthContext';
 
 // Components
-import { ProtectedRoute } from '@/components/ProtectedRoute';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 const queryClient = new QueryClient();
 
@@ -73,22 +73,20 @@ function App() {
             <Route path="/validar-certidao/:numeroProtocolo" element={<ValidarCertidao />} />
 
             {/* Protected routes */}
-            <Route element={<ProtectedRoute />}>
-              <Route element={<DashboardLayout />}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/dashboard/perfil" element={<Perfil />} />
-                <Route path="/dashboard/meus-dados" element={<MeusDados />} />
-                <Route path="/dashboard/carteira" element={<CarteiraDigital />} />
-                <Route path="/dashboard/comunicacao" element={<Comunicacao />} />
-                <Route path="/dashboard/comunicacao-dashboard" element={<ComunicacaoDashboard />} />
-                <Route path="/dashboard/eventos" element={<EventosDashboard />} />
-                <Route path="/dashboard/certidoes" element={<Certidoes />} />
-                <Route path="/dashboard/financeiro" element={<Financeiro />} />
-                <Route path="/dashboard/regularizacao" element={<Regularizacao />} />
-                <Route path="/dashboard/checkout-regularizacao" element={<CheckoutRegularizacao />} />
-                <Route path="/dashboard/suporte" element={<Suporte />} />
-                <Route path="/dashboard/afiliados" element={<Afiliados />} />
-              </Route>
+            <Route element={<ProtectedRoute><DashboardLayout><Outlet /></DashboardLayout></ProtectedRoute>}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/dashboard/perfil" element={<Perfil />} />
+              <Route path="/dashboard/meus-dados" element={<MeusDados />} />
+              <Route path="/dashboard/carteira" element={<CarteiraDigital />} />
+              <Route path="/dashboard/comunicacao" element={<Comunicacao />} />
+              <Route path="/dashboard/comunicacao-dashboard" element={<ComunicacaoDashboard />} />
+              <Route path="/dashboard/eventos" element={<EventosDashboard />} />
+              <Route path="/dashboard/certidoes" element={<Certidoes />} />
+              <Route path="/dashboard/financeiro" element={<Financeiro />} />
+              <Route path="/dashboard/regularizacao" element={<Regularizacao />} />
+              <Route path="/dashboard/checkout-regularizacao" element={<CheckoutRegularizacao />} />
+              <Route path="/dashboard/suporte" element={<Suporte />} />
+              <Route path="/dashboard/afiliados" element={<Afiliados />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
