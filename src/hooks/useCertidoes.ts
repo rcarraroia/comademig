@@ -17,6 +17,12 @@ interface SolicitacaoCertidao {
   arquivo_pdf?: string;
   created_at: string;
   updated_at: string;
+  profiles?: {
+    nome_completo: string;
+    cpf: string;
+    cargo: string;
+    igreja: string;
+  };
 }
 
 export const useCertidoes = () => {
@@ -41,21 +47,22 @@ export const useCertidoes = () => {
 
   const { data: todasSolicitacoes } = useSupabaseQuery(
     ['certidoes-admin'],
-    async (): Promise<any[]> => {
+    async (): Promise<SolicitacaoCertidao[]> => {
       const { data, error } = await supabase
         .from('solicitacoes_certidoes')
         .select(`
           *,
           profiles (
             nome_completo,
-            igreja,
-            cargo
+            cpf,
+            cargo,
+            igreja
           )
         `)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as any[];
+      return data as SolicitacaoCertidao[];
     },
     { enabled: !!user }
   );
@@ -142,31 +149,12 @@ export const useCertidoes = () => {
     }
   );
 
-  const gerarPdfCertidao = useSupabaseMutation(
-    async (solicitacaoId: string) => {
-      // Esta função seria implementada para gerar o PDF
-      // Por enquanto, simula a geração
-      const pdfUrl = `https://comademig.org/pdfs/certidao-${solicitacaoId}.pdf`;
-      
-      return atualizarStatusCertidao.mutateAsync({
-        id: solicitacaoId,
-        status: 'aprovada',
-        arquivoPdf: pdfUrl
-      });
-    },
-    {
-      successMessage: 'PDF gerado com sucesso!',
-      errorMessage: 'Erro ao gerar PDF'
-    }
-  );
-
   return {
     minhasSolicitacoes: (minhasSolicitacoes || []) as SolicitacaoCertidao[],
-    todasSolicitacoes: (todasSolicitacoes || []) as any[],
+    todasSolicitacoes: (todasSolicitacoes || []) as SolicitacaoCertidao[],
     isLoading,
     solicitarCertidao,
     atualizarStatusCertidao,
-    gerarPdfCertidao,
     refetch
   };
 };

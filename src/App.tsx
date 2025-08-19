@@ -1,141 +1,100 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import Layout from "./components/Layout";
-import DashboardLayout from "./components/dashboard/DashboardLayout";
-import ProtectedRoute from "./components/ProtectedRoute";
-import AuthRedirect from "./components/AuthRedirect";
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { QueryClient } from '@tanstack/react-query';
 
-// Import pages
-import Index from "./pages/Index";
-import Home from "./pages/Home";
-import Sobre from "./pages/Sobre";
-import Lideranca from "./pages/Lideranca";
-import Noticias from "./pages/Noticias";
-import Eventos from "./pages/Eventos";
-import Multimidia from "./pages/Multimidia";
-import Filiacao from "./pages/Filiacao";
-import Contato from "./pages/Contato";
-import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
+// Public Pages
+import Index from '@/pages/Index';
+import Home from '@/pages/Home';
+import Sobre from '@/pages/Sobre';
+import Lideranca from '@/pages/Lideranca';
+import Noticias from '@/pages/Noticias';
+import Eventos from '@/pages/Eventos';
+import Multimidia from '@/pages/Multimidia';
+import Contato from '@/pages/Contato';
+import Filiacao from '@/pages/Filiacao';
+import Auth from '@/pages/Auth';
+import Checkout from '@/pages/Checkout';
+import PagamentoSucesso from '@/pages/PagamentoSucesso';
+import ValidarCarteira from '@/pages/ValidarCarteira';
+import ValidarCertificado from '@/pages/ValidarCertificado';
+import ValidarCertidao from '@/pages/ValidarCertidao';
+import NotFound from '@/pages/NotFound';
 
-// Dashboard pages
-import Dashboard from "./pages/dashboard/Dashboard";
-import Perfil from "./pages/dashboard/Perfil";
-import MeusDados from "./pages/dashboard/MeusDados";
-import CarteiraDigital from "./pages/dashboard/CarteiraDigital";
-import Certidoes from "./pages/dashboard/Certidoes";
-import Financeiro from "./pages/dashboard/Financeiro";
-import EventosDashboard from "./pages/dashboard/EventosDashboard";
-import Comunicacao from "./pages/dashboard/Comunicacao";
-import Suporte from "./pages/dashboard/Suporte";
-import Regularizacao from "./pages/dashboard/Regularizacao";
-import CheckoutRegularizacao from "./pages/dashboard/CheckoutRegularizacao";
-import Checkout from "./pages/Checkout";
-import PagamentoSucesso from "./pages/PagamentoSucesso";
+// Dashboard Pages
+import Dashboard from '@/pages/dashboard/Dashboard';
+import Perfil from '@/pages/dashboard/Perfil';
+import MeusDados from '@/pages/dashboard/MeusDados';
+import CarteiraDigital from '@/pages/dashboard/CarteiraDigital';
+import Comunicacao from '@/pages/dashboard/Comunicacao';
+import ComunicacaoDashboard from '@/pages/dashboard/ComunicacaoDashboard';
+import EventosDashboard from '@/pages/dashboard/EventosDashboard';
+import Certidoes from '@/pages/dashboard/Certidoes';
+import Financeiro from '@/pages/dashboard/Financeiro';
+import Regularizacao from '@/pages/dashboard/Regularizacao';
+import CheckoutRegularizacao from '@/pages/dashboard/CheckoutRegularizacao';
+import Suporte from '@/pages/dashboard/Suporte';
 import Afiliados from '@/pages/dashboard/Afiliados';
 
-const queryClient = new QueryClient();
+// Layouts
+import Layout from '@/layouts/Layout';
+import DashboardLayout from '@/layouts/DashboardLayout';
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+// Contexts
+import { AuthProvider } from '@/contexts/AuthContext';
+
+// Components
+import { ProtectedRoute } from '@/components/common/ProtectedRoute';
+
+function App() {
+  return (
+    <QueryClient>
+      <AuthProvider>
+        <Router>
           <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Index />} />
+            {/* Public routes */}
+            <Route path="/" element={<Layout><Index /></Layout>} />
             <Route path="/home" element={<Layout><Home /></Layout>} />
             <Route path="/sobre" element={<Layout><Sobre /></Layout>} />
             <Route path="/lideranca" element={<Layout><Lideranca /></Layout>} />
             <Route path="/noticias" element={<Layout><Noticias /></Layout>} />
             <Route path="/eventos" element={<Layout><Eventos /></Layout>} />
             <Route path="/multimidia" element={<Layout><Multimidia /></Layout>} />
-            <Route path="/filiacao" element={<Layout><Filiacao /></Layout>} />
             <Route path="/contato" element={<Layout><Contato /></Layout>} />
-            <Route path="/checkout" element={<Layout><Checkout /></Layout>} />
-            <Route path="/pagamento-sucesso" element={<Layout><PagamentoSucesso /></Layout>} />
-            
-            {/* Auth Routes */}
-            <Route path="/auth" element={
-              <AuthRedirect>
-                <Auth />
-              </AuthRedirect>
-            } />
-            
-            {/* Protected Dashboard Routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <DashboardLayout><Dashboard /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard/perfil" element={
-              <ProtectedRoute>
-                <DashboardLayout><Perfil /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard/meus-dados" element={
-              <ProtectedRoute>
-                <DashboardLayout><MeusDados /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard/carteira-digital" element={
-              <ProtectedRoute>
-                <DashboardLayout><CarteiraDigital /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard/certidoes" element={
-              <ProtectedRoute>
-                <DashboardLayout><Certidoes /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard/financeiro" element={
-              <ProtectedRoute>
-                <DashboardLayout><Financeiro /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard/regularizacao" element={
-              <ProtectedRoute>
-                <DashboardLayout><Regularizacao /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard/checkout-regularizacao" element={
-              <ProtectedRoute>
-                <DashboardLayout><CheckoutRegularizacao /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard/eventos" element={
-              <ProtectedRoute>
-                <DashboardLayout><EventosDashboard /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard/comunicacao" element={
-              <ProtectedRoute>
-                <DashboardLayout><Comunicacao /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard/suporte" element={
-              <ProtectedRoute>
-                <DashboardLayout><Suporte /></DashboardLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard/afiliados" element={
-              <ProtectedRoute>
-                <Afiliados />
-              </ProtectedRoute>
-            } />
+            <Route path="/filiacao" element={<Layout><Filiacao /></Layout>} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/pagamento-sucesso" element={<PagamentoSucesso />} />
+            <Route path="/validar-carteira/:numeroCarteira" element={<ValidarCarteira />} />
+            <Route path="/validar-certificado/:numeroCertificado" element={<ValidarCertificado />} />
+            <Route path="/validar-certidao/:numeroProtocolo" element={<ValidarCertidao />} />
+
+            {/* Protected routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<DashboardLayout />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/dashboard/perfil" element={<Perfil />} />
+                <Route path="/dashboard/meus-dados" element={<MeusDados />} />
+                <Route path="/dashboard/carteira" element={<CarteiraDigital />} />
+                <Route path="/dashboard/comunicacao" element={<Comunicacao />} />
+                <Route path="/dashboard/comunicacao-dashboard" element={<ComunicacaoDashboard />} />
+                <Route path="/dashboard/eventos" element={<EventosDashboard />} />
+                <Route path="/dashboard/certidoes" element={<Certidoes />} />
+                <Route path="/dashboard/financeiro" element={<Financeiro />} />
+                <Route path="/dashboard/regularizacao" element={<Regularizacao />} />
+                <Route path="/dashboard/checkout-regularizacao" element={<CheckoutRegularizacao />} />
+                <Route path="/dashboard/suporte" element={<Suporte />} />
+                <Route path="/dashboard/afiliados" element={<Afiliados />} />
+              </Route>
+            </Route>
             
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+        </Router>
+        <Toaster />
+      </AuthProvider>
+    </QueryClient>
+  );
+}
 
 export default App;
