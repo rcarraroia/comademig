@@ -29,29 +29,13 @@ serve(async (req) => {
 
     const url = new URL(req.url)
     const method = req.method
-    const pathname = url.pathname
     
     console.log('Full URL:', req.url)
-    console.log('Pathname:', pathname)
     console.log('Method:', method)
+    console.log('User ID:', user.id)
 
-    // Determinar o endpoint baseado no pathname
-    let endpoint = 'create' // default para POST na raiz
-    
-    if (pathname.includes('/me')) {
-      endpoint = 'me'
-    } else if (pathname.includes('/update')) {
-      endpoint = 'update'
-    } else if (pathname.includes('/referrals')) {
-      endpoint = 'referrals'
-    } else if (pathname.includes('/transactions')) {
-      endpoint = 'transactions'
-    }
-
-    console.log('Determined endpoint:', endpoint)
-
-    // POST para criar afiliado (endpoint raiz)
-    if (method === 'POST' && endpoint === 'create') {
+    // POST - Criar afiliado
+    if (method === 'POST') {
       const body = await req.json()
       console.log('Creating affiliate with data:', body)
       
@@ -107,33 +91,74 @@ serve(async (req) => {
       })
     }
 
-    // GET para buscar dados do afiliado
-    if (method === 'GET' && endpoint === 'me') {
-      console.log('Fetching affiliate data for user:', user.id)
-      
-      const { data: affiliate, error } = await supabaseClient
+    // GET - Buscar dados (afiliado, referrals, transactions)
+    if (method === 'GET') {
+      const body = await req.json().catch(() => ({}))
+      console.log('GET request body:', body)
+
+      // Buscar afiliado do usuário
+      const { data: affiliate, error: affiliateError } = await supabaseClient
         .from('affiliates')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle()
 
-      if (error) {
-        console.error('Error fetching affiliate:', error)
-        return new Response(JSON.stringify({ error: error.message }), { 
+      if (affiliateError) {
+        console.error('Error fetching affiliate:', affiliateError)
+        return new Response(JSON.stringify({ error: affiliateError.message }), { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
 
-      console.log('Affiliate data found:', affiliate)
-      return new Response(JSON.stringify({ affiliate }), {
+      // Se não existe afiliado, retornar null
+      if (!affiliate) {
+        return new Response(JSON.stringify({ 
+          affiliate: null,
+          referrals: [],
+          transactions: []
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      // Buscar referrals
+      const { data: referrals = [], error: referralsError } = await supabaseClient
+        .from('referrals')
+        .select('*')
+        .eq('affiliate_id', affiliate.id)
+
+      if (referralsError) {
+        console.error('Error fetching referrals:', referralsError)
+      }
+
+      // Buscar transactions
+      const { data: transactions = [], error: transactionsError } = await supabaseClient
+        .from('transactions')
+        .select('*')
+        .eq('affiliate_id', affiliate.id)
+        .order('created_at', { ascending: false })
+
+      if (transactionsError) {
+        console.error('Error fetching transactions:', transactionsError)
+      }
+
+      console.log('Returning data:', { affiliate: !!affiliate, referrals: referrals.length, transactions: transactions.length })
+      
+      return new Response(JSON.stringify({ 
+        affiliate,
+        referrals,
+        transactions
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    // PUT para atualizar afiliado
-    if (method === 'PUT' && endpoint === 'update') {
+    // PUT - Atualizar afiliado
+    if (method === 'PUT') {
       const body = await req.json()
+      console.log('Updating affiliate with data:', body)
+      
       const { display_name, cpf_cnpj, asaas_wallet_id, contact_email, phone } = body
 
       const { data: affiliate, error } = await supabaseClient
@@ -150,6 +175,7 @@ serve(async (req) => {
         .single()
 
       if (error) {
+        console.error('Error updating affiliate:', error)
         return new Response(JSON.stringify({ error: error.message }), { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -161,72 +187,9 @@ serve(async (req) => {
       })
     }
 
-    // GET para buscar indicações
-    if (method === 'GET' && endpoint === 'referrals') {
-      const { data: affiliate } = await supabaseClient
-        .from('affiliates')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (!affiliate) {
-        return new Response(JSON.stringify({ referrals: [] }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-
-      const { data: referrals, error } = await supabaseClient
-        .from('referrals')
-        .select('*')
-        .eq('affiliate_id', affiliate.id)
-
-      if (error) {
-        return new Response(JSON.stringify({ error: error.message }), { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-
-      return new Response(JSON.stringify({ referrals }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    // GET para buscar transações
-    if (method === 'GET' && endpoint === 'transactions') {
-      const { data: affiliate } = await supabaseClient
-        .from('affiliates')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (!affiliate) {
-        return new Response(JSON.stringify({ transactions: [] }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-
-      const { data: transactions, error } = await supabaseClient
-        .from('transactions')
-        .select('*')
-        .eq('affiliate_id', affiliate.id)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        return new Response(JSON.stringify({ error: error.message }), { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-
-      return new Response(JSON.stringify({ transactions }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    console.log('No matching endpoint found for:', method, endpoint)
-    return new Response(JSON.stringify({ error: 'Endpoint não encontrado', method, endpoint }), { 
-      status: 404, 
+    console.log('Method not supported:', method)
+    return new Response(JSON.stringify({ error: `Método ${method} não suportado` }), { 
+      status: 405, 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
 

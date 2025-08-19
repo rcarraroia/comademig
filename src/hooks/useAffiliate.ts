@@ -55,12 +55,19 @@ export const useAffiliate = () => {
 
   const createAffiliate = async (data: AffiliateData) => {
     setLoading(true);
+    console.log('Creating affiliate with data:', data);
+    
     try {
       const { data: result, error } = await supabase.functions.invoke('affiliates-management', {
         body: data
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
+
+      console.log('Create affiliate result:', result);
 
       toast({
         title: "Cadastro realizado com sucesso",
@@ -83,15 +90,21 @@ export const useAffiliate = () => {
 
   const getAffiliate = async (): Promise<Affiliate | null> => {
     setLoading(true);
+    console.log('Getting affiliate data...');
+    
     try {
       const { data, error } = await supabase.functions.invoke('affiliates-management', {
         body: {},
         method: 'GET'
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
 
-      return data.affiliate;
+      console.log('Get affiliate result:', data);
+      return data?.affiliate || null;
     } catch (error: any) {
       console.error('Erro ao buscar afiliado:', error);
       return null;
@@ -102,13 +115,18 @@ export const useAffiliate = () => {
 
   const updateAffiliate = async (data: AffiliateData) => {
     setLoading(true);
+    console.log('Updating affiliate with data:', data);
+    
     try {
       const { data: result, error } = await supabase.functions.invoke('affiliates-management', {
         body: data,
         method: 'PUT'
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
 
       toast({
         title: "Dados atualizados",
@@ -131,15 +149,21 @@ export const useAffiliate = () => {
 
   const getReferrals = async (): Promise<Referral[]> => {
     setLoading(true);
+    console.log('Getting referrals...');
+    
     try {
       const { data, error } = await supabase.functions.invoke('affiliates-management', {
         body: {},
         method: 'GET'
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
 
-      return data.referrals || [];
+      console.log('Get referrals result:', data?.referrals);
+      return data?.referrals || [];
     } catch (error: any) {
       console.error('Erro ao buscar indicações:', error);
       return [];
@@ -150,15 +174,21 @@ export const useAffiliate = () => {
 
   const getTransactions = async (): Promise<Transaction[]> => {
     setLoading(true);
+    console.log('Getting transactions...');
+    
     try {
       const { data, error } = await supabase.functions.invoke('affiliates-management', {
         body: {},
         method: 'GET'
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
 
-      return data.transactions || [];
+      console.log('Get transactions result:', data?.transactions);
+      return data?.transactions || [];
     } catch (error: any) {
       console.error('Erro ao buscar transações:', error);
       return [];
