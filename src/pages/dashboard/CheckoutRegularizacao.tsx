@@ -48,18 +48,6 @@ const CheckoutRegularizacao = () => {
       popular: true
     },
     {
-      id: "alvara",
-      nome: "Alvará de Funcionamento",
-      descricao: "Obtenção do alvará de funcionamento junto aos órgãos competentes",
-      valor: 320.00
-    },
-    {
-      id: "inscricao-municipal",
-      nome: "Inscrição Municipal",
-      descricao: "Registro da igreja junto à prefeitura municipal para regularização fiscal",
-      valor: 180.00
-    },
-    {
       id: "consultoria",
       nome: "Consultoria Jurídica",
       descricao: "Consultoria especializada em direito eclesiástico para dúvidas e orientações",
