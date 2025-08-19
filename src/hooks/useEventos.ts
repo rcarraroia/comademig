@@ -83,7 +83,10 @@ export const useEventos = () => {
     },
     {
       successMessage: 'Inscrição cancelada com sucesso!',
-      errorMessage: 'Erro ao cancelar inscrição'
+      errorMessage: 'Erro ao cancelar inscrição',
+      onSuccess: () => {
+        refetch();
+      }
     }
   );
 

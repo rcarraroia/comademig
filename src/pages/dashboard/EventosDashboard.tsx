@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar, Search, Plus, Award } from "lucide-react";
+import { Calendar, Search, Plus, Award, QrCode } from "lucide-react";
 import { useEventos } from "@/hooks/useEventos";
 import { EventsList } from "@/components/events/EventsList";
 import { MyEventsList } from "@/components/events/MyEventsList";
@@ -116,7 +116,7 @@ const EventosDashboard = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Eventos</h1>
           <p className="text-gray-600">
-            Participe dos eventos da COMADEMIG
+            Participe dos eventos da COMADEMIG e obtenha certificados
           </p>
         </div>
         <Button variant="outline" size="sm">
@@ -126,10 +126,11 @@ const EventosDashboard = () => {
       </div>
 
       <Tabs defaultValue="todos" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="todos">Todos os Eventos</TabsTrigger>
           <TabsTrigger value="minhas">Minhas Inscrições</TabsTrigger>
           <TabsTrigger value="certificados">Meus Certificados</TabsTrigger>
+          <TabsTrigger value="presenca">Presença</TabsTrigger>
         </TabsList>
 
         <TabsContent value="todos" className="space-y-6">
@@ -194,6 +195,32 @@ const EventosDashboard = () => {
             </CardHeader>
             <CardContent>
               <MeusCertificados />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="presenca" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <QrCode className="h-5 w-5" />
+                Registro de Presença
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12">
+                <QrCode className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Scanner de Presença
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Registre sua presença nos eventos escaneando o QR Code disponibilizado no local.
+                </p>
+                <Button>
+                  <QrCode className="h-4 w-4 mr-2" />
+                  Abrir Scanner
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
