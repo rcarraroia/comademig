@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Users, Heart, Play } from "lucide-react";
+import { Calendar, Users, Heart, Play, Building } from "lucide-react";
+
 const Home = () => {
   return <div className="min-h-screen">
       {/* Hero Section */}
@@ -29,7 +30,7 @@ const Home = () => {
       {/* Chamadas Rápidas */}
       <section className="py-16 bg-comademig-light">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <Card className="text-center hover:shadow-lg transition-shadow border-0 bg-white">
               <CardHeader>
                 <div className="mx-auto w-16 h-16 bg-comademig-gold rounded-full flex items-center justify-center mb-4">
@@ -55,10 +56,34 @@ const Home = () => {
                   <Heart className="w-8 h-8 text-white" />
                 </div>
                 <CardTitle className="font-montserrat text-comademig-blue">Filie-se</CardTitle>
-                <CardDescription className="font-inter">Faça seu registro hoje mesmo e se credencie ela COMADEMIG</CardDescription>
+                <CardDescription className="font-inter">Faça seu registro hoje mesmo e se credencie pela COMADEMIG</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button className="bg-comademig-gold hover:bg-comademig-gold/90 text-white font-montserrat">Filie-se</Button>
+                <Button asChild className="bg-comademig-gold hover:bg-comademig-gold/90 text-white font-montserrat">
+                  <Link to="/filiacao">Filie-se</Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center hover:shadow-lg transition-shadow border-0 bg-white">
+              <CardHeader>
+                <div className="mx-auto w-16 h-16 bg-comademig-gold rounded-full flex items-center justify-center mb-4">
+                  <Building className="w-8 h-8 text-white" />
+                </div>
+                <CardTitle className="font-montserrat text-comademig-blue">
+                  Regularização de Igrejas
+                </CardTitle>
+                <CardDescription className="font-inter">
+                  Serviços completos para legalização e documentação de igrejas evangélicas
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button asChild size="sm" className="bg-comademig-blue hover:bg-comademig-blue/90 text-white font-montserrat w-full">
+                  <Link to="/auth">Fazer Login</Link>
+                </Button>
+                <Button asChild size="sm" variant="outline" className="border-comademig-gold text-comademig-gold hover:bg-comademig-gold hover:text-white font-montserrat w-full">
+                  <Link to="/filiacao">Não sou filiado</Link>
+                </Button>
               </CardContent>
             </Card>
 
@@ -280,4 +305,5 @@ const Home = () => {
       </section>
     </div>;
 };
+
 export default Home;
