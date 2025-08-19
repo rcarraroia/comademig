@@ -2,6 +2,7 @@
 import { useSupabaseQuery, useSupabaseMutation } from '@/hooks/useSupabaseQuery';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { Profile } from '@/hooks/useAuthState';
 
 interface CarteiraDigital {
   id: string;
@@ -177,26 +178,68 @@ export const useCarteiraDigital = () => {
     }
   );
 
+  const uploadFoto = useSupabaseMutation(
+    async (file: File) => {
+      if (!user || !carteira) throw new Error('Dados inválidos');
+      
+      // Gerar nome único para o arquivo
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      // Upload do arquivo
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('carteiras')
+        .upload(fileName, file);
+      
+      if (uploadError) throw uploadError;
+      
+      // Obter URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('carteiras')
+        .getPublicUrl(uploadData.path);
+      
+      // Atualizar carteira com nova foto
+      const { data, error } = await (supabase as any)
+        .from('carteira_digital')
+        .update({ foto_url: publicUrl })
+        .eq('id', (carteira as CarteiraDigital).id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    {
+      successMessage: 'Foto uploaded com sucesso!',
+      errorMessage: 'Erro ao fazer upload da foto',
+      onSuccess: () => {
+        refetch();
+      }
+    }
+  );
+
   // Função helper para verificar se o usuário pode gerar carteira
   const podeGerarCarteira = () => {
     if (!profile) return false;
     
     // Verificar se o perfil está completo o suficiente
-    const profileCompleto = profile.nome_completo && 
-                           profile.status === 'ativo' && 
-                           profile.tipo_membro;
+    const profileTyped = profile as Profile;
+    const profileCompleto = profileTyped.nome_completo && 
+                           profileTyped.status === 'ativo' && 
+                           profileTyped.tipo_membro;
     
     return profileCompleto && !carteira;
   };
 
   return {
     carteira: carteira as CarteiraDigital | null,
-    profile,
+    profile: profile as Profile | null,
     isLoading,
     error,
     gerarCarteira,
     renovarCarteira,
     atualizarFoto,
+    uploadFoto,
     podeGerarCarteira,
     refetch
   };
