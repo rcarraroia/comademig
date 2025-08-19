@@ -20,7 +20,7 @@ interface CertidaoData {
     cpf: string;
     cargo: string;
     igreja: string;
-  };
+  } | null;
 }
 
 const ValidarCertidao = () => {
@@ -58,7 +58,12 @@ const ValidarCertidao = () => {
           setCertidao(null);
         } else {
           setIsValid(true);
-          setCertidao(data as CertidaoData);
+          // Transform the data to handle the profiles relation properly
+          const transformedData: CertidaoData = {
+            ...data,
+            profiles: Array.isArray(data.profiles) ? data.profiles[0] : data.profiles
+          };
+          setCertidao(transformedData);
         }
       } catch (error) {
         console.error('Erro ao validar certidão:', error);
@@ -139,7 +144,7 @@ const ValidarCertidao = () => {
           </Card>
 
           {/* Certificate Information */}
-          {isValid && certidao && (
+          {isValid && certidao && certidao.profiles && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -152,9 +157,9 @@ const ValidarCertidao = () => {
                 <div>
                   <div className="flex items-center space-x-2 mb-2">
                     <User className="h-4 w-4 text-gray-400" />
-                    <h3 className="text-lg font-semibold">{certidao.profiles?.nome_completo}</h3>
+                    <h3 className="text-lg font-semibold">{certidao.profiles.nome_completo}</h3>
                   </div>
-                  <p className="text-gray-600">CPF: {certidao.profiles?.cpf}</p>
+                  <p className="text-gray-600">CPF: {certidao.profiles.cpf}</p>
                 </div>
 
                 {/* Church Info */}
@@ -163,8 +168,8 @@ const ValidarCertidao = () => {
                     <MapPin className="h-4 w-4 text-gray-400" />
                     <span className="font-medium">Informações Ministeriais</span>
                   </div>
-                  <p className="text-gray-600">Cargo: {certidao.profiles?.cargo}</p>
-                  <p className="text-gray-600">Igreja: {certidao.profiles?.igreja}</p>
+                  <p className="text-gray-600">Cargo: {certidao.profiles.cargo}</p>
+                  <p className="text-gray-600">Igreja: {certidao.profiles.igreja}</p>
                 </div>
 
                 {/* Certificate Details */}

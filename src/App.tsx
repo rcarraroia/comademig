@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Public Pages
 import Index from '@/pages/Index';
@@ -37,18 +38,20 @@ import Suporte from '@/pages/dashboard/Suporte';
 import Afiliados from '@/pages/dashboard/Afiliados';
 
 // Layouts
-import Layout from '@/layouts/Layout';
-import DashboardLayout from '@/layouts/DashboardLayout';
+import Layout from '@/components/Layout';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 // Contexts
 import { AuthProvider } from '@/contexts/AuthContext';
 
 // Components
-import { ProtectedRoute } from '@/components/common/ProtectedRoute';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+
+const queryClient = new QueryClient();
 
 function App() {
   return (
-    <QueryClient>
+    <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
           <Routes>
@@ -93,7 +96,7 @@ function App() {
         </Router>
         <Toaster />
       </AuthProvider>
-    </QueryClient>
+    </QueryClientProvider>
   );
 }
 

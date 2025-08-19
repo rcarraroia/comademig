@@ -22,7 +22,7 @@ interface SolicitacaoCertidao {
     cpf: string;
     cargo: string;
     igreja: string;
-  };
+  } | null;
 }
 
 export const useCertidoes = () => {
@@ -40,7 +40,7 @@ export const useCertidoes = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as SolicitacaoCertidao[];
+      return (data || []) as SolicitacaoCertidao[];
     },
     { enabled: !!user }
   );
@@ -62,7 +62,14 @@ export const useCertidoes = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as SolicitacaoCertidao[];
+      
+      // Transform the data to handle the profiles relation properly
+      const transformedData = (data || []).map(item => ({
+        ...item,
+        profiles: Array.isArray(item.profiles) ? item.profiles[0] : item.profiles
+      }));
+      
+      return transformedData as SolicitacaoCertidao[];
     },
     { enabled: !!user }
   );
