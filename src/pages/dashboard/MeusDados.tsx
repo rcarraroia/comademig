@@ -1,15 +1,16 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, Save, Edit, User, MapPin, Church } from "lucide-react";
+import { Save, Edit, User, MapPin, Church } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useLoadingState } from "@/hooks/useLoadingState";
 import { useAccessibility } from "@/hooks/useAccessibility";
-import { FileUpload } from "@/components/forms/FileUpload";
+import { PhotoUpload } from "@/components/forms/PhotoUpload";
+import { UserAvatar } from "@/components/common/UserAvatar";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ProgressBar } from "@/components/feedback/ProgressBar";
 import { useToast } from "@/hooks/use-toast";
@@ -44,7 +45,9 @@ const MeusDados = () => {
       'cidade', 'estado', 'cep', 'igreja'
     ];
     const completedFields = requiredFields.filter(field => formData[field as keyof typeof formData]);
-    return (completedFields.length / requiredFields.length) * 100;
+    // Add photo to completion calculation
+    const photoComplete = profile?.foto_url ? 1 : 0;
+    return ((completedFields.length + photoComplete) / (requiredFields.length + 1)) * 100;
   };
 
   const completionPercentage = calculateCompletionPercentage();
@@ -107,8 +110,6 @@ const MeusDados = () => {
   if (authLoading) {
     return <LoadingSpinner />;
   }
-
-  const gridCols = isMobile ? 1 : isTablet ? 2 : 3;
 
   return (
     <div className="space-y-6">
@@ -181,32 +182,13 @@ const MeusDados = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center space-y-4">
-            <Avatar className="w-32 h-32">
-              <AvatarImage src="/placeholder-avatar.jpg" />
-              <AvatarFallback className="bg-comademig-blue text-white text-2xl">
-                {profile?.nome_completo?.split(' ').map(n => n[0]).join('').substring(0, 2) || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            {isEditing && (
-              <FileUpload
-                bucket="avatars"
-                path={`${user?.id}/avatar`}
-                onUpload={(url) => {
-                  console.log('Avatar uploaded:', url);
-                  toast({
-                    title: "Foto atualizada",
-                    description: "Sua foto de perfil foi atualizada com sucesso",
-                  });
-                }}
-                accept="image/*"
-                className="w-full"
-              >
-                <Button variant="outline" className="w-full">
-                  <Upload size={16} className="mr-2" />
-                  Alterar Foto
-                </Button>
-              </FileUpload>
-            )}
+            <UserAvatar size="xl" />
+            
+            {isEditing && <PhotoUpload />}
+            
+            <p className="text-xs text-center text-muted-foreground">
+              Esta foto será usada em seu perfil, avatar e carteira digital
+            </p>
           </CardContent>
         </Card>
 
@@ -228,7 +210,7 @@ const MeusDados = () => {
                   onChange={(e) => handleInputChange('nome_completo', e.target.value)}
                   disabled={!isEditing}
                   required
-                  aria-describedby="nome_completo-help"
+                  autoComplete="name"
                 />
               </div>
               <div>
@@ -258,6 +240,7 @@ const MeusDados = () => {
                   value={formData.data_nascimento}
                   onChange={(e) => handleInputChange('data_nascimento', e.target.value)}
                   disabled={!isEditing}
+                  autoComplete="bday"
                 />
               </div>
               <div>
@@ -269,6 +252,7 @@ const MeusDados = () => {
                   disabled={!isEditing}
                   required
                   placeholder="(11) 99999-9999"
+                  autoComplete="tel"
                 />
               </div>
               <div>
@@ -279,6 +263,7 @@ const MeusDados = () => {
                   value={user?.email || ''}
                   disabled
                   className="bg-gray-100"
+                  autoComplete="email"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Para alterar o email, entre em contato com o suporte
@@ -306,6 +291,7 @@ const MeusDados = () => {
                   onChange={(e) => handleInputChange('endereco', e.target.value)}
                   disabled={!isEditing}
                   required
+                  autoComplete="street-address"
                 />
               </div>
               <div>
@@ -316,6 +302,7 @@ const MeusDados = () => {
                   onChange={(e) => handleInputChange('cidade', e.target.value)}
                   disabled={!isEditing}
                   required
+                  autoComplete="address-level2"
                 />
               </div>
               <div>
@@ -327,6 +314,7 @@ const MeusDados = () => {
                   disabled={!isEditing}
                   required
                   placeholder="00000-000"
+                  autoComplete="postal-code"
                 />
               </div>
               <div>
@@ -337,6 +325,7 @@ const MeusDados = () => {
                   onChange={(e) => handleInputChange('estado', e.target.value)}
                   disabled={!isEditing}
                   required
+                  autoComplete="address-level1"
                 />
               </div>
             </div>
@@ -361,6 +350,7 @@ const MeusDados = () => {
                   onChange={(e) => handleInputChange('igreja', e.target.value)}
                   disabled={!isEditing}
                   required
+                  autoComplete="organization"
                 />
               </div>
               <div>
@@ -370,6 +360,7 @@ const MeusDados = () => {
                   value={formData.cargo}
                   onChange={(e) => handleInputChange('cargo', e.target.value)}
                   disabled={!isEditing}
+                  autoComplete="organization-title"
                 />
               </div>
               <div>

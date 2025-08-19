@@ -19,6 +19,7 @@ export interface Profile {
   data_ordenacao?: string;
   status: string;
   tipo_membro: string;
+  foto_url?: string;
 }
 
 export const useAuthState = () => {

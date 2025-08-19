@@ -1,15 +1,13 @@
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, User, MapPin, Phone, Mail, Download, QrCode, Camera, Loader2 } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import QRCodeDisplay from "./QRCodeDisplay";
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { downloadCarteiraAsPDF } from "@/utils/carteiraDownloadUtils";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Calendar, Download, RefreshCw, QrCode } from 'lucide-react';
+import { UserAvatar } from '@/components/common/UserAvatar';
+import { QRCodeDisplay } from './QRCodeDisplay';
+import { useAuth } from '@/contexts/AuthContext';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface CarteiraDigitalCardProps {
   carteira: {
@@ -21,271 +19,155 @@ interface CarteiraDigitalCardProps {
     status: string;
     foto_url?: string;
   };
-  profile: {
-    nome_completo: string;
-    cpf?: string;
-    igreja?: string;
-    cargo?: string;
-    telefone?: string;
-    cidade?: string;
-    estado?: string;
-    tipo_membro?: string;
-  };
-  userEmail?: string;
-  onUpdatePhoto?: (file: File) => void;
-  isUploadingPhoto?: boolean;
+  onRenovar: () => void;
+  onDownload: () => void;
+  renovandoCarteira: boolean;
 }
 
-const CarteiraDigitalCard = ({ 
+export const CarteiraDigitalCard = ({ 
   carteira, 
-  profile, 
-  userEmail, 
-  onUpdatePhoto, 
-  isUploadingPhoto = false 
+  onRenovar, 
+  onDownload,
+  renovandoCarteira 
 }: CarteiraDigitalCardProps) => {
-  const [showQRCode, setShowQRCode] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const { toast } = useToast();
+  const { profile } = useAuth();
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ativa':
-        return 'success';
-      case 'expirada':
-        return 'warning';
-      case 'suspensa':
-        return 'destructive';
-      default:
-        return 'secondary';
-    }
+  const formatDate = (dateString: string) => {
+    return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'ativa':
-        return 'Ativa';
-      case 'expirada':
-        return 'Expirada';
-      case 'suspensa':
-        return 'Suspensa';
-      default:
-        return status;
-    }
-  };
-
-  const getTipoMembroLabel = (tipo: string) => {
-    switch (tipo) {
-      case 'pastor':
-        return 'Pastor';
-      case 'evangelista':
-        return 'Evangelista';
-      case 'presbitero':
-        return 'Presbítero';
-      case 'diacono':
-        return 'Diácono';
-      case 'obreiro':
-        return 'Obreiro';
-      case 'membro':
-        return 'Membro';
-      default:
-        return 'Membro';
-    }
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && onUpdatePhoto) {
-      // Validar tipo de arquivo
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Arquivo inválido",
-          description: "Por favor, selecione apenas arquivos de imagem",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Validar tamanho do arquivo (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "Arquivo muito grande",
-          description: "A imagem deve ter no máximo 5MB",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      onUpdatePhoto(file);
-    }
-  };
-
-  const handleDownloadCard = async () => {
-    try {
-      setIsDownloading(true);
-      await downloadCarteiraAsPDF('carteira-digital-card', carteira.numero_carteira);
-      toast({
-        title: "Download concluído",
-        description: "Carteira digital baixada com sucesso",
-      });
-    } catch (error) {
-      console.error('Erro no download da carteira:', error);
-      toast({
-        title: "Erro no download",
-        description: "Não foi possível baixar a carteira. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDownloading(false);
-    }
+  const isExpired = () => {
+    return new Date(carteira.data_validade) < new Date();
   };
 
   return (
-    <div className="max-w-md mx-auto">
-      <Card id="carteira-digital-card" className="bg-gradient-to-br from-comademig-blue to-comademig-blue/90 text-white shadow-2xl">
+    <div className="space-y-6">
+      {/* Carteira Digital Visual */}
+      <Card className="bg-gradient-to-br from-comademig-blue to-comademig-gold text-white overflow-hidden relative">
         <CardHeader className="pb-4">
           <div className="flex justify-between items-start">
-            <div className="flex items-center space-x-3">
-              <img 
-                src="/lovable-uploads/3b224a34-6b1d-42ce-9831-77c118c82d27.png" 
-                alt="COMADEMIG" 
-                className="h-8 w-auto brightness-0 invert"
-              />
-              <div>
-                <h3 className="font-bold text-lg">COMADEMIG</h3>
-                <p className="text-xs text-gray-200">Identificação Eclesiástica</p>
-              </div>
+            <div>
+              <CardTitle className="text-white text-xl mb-1">COMADEMIG</CardTitle>
+              <p className="text-blue-100 text-sm">Carteira Digital Eclesiástica</p>
             </div>
-            <Badge variant={getStatusColor(carteira.status)} className="text-xs">
-              {getStatusLabel(carteira.status)}
+            <Badge 
+              variant={carteira.status === 'ativa' ? 'default' : 'destructive'}
+              className="bg-white/20 text-white border-white/30"
+            >
+              {carteira.status === 'ativa' ? 'Ativa' : 'Inválida'}
             </Badge>
           </div>
         </CardHeader>
-
-        <CardContent className="space-y-4">
-          {/* Foto e Dados Pessoais */}
-          <div className="flex items-start space-x-4">
-            <div className="relative">
-              <Avatar className="h-20 w-20 border-2 border-white">
-                <AvatarImage src={carteira.foto_url} />
-                <AvatarFallback className="bg-comademig-gold text-comademig-blue text-lg font-bold">
-                  {profile.nome_completo?.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                </AvatarFallback>
-              </Avatar>
-              {onUpdatePhoto && (
-                <label className="absolute -bottom-1 -right-1 bg-comademig-gold text-comademig-blue rounded-full p-1 cursor-pointer hover:bg-comademig-gold/90 transition-colors">
-                  {isUploadingPhoto ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Camera className="h-3 w-3" />
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    disabled={isUploadingPhoto}
-                  />
-                </label>
-              )}
-            </div>
-
+        
+        <CardContent className="pt-0">
+          <div className="flex items-start gap-4 mb-6">
+            <UserAvatar size="lg" className="border-2 border-white/30" />
+            
             <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-lg leading-tight">{profile.nome_completo}</h4>
-              <p className="text-comademig-gold font-medium">
-                {getTipoMembroLabel(profile.tipo_membro || 'membro')}
+              <h3 className="font-semibold text-lg text-white mb-1 truncate">
+                {profile?.nome_completo}
+              </h3>
+              <p className="text-blue-100 text-sm mb-1">{profile?.cargo || 'Membro'}</p>
+              <p className="text-blue-100 text-sm">{profile?.igreja}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-blue-100 mb-1">Número da Carteira</p>
+              <p className="font-mono text-white font-semibold">
+                {carteira.numero_carteira}
               </p>
-              {profile.cargo && (
-                <p className="text-xs text-gray-200">{profile.cargo}</p>
-              )}
+            </div>
+            <div>
+              <p className="text-blue-100 mb-1">Válida até</p>
+              <p className="font-semibold text-white">
+                {formatDate(carteira.data_validade)}
+              </p>
             </div>
           </div>
 
-          {/* Informações da Igreja */}
-          {profile.igreja && (
-            <div className="bg-white/10 rounded-lg p-3">
-              <div className="flex items-center space-x-2 text-sm">
-                <MapPin className="h-4 w-4" />
-                <div>
-                  <p className="font-medium">{profile.igreja}</p>
-                  {profile.cidade && profile.estado && (
-                    <p className="text-xs text-gray-200">{profile.cidade}, {profile.estado}</p>
-                  )}
-                </div>
-              </div>
+          {/* QR Code */}
+          <div className="mt-6 flex justify-center">
+            <div className="bg-white p-3 rounded-lg">
+              <QRCodeDisplay 
+                value={carteira.qr_code} 
+                size={120}
+                className="rounded"
+              />
             </div>
-          )}
-
-          {/* Contatos */}
-          <div className="space-y-1">
-            {userEmail && (
-              <div className="flex items-center space-x-2 text-xs">
-                <Mail className="h-3 w-3" />
-                <span className="truncate">{userEmail}</span>
-              </div>
-            )}
-            {profile.telefone && (
-              <div className="flex items-center space-x-2 text-xs">
-                <Phone className="h-3 w-3" />
-                <span>{profile.telefone}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Número da Carteira e Validade */}
-          <div className="border-t border-white/20 pt-3">
-            <div className="flex justify-between items-center text-xs">
-              <div>
-                <p className="text-gray-200">Nº da Carteira</p>
-                <p className="font-mono font-bold">{carteira.numero_carteira}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-gray-200">Válida até</p>
-                <p className="font-bold">
-                  {format(new Date(carteira.data_validade), 'dd/MM/yyyy', { locale: ptBR })}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Ações */}
-          <div className="flex space-x-2 pt-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setShowQRCode(true)}
-              className="flex-1 bg-white/20 hover:bg-white/30 text-white border-white/30"
-            >
-              <QrCode className="h-4 w-4 mr-1" />
-              QR Code
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleDownloadCard}
-              disabled={isDownloading}
-              className="flex-1 bg-white/20 hover:bg-white/30 text-white border-white/30"
-            >
-              {isDownloading ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4 mr-1" />
-              )}
-              {isDownloading ? 'Baixando...' : 'Download'}
-            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Modal QR Code */}
-      {showQRCode && (
-        <QRCodeDisplay
-          qrCodeUrl={carteira.qr_code}
-          numeroCarteira={carteira.numero_carteira}
-          onClose={() => setShowQRCode(false)}
-        />
-      )}
+      {/* Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Button
+          onClick={onDownload}
+          className="bg-comademig-blue hover:bg-comademig-blue/90"
+        >
+          <Download className="mr-2 h-4 w-4" />
+          Baixar PDF
+        </Button>
+
+        <Button
+          onClick={onRenovar}
+          disabled={renovandoCarteira || !isExpired()}
+          variant="outline"
+        >
+          <RefreshCw className={`mr-2 h-4 w-4 ${renovandoCarteira ? 'animate-spin' : ''}`} />
+          {renovandoCarteira ? 'Renovando...' : 'Renovar'}
+        </Button>
+
+        <Button
+          onClick={() => {
+            const qrWindow = window.open('', '_blank');
+            if (qrWindow) {
+              qrWindow.document.write(`
+                <html>
+                  <head><title>QR Code - Carteira Digital</title></head>
+                  <body style="display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;">
+                    <div style="text-align: center;">
+                      <h2>QR Code - Carteira Digital</h2>
+                      <img src="data:image/svg+xml;base64,${btoa(document.querySelector('[data-qr-code]')?.innerHTML || '')}" style="max-width: 300px;" />
+                      <p>${carteira.numero_carteira}</p>
+                    </div>
+                  </body>
+                </html>
+              `);
+            }
+          }}
+          variant="outline"
+        >
+          <QrCode className="mr-2 h-4 w-4" />
+          Ver QR Code
+        </Button>
+      </div>
+
+      {/* Info */}
+      <Card className="border-l-4 border-l-blue-500 bg-blue-50">
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-3">
+            <Calendar className="h-5 w-5 text-blue-600 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-blue-900">
+                Informações da Carteira
+              </p>
+              <p className="text-sm text-blue-700 mt-1">
+                Emitida em: {formatDate(carteira.data_emissao)}
+              </p>
+              <p className="text-sm text-blue-700">
+                Status: {carteira.status === 'ativa' ? 'Ativa e válida' : 'Inválida ou expirada'}
+              </p>
+              {isExpired() && (
+                <p className="text-sm text-red-600 font-medium mt-1">
+                  ⚠️ Carteira expirada - renove para manter a validade
+                </p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
-
-export default CarteiraDigitalCard;

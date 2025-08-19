@@ -110,6 +110,7 @@ const Auth = () => {
                     placeholder="seu@email.com"
                     value={loginData.email}
                     onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                    autoComplete="email"
                     required
                   />
                 </div>
@@ -129,6 +130,7 @@ const Auth = () => {
                       type={showPassword ? "text" : "password"}
                       value={loginData.password}
                       onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                      autoComplete="current-password"
                       required
                     />
                     <Button
