@@ -64,7 +64,11 @@ export const useAffiliate = () => {
 
       if (error) {
         console.error('Edge function error:', error);
-        throw error;
+        throw new Error(error.message || 'Erro ao criar afiliado');
+      }
+
+      if (result?.error) {
+        throw new Error(result.error);
       }
 
       console.log('Create affiliate result:', result);
@@ -93,14 +97,15 @@ export const useAffiliate = () => {
     console.log('Getting affiliate data...');
     
     try {
-      const { data, error } = await supabase.functions.invoke('affiliates-management', {
-        body: {},
-        method: 'GET'
-      });
+      const { data, error } = await supabase.functions.invoke('affiliates-management');
 
       if (error) {
         console.error('Edge function error:', error);
-        throw error;
+        throw new Error(error.message || 'Erro ao buscar afiliado');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
       }
 
       console.log('Get affiliate result:', data);
@@ -125,7 +130,11 @@ export const useAffiliate = () => {
 
       if (error) {
         console.error('Edge function error:', error);
-        throw error;
+        throw new Error(error.message || 'Erro ao atualizar afiliado');
+      }
+
+      if (result?.error) {
+        throw new Error(result.error);
       }
 
       toast({
@@ -152,14 +161,16 @@ export const useAffiliate = () => {
     console.log('Getting referrals...');
     
     try {
-      const { data, error } = await supabase.functions.invoke('affiliates-management', {
-        body: {},
-        method: 'GET'
-      });
+      const { data, error } = await supabase.functions.invoke('affiliates-management');
 
       if (error) {
         console.error('Edge function error:', error);
-        throw error;
+        return [];
+      }
+
+      if (data?.error) {
+        console.error('Function returned error:', data.error);
+        return [];
       }
 
       console.log('Get referrals result:', data?.referrals);
@@ -177,14 +188,16 @@ export const useAffiliate = () => {
     console.log('Getting transactions...');
     
     try {
-      const { data, error } = await supabase.functions.invoke('affiliates-management', {
-        body: {},
-        method: 'GET'
-      });
+      const { data, error } = await supabase.functions.invoke('affiliates-management');
 
       if (error) {
         console.error('Edge function error:', error);
-        throw error;
+        return [];
+      }
+
+      if (data?.error) {
+        console.error('Function returned error:', data.error);
+        return [];
       }
 
       console.log('Get transactions result:', data?.transactions);
