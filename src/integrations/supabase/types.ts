@@ -552,6 +552,54 @@ export type Database = {
         }
         Relationships: []
       }
+      solicitacoes_certidoes: {
+        Row: {
+          arquivo_pdf: string | null
+          created_at: string
+          data_aprovacao: string | null
+          data_entrega: string | null
+          data_solicitacao: string
+          id: string
+          justificativa: string
+          numero_protocolo: string
+          observacoes_admin: string | null
+          status: string
+          tipo_certidao: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          arquivo_pdf?: string | null
+          created_at?: string
+          data_aprovacao?: string | null
+          data_entrega?: string | null
+          data_solicitacao?: string
+          id?: string
+          justificativa: string
+          numero_protocolo: string
+          observacoes_admin?: string | null
+          status?: string
+          tipo_certidao: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          arquivo_pdf?: string | null
+          created_at?: string
+          data_aprovacao?: string | null
+          data_entrega?: string | null
+          data_solicitacao?: string
+          id?: string
+          justificativa?: string
+          numero_protocolo?: string
+          observacoes_admin?: string | null
+          status?: string
+          tipo_certidao?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       suporte: {
         Row: {
           assunto: string

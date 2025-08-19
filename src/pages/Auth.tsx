@@ -9,14 +9,17 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, CheckCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const Auth = () => {
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [searchParams] = useSearchParams();
   
   const { user } = useAuth();
-  const { handleSignIn, loading } = useAuthActions();
+  const { signIn } = useAuthActions();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   const confirmed = searchParams.get('confirmed');
@@ -26,6 +29,38 @@ const Auth = () => {
       navigate("/dashboard");
     }
   }, [user, navigate]);
+
+  const handleSignIn = async (email: string, password: string) => {
+    setLoading(true);
+    try {
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        toast({
+          title: "Erro no login",
+          description: error.message || "Credenciais inválidas",
+          variant: "destructive",
+        });
+        return { success: false };
+      }
+      
+      toast({
+        title: "Sucesso",
+        description: "Login realizado com sucesso!",
+      });
+      
+      return { success: true };
+    } catch (error: any) {
+      toast({
+        title: "Erro no login",
+        description: error.message || "Erro inesperado",
+        variant: "destructive",
+      });
+      return { success: false };
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

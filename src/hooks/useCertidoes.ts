@@ -41,7 +41,7 @@ export const useCertidoes = () => {
 
   const { data: todasSolicitacoes } = useSupabaseQuery(
     ['certidoes-admin'],
-    async (): Promise<SolicitacaoCertidao[]> => {
+    async (): Promise<any[]> => {
       const { data, error } = await supabase
         .from('solicitacoes_certidoes')
         .select(`
@@ -55,7 +55,7 @@ export const useCertidoes = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as SolicitacaoCertidao[];
+      return data as any[];
     },
     { enabled: !!user }
   );
@@ -162,7 +162,7 @@ export const useCertidoes = () => {
 
   return {
     minhasSolicitacoes: (minhasSolicitacoes || []) as SolicitacaoCertidao[],
-    todasSolicitacoes: (todasSolicitacoes || []) as SolicitacaoCertidao[],
+    todasSolicitacoes: (todasSolicitacoes || []) as any[],
     isLoading,
     solicitarCertidao,
     atualizarStatusCertidao,

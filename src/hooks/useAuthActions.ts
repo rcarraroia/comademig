@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Profile } from './useAuthState';
 
-export const useAuthActionsImpl = () => {
+export const useAuthActions = () => {
   const signIn = async (email: string, password: string) => {
     try {
       const { error } = await supabase.auth.signInWithPassword({ 
