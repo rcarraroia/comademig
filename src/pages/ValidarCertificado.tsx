@@ -5,166 +5,181 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Award, Search, CheckCircle, XCircle } from 'lucide-react';
-import { useCertificadosEventos } from '@/hooks/useCertificadosEventos';
-import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { Award, Search, Calendar, MapPin, Clock } from 'lucide-react';
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useCertificadosEventos } from '@/hooks/useCertificadosEventos';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { useToast } from '@/hooks/use-toast';
 
-const ValidarCertificado = () => {
-  const { numeroCertificado: urlNumero } = useParams();
-  const [numeroBusca, setNumeroBusca] = useState(urlNumero || '');
+interface CertificadoValidado {
+  id: string;
+  numero_certificado: string;
+  data_emissao: string;
+  qr_code: string;
+  status: string;
+  eventos: {
+    titulo: string;
+    data_inicio: string;
+    data_fim: string;
+    local?: string;
+    carga_horaria?: number;
+  };
+  profiles: {
+    nome_completo: string;
+  };
+}
+
+export default function ValidarCertificado() {
+  const { numero } = useParams();
+  const [numeroCertificado, setNumeroCertificado] = useState(numero || '');
+  const [certificado, setCertificado] = useState<CertificadoValidado | null>(null);
+  const [loading, setLoading] = useState(false);
   const { validarCertificado } = useCertificadosEventos();
+  const { toast } = useToast();
 
-  const handleValidar = () => {
-    if (numeroBusca.trim()) {
-      validarCertificado.refetch();
+  const handleValidar = async () => {
+    if (!numeroCertificado.trim()) {
+      toast({
+        title: "Erro",
+        description: "Por favor, insira o número do certificado",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await validarCertificado(numeroCertificado);
+      setCertificado(data);
+      toast({
+        title: "Certificado válido!",
+        description: "Certificado encontrado e validado com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao validar certificado:', error);
+      setCertificado(null);
+      toast({
+        title: "Certificado não encontrado",
+        description: "O número do certificado não foi encontrado ou está inválido.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const certificado = validarCertificado.data;
-  const isLoading = validarCertificado.isLoading;
-  const error = validarCertificado.error;
+  // Auto-validar se veio da URL
+  useState(() => {
+    if (numero) {
+      handleValidar();
+    }
+  });
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="container mx-auto px-4 max-w-4xl">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Validação de Certificado
-          </h1>
-          <p className="text-gray-600">
-            Verifique a autenticidade de certificados emitidos pela COMADEMIG
-          </p>
-        </div>
-
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              Buscar Certificado
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4">
-              <Input
-                placeholder="Digite o número do certificado..."
-                value={numeroBusca}
-                onChange={(e) => setNumeroBusca(e.target.value)}
-                className="flex-1"
-              />
-              <Button onClick={handleValidar} disabled={!numeroBusca.trim()}>
-                <Search className="h-4 w-4 mr-2" />
-                Validar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {isLoading && (
-          <div className="text-center py-12">
-            <LoadingSpinner size="lg" />
-            <p className="mt-4 text-gray-600">Validando certificado...</p>
-          </div>
-        )}
-
-        {error && (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Certificado não encontrado
-              </h3>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12">
+      <div className="container mx-auto px-4">
+        <div className="max-w-2xl mx-auto">
+          <Card className="mb-8">
+            <CardHeader className="text-center">
+              <CardTitle className="flex items-center justify-center gap-2 text-2xl">
+                <Award className="h-8 w-8 text-yellow-500" />
+                Validar Certificado
+              </CardTitle>
               <p className="text-gray-600">
-                O número do certificado informado não foi encontrado ou não é válido.
+                Digite o número do certificado para verificar sua autenticidade
               </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Ex: CERT-1234567890-ABCDEF"
+                  value={numeroCertificado}
+                  onChange={(e) => setNumeroCertificado(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleValidar()}
+                />
+                <Button onClick={handleValidar} disabled={loading}>
+                  {loading ? (
+                    <LoadingSpinner size="sm" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </CardContent>
           </Card>
-        )}
 
-        {certificado && (
-          <Card>
-            <CardContent className="py-8">
-              <div className="text-center mb-6">
-                <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                  Certificado Válido
-                </h3>
-                <Badge variant="success" className="text-sm">
-                  Autêntico
-                </Badge>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-6 space-y-4">
+          {certificado && (
+            <Card className="border-green-200 bg-green-50">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-xl text-green-800">
+                    Certificado Válido
+                  </CardTitle>
+                  <Badge variant="default" className="bg-green-600">
+                    ✓ Autêntico
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-500">
-                      Participante
-                    </label>
-                    <p className="text-lg font-semibold">
-                      {certificado.profiles?.nome_completo}
-                    </p>
+                    <h4 className="font-semibold text-gray-700 mb-2">Participante</h4>
+                    <p className="text-lg">{certificado.profiles?.nome_completo}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">
-                      Número do Certificado
-                    </label>
-                    <p className="text-lg font-mono">
-                      {certificado.numero_certificado}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">
-                      Evento
-                    </label>
-                    <p className="text-lg font-semibold">
-                      {certificado.eventos.titulo}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">
-                      Data do Evento
-                    </label>
-                    <p className="text-lg">
-                      {format(new Date(certificado.eventos.data_inicio), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                    </p>
-                  </div>
-                  {certificado.eventos.local && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">
-                        Local
-                      </label>
-                      <p className="text-lg">
-                        {certificado.eventos.local}
-                      </p>
-                    </div>
-                  )}
-                  {certificado.eventos.carga_horaria && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">
-                        Carga Horária
-                      </label>
-                      <p className="text-lg">
-                        {certificado.eventos.carga_horaria} horas
-                      </p>
-                    </div>
-                  )}
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">
-                      Data de Emissão
-                    </label>
-                    <p className="text-lg">
-                      {format(new Date(certificado.data_emissao), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                    </p>
+                    <h4 className="font-semibold text-gray-700 mb-2">Número do Certificado</h4>
+                    <p className="font-mono text-sm">{certificado.numero_certificado}</p>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+
+                <div>
+                  <h4 className="font-semibold text-gray-700 mb-2">Evento</h4>
+                  <p className="text-lg font-medium">{certificado.eventos?.titulo}</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-gray-500" />
+                    <div>
+                      <p className="text-sm text-gray-600">Período do evento</p>
+                      <p className="font-medium">
+                        {format(new Date(certificado.eventos.data_inicio), "dd/MM/yyyy", { locale: ptBR })} - {format(new Date(certificado.eventos.data_fim), "dd/MM/yyyy", { locale: ptBR })}
+                      </p>
+                    </div>
+                  </div>
+                  {certificado.eventos?.local && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-gray-500" />
+                      <div>
+                        <p className="text-sm text-gray-600">Local</p>
+                        <p className="font-medium">{certificado.eventos.local}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {certificado.eventos?.carga_horaria && (
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-gray-500" />
+                    <div>
+                      <p className="text-sm text-gray-600">Carga Horária</p>
+                      <p className="font-medium">{certificado.eventos.carga_horaria}h</p>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-sm text-gray-600">Data de Emissão</p>
+                  <p className="font-medium">
+                    {format(new Date(certificado.data_emissao), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );
-};
-
-export default ValidarCertificado;
+}

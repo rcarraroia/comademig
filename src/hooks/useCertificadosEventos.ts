@@ -3,6 +3,39 @@ import { useSupabaseQuery, useSupabaseMutation } from '@/hooks/useSupabaseQuery'
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+interface CertificadoEvento {
+  id: string;
+  numero_certificado: string;
+  data_emissao: string;
+  qr_code: string;
+  status: string;
+  eventos: {
+    titulo: string;
+    data_inicio: string;
+    data_fim: string;
+    local?: string;
+    carga_horaria?: number;
+  };
+}
+
+interface CertificadoValidacao {
+  id: string;
+  numero_certificado: string;
+  data_emissao: string;
+  qr_code: string;
+  status: string;
+  eventos: {
+    titulo: string;
+    data_inicio: string;
+    data_fim: string;
+    local?: string;
+    carga_horaria?: number;
+  };
+  profiles: {
+    nome_completo: string;
+  };
+}
+
 export const useCertificadosEventos = () => {
   const { user } = useAuth();
 
@@ -28,38 +61,34 @@ export const useCertificadosEventos = () => {
         .order('data_emissao', { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data as CertificadoEvento[];
     },
     { enabled: !!user }
   );
 
-  const validarCertificado = useSupabaseQuery(
-    ['validar_certificado'],
-    async (numeroCertificado: string) => {
-      const { data, error } = await supabase
-        .from('certificados_eventos')
-        .select(`
-          *,
-          eventos (
-            titulo,
-            data_inicio,
-            data_fim,
-            local,
-            carga_horaria
-          ),
-          profiles (
-            nome_completo
-          )
-        `)
-        .eq('numero_certificado', numeroCertificado)
-        .eq('status', 'emitido')
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    { enabled: false }
-  );
+  const validarCertificado = async (numeroCertificado: string): Promise<CertificadoValidacao> => {
+    const { data, error } = await supabase
+      .from('certificados_eventos')
+      .select(`
+        *,
+        eventos (
+          titulo,
+          data_inicio,
+          data_fim,
+          local,
+          carga_horaria
+        ),
+        profiles (
+          nome_completo
+        )
+      `)
+      .eq('numero_certificado', numeroCertificado)
+      .eq('status', 'emitido')
+      .single();
+    
+    if (error) throw error;
+    return data as CertificadoValidacao;
+  };
 
   const gerarCertificado = useSupabaseMutation(
     async (eventoId: string) => {
@@ -106,7 +135,7 @@ export const useCertificadosEventos = () => {
   );
 
   return {
-    meusCertificados,
+    meusCertificados: meusCertificados || [],
     isLoading,
     validarCertificado,
     gerarCertificado,
