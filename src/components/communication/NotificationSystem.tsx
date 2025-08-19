@@ -1,80 +1,16 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Bell, X, CheckCircle, AlertCircle, Info, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { useSupabaseQuery, useSupabaseMutation } from '@/hooks/useSupabaseQuery';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-
-interface Notification {
-  id: string;
-  user_id: string;
-  type: 'info' | 'warning' | 'success' | 'error';
-  title: string;
-  message: string;
-  read: boolean;
-  created_at: string;
-  action_url?: string;
-}
+import { useNotifications } from '@/hooks/useNotifications';
 
 export const NotificationSystem = () => {
-  const { user } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
-
-  const { data: notifications, refetch } = useSupabaseQuery(
-    ['notifications', user?.id],
-    async () => {
-      if (!user) return [];
-      
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(20);
-      
-      if (error) throw error;
-      return data as Notification[];
-    },
-    { enabled: !!user }
-  );
-
-  const markAsRead = useSupabaseMutation(
-    async (notificationId: string) => {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('id', notificationId);
-      
-      if (error) throw error;
-    },
-    {
-      onSuccess: () => refetch()
-    }
-  );
-
-  const markAllAsRead = useSupabaseMutation(
-    async () => {
-      if (!user) return;
-      
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('user_id', user.id)
-        .eq('read', false);
-      
-      if (error) throw error;
-    },
-    {
-      onSuccess: () => refetch()
-    }
-  );
-
-  const unreadCount = notifications?.filter(n => !n.read).length || 0;
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -145,7 +81,7 @@ export const NotificationSystem = () => {
           
           <CardContent className="p-0">
             <ScrollArea className="h-80">
-              {notifications && notifications.length > 0 ? (
+              {notifications.length > 0 ? (
                 <div className="space-y-0">
                   {notifications.map((notification, index) => (
                     <div key={notification.id}>

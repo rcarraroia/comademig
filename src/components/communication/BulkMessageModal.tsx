@@ -39,7 +39,7 @@ export const BulkMessageModal = ({ trigger }: BulkMessageModalProps) => {
   const [filterType, setFilterType] = useState<'all' | 'cargo' | 'igreja' | 'status'>('all');
   const [filterValue, setFilterValue] = useState('');
 
-  const { data: profiles, isLoading } = useSupabaseQuery(
+  const { data: profiles = [], isLoading } = useSupabaseQuery(
     ['profiles-bulk'],
     async () => {
       const { data, error } = await supabase
@@ -81,7 +81,7 @@ export const BulkMessageModal = ({ trigger }: BulkMessageModalProps) => {
       onSuccess: (data) => {
         toast({
           title: 'Mensagens enviadas com sucesso!',
-          description: `${data.length} mensagens foram enviadas`,
+          description: `${data?.length || 0} mensagens foram enviadas`,
         });
         setOpen(false);
         setAssunto('');
@@ -98,7 +98,7 @@ export const BulkMessageModal = ({ trigger }: BulkMessageModalProps) => {
     }
   );
 
-  const filteredProfiles = profiles?.filter(profile => {
+  const filteredProfiles = profiles.filter(profile => {
     if (filterType === 'all') return true;
     
     const value = filterValue.toLowerCase();
@@ -112,7 +112,7 @@ export const BulkMessageModal = ({ trigger }: BulkMessageModalProps) => {
       default:
         return true;
     }
-  }) || [];
+  });
 
   const handleSelectAll = () => {
     if (selectedUsers.length === filteredProfiles.length) {
@@ -158,11 +158,11 @@ export const BulkMessageModal = ({ trigger }: BulkMessageModalProps) => {
 
   const getFilterOptions = () => {
     if (filterType === 'cargo') {
-      const cargos = [...new Set(profiles?.map(p => p.cargo).filter(Boolean))];
+      const cargos = [...new Set(profiles.map(p => p.cargo).filter(Boolean))];
       return cargos;
     }
     if (filterType === 'igreja') {
-      const igrejas = [...new Set(profiles?.map(p => p.igreja).filter(Boolean))];
+      const igrejas = [...new Set(profiles.map(p => p.igreja).filter(Boolean))];
       return igrejas;
     }
     if (filterType === 'status') {
@@ -258,7 +258,7 @@ export const BulkMessageModal = ({ trigger }: BulkMessageModalProps) => {
                   >
                     <option value="">Selecione...</option>
                     {getFilterOptions().map(option => (
-                      <option key={option} value={option}>{option}</option>
+                      <option key={option} value={option || ''}>{option}</option>
                     ))}
                   </select>
                 )}

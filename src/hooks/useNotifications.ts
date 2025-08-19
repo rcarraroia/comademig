@@ -17,7 +17,7 @@ interface Notification {
 export const useNotifications = () => {
   const { user } = useAuth();
 
-  const { data: notifications, isLoading, error, refetch } = useSupabaseQuery(
+  const { data: notifications = [], isLoading, error, refetch } = useSupabaseQuery(
     ['notifications', user?.id],
     async () => {
       if (!user) return [];
@@ -34,7 +34,7 @@ export const useNotifications = () => {
     { enabled: !!user }
   );
 
-  const { data: unreadCount } = useSupabaseQuery(
+  const { data: unreadCount = 0 } = useSupabaseQuery(
     ['notifications-unread', user?.id],
     async () => {
       if (!user) return 0;
@@ -87,7 +87,7 @@ export const useNotifications = () => {
   );
 
   const createNotification = useSupabaseMutation(
-    async (notificationData: Omit<Notification, 'id' | 'user_id' | 'read' | 'created_at'> & { user_id: string }) => {
+    async (notificationData: Omit<Notification, 'id' | 'read' | 'created_at'>) => {
       const { data, error } = await supabase
         .from('notifications')
         .insert({
@@ -107,8 +107,8 @@ export const useNotifications = () => {
   );
 
   return {
-    notifications: notifications || [],
-    unreadCount: unreadCount || 0,
+    notifications,
+    unreadCount,
     isLoading,
     error,
     markAsRead,
