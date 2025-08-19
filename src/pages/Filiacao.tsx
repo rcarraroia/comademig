@@ -31,19 +31,9 @@ export default function Filiacao() {
     }
   };
 
-  const handlePaymentData = (baseData: any) => {
-    // Adicionar affiliate_id se houver indicação
-    if (affiliateInfo?.id) {
-      return {
-        ...baseData,
-        affiliateId: affiliateInfo.id,
-        tipoCobranca: 'filiacao'
-      };
-    }
-    return {
-      ...baseData,
-      tipoCobranca: 'filiacao'
-    };
+  const handlePaymentSuccess = (cobranca: any) => {
+    // Redirecionar para página de sucesso ou mostrar confirmação
+    console.log('Pagamento criado com sucesso:', cobranca);
   };
 
   return (
@@ -155,10 +145,13 @@ export default function Filiacao() {
               </CardHeader>
               <CardContent>
                 <PaymentForm 
-                  value={250}
-                  description="Taxa de Filiação - COMADEMIG"
-                  tipoCobranca="filiacao"
-                  onPaymentData={handlePaymentData}
+                  defaultData={{
+                    value: 250,
+                    description: "Taxa de Filiação - COMADEMIG",
+                    tipoCobranca: "filiacao",
+                    affiliateId: affiliateInfo?.id
+                  }}
+                  onSuccess={handlePaymentSuccess}
                 />
               </CardContent>
             </Card>
