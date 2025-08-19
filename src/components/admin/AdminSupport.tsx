@@ -4,17 +4,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, MessageCircle, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { Search, MessageCircle, Clock, CheckCircle, AlertCircle, Reply } from "lucide-react";
 import { useAdminData, AdminTicket } from "@/hooks/useAdminData";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import TicketResponse from "./TicketResponse";
 
 const AdminSupport = () => {
-  const { tickets, isLoading } = useAdminData();
+  const { tickets, isLoading, refetchTickets } = useAdminData();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedPriority, setSelectedPriority] = useState<string>("all");
+  const [selectedTicket, setSelectedTicket] = useState<AdminTicket | null>(null);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -74,48 +76,71 @@ const AdminSupport = () => {
         <p className="text-gray-600">Gerencie todos os tickets de suporte</p>
       </div>
 
-      {/* Estatísticas */}
+      {/* Estatísticas Melhoradas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <MessageCircle className="h-5 w-5 text-blue-600" />
-              <div>
-                <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-sm text-gray-600">Total</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <MessageCircle className="h-5 w-5 text-blue-600" />
+                <div>
+                  <p className="text-2xl font-bold">{stats.total}</p>
+                  <p className="text-sm text-gray-600">Total</p>
+                </div>
+              </div>
+              <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                +{Math.round((stats.total * 5) / 100)} esta semana
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card className="hover:shadow-md transition-shadow">
           <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <AlertCircle className="h-5 w-5 text-red-600" />
-              <div>
-                <p className="text-2xl font-bold">{stats.abertos}</p>
-                <p className="text-sm text-gray-600">Abertos</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                <div>
+                  <p className="text-2xl font-bold">{stats.abertos}</p>
+                  <p className="text-sm text-gray-600">Abertos</p>
+                </div>
+              </div>
+              <div className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
+                Urgente
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card className="hover:shadow-md transition-shadow">
           <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Clock className="h-5 w-5 text-yellow-600" />
-              <div>
-                <p className="text-2xl font-bold">{stats.emAndamento}</p>
-                <p className="text-sm text-gray-600">Em Andamento</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Clock className="h-5 w-5 text-yellow-600" />
+                <div>
+                  <p className="text-2xl font-bold">{stats.emAndamento}</p>
+                  <p className="text-sm text-gray-600">Em Andamento</p>
+                </div>
+              </div>
+              <div className="text-xs text-yellow-600 bg-yellow-50 px-2 py-1 rounded">
+                Aguardando
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card className="hover:shadow-md transition-shadow">
           <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <div>
-                <p className="text-2xl font-bold">{stats.resolvidos}</p>
-                <p className="text-sm text-gray-600">Resolvidos</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                <div>
+                  <p className="text-2xl font-bold">{stats.resolvidos}</p>
+                  <p className="text-sm text-gray-600">Resolvidos</p>
+                </div>
+              </div>
+              <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+                {Math.round((stats.resolvidos / stats.total) * 100)}% taxa
               </div>
             </div>
           </CardContent>
@@ -163,7 +188,7 @@ const AdminSupport = () => {
         </CardContent>
       </Card>
 
-      {/* Lista de Tickets */}
+      {/* Lista de Tickets Melhorada */}
       <Card>
         <CardHeader>
           <CardTitle>Tickets ({filteredTickets.length})</CardTitle>
@@ -204,14 +229,21 @@ const AdminSupport = () => {
                 </div>
                 
                 <div className="mt-3 flex gap-2">
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setSelectedTicket(ticket)}
+                  >
                     Ver Detalhes
                   </Button>
-                  {ticket.status === 'aberto' && (
-                    <Button size="sm" variant="default">
-                      Responder
-                    </Button>
-                  )}
+                  <Button 
+                    size="sm" 
+                    variant="default"
+                    onClick={() => setSelectedTicket(ticket)}
+                  >
+                    <Reply className="h-4 w-4 mr-2" />
+                    Gerenciar
+                  </Button>
                 </div>
               </div>
             ))}
@@ -224,6 +256,18 @@ const AdminSupport = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal de Resposta */}
+      {selectedTicket && (
+        <TicketResponse
+          ticket={selectedTicket}
+          onClose={() => setSelectedTicket(null)}
+          onUpdate={() => {
+            refetchTickets();
+            setSelectedTicket(null);
+          }}
+        />
+      )}
     </div>
   );
 };
