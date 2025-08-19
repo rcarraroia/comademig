@@ -24,6 +24,7 @@ interface CertificadoValidacao {
   data_emissao: string;
   qr_code: string;
   status: string;
+  user_id: string;
   eventos: {
     titulo: string;
     data_inicio: string;
@@ -67,7 +68,8 @@ export const useCertificadosEventos = () => {
   );
 
   const validarCertificado = async (numeroCertificado: string): Promise<CertificadoValidacao> => {
-    const { data, error } = await supabase
+    // First get the certificate data
+    const { data: certificadoData, error: certificadoError } = await supabase
       .from('certificados_eventos')
       .select(`
         *,
@@ -77,23 +79,35 @@ export const useCertificadosEventos = () => {
           data_fim,
           local,
           carga_horaria
-        ),
-        profiles (
-          nome_completo
         )
       `)
       .eq('numero_certificado', numeroCertificado)
       .eq('status', 'emitido')
       .single();
     
-    if (error) throw error;
+    if (certificadoError) throw certificadoError;
     
-    // Validate the structure before returning
-    if (!data?.profiles?.nome_completo) {
+    // Then get the profile data using the user_id from the certificate
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('nome_completo')
+      .eq('id', certificadoData.user_id)
+      .single();
+    
+    if (profileError) throw profileError;
+    
+    // Validate that we have all required data
+    if (!profileData?.nome_completo) {
       throw new Error('Dados do certificado incompletos');
     }
     
-    return data as CertificadoValidacao;
+    // Combine the data
+    const result: CertificadoValidacao = {
+      ...certificadoData,
+      profiles: profileData
+    };
+    
+    return result;
   };
 
   const gerarCertificado = useSupabaseMutation(
