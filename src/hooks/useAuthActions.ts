@@ -1,124 +1,95 @@
 
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { supabase } from "@/integrations/supabase/client";
+import { Profile } from './useAuthState';
 
-export const useAuthActions = () => {
-  const [loading, setLoading] = useState(false);
-  const { signIn, signUp, signOut, resetPassword } = useAuth();
-  const { toast } = useToast();
-
-  const handleSignIn = async (email: string, password: string) => {
-    setLoading(true);
+export const useAuthActionsImpl = () => {
+  const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await signIn(email, password);
+      const { error } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
+      });
       
-      if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          throw new Error('Email ou senha incorretos');
-        } else if (error.message.includes('Email not confirmed')) {
-          throw new Error('Por favor, confirme seu email antes de fazer login');
-        } else {
-          throw new Error(error.message);
+      return { error };
+    } catch (error) {
+      console.error('Erro no signIn:', error);
+      return { error };
+    }
+  };
+
+  const signUp = async (email: string, password: string, userData: any) => {
+    try {
+      const redirectUrl = `${window.location.origin}/auth?confirmed=true`;
+      
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: userData.nome_completo,
+          }
         }
-      }
-      
-      toast({
-        title: "Login realizado com sucesso",
-        description: "Bem-vindo ao portal COMADEMIG!",
       });
       
-      return { success: true };
-    } catch (error: any) {
-      toast({
-        title: "Erro no login",
-        description: error.message,
-        variant: "destructive",
-      });
-      return { success: false, error: error.message };
-    } finally {
-      setLoading(false);
+      return { error };
+    } catch (error) {
+      console.error('Erro no signUp:', error);
+      return { error };
     }
   };
 
-  const handleSignUp = async (email: string, password: string, userData: any) => {
-    setLoading(true);
+  const signOut = async () => {
     try {
-      const { error } = await signUp(email, password, userData);
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      toast({
-        title: "Cadastro realizado com sucesso",
-        description: "Verifique seu email para confirmar a conta.",
-      });
-      
-      return { success: true };
-    } catch (error: any) {
-      toast({
-        title: "Erro no cadastro",
-        description: error.message,
-        variant: "destructive",
-      });
-      return { success: false, error: error.message };
-    } finally {
-      setLoading(false);
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Erro no signOut:', error);
     }
   };
 
-  const handleSignOut = async () => {
-    setLoading(true);
+  const resetPassword = async (email: string) => {
     try {
-      await signOut();
-      toast({
-        title: "Logout realizado",
-        description: "Até logo!",
+      const redirectUrl = `${window.location.origin}/reset-password`;
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
       });
-    } catch (error: any) {
-      toast({
-        title: "Erro no logout",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      
+      return { error };
+    } catch (error) {
+      console.error('Erro no resetPassword:', error);
+      return { error };
     }
   };
 
-  const handlePasswordReset = async (email: string) => {
-    setLoading(true);
+  const updateProfile = async (user: any, profile: Profile | null, setProfile: (profile: Profile | null) => void, data: Partial<Profile>) => {
+    if (!user) return { error: { message: 'Usuário não autenticado' } };
+    
     try {
-      const { error } = await resetPassword(email);
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          ...data,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
       
-      if (error) {
-        throw new Error(error.message);
+      if (!error && profile) {
+        setProfile({ ...profile, ...data });
       }
       
-      toast({
-        title: "Email enviado",
-        description: "Verifique sua caixa de entrada para redefinir a senha.",
-      });
-      
-      return { success: true };
-    } catch (error: any) {
-      toast({
-        title: "Erro ao enviar email",
-        description: error.message,
-        variant: "destructive",
-      });
-      return { success: false, error: error.message };
-    } finally {
-      setLoading(false);
+      return { error };
+    } catch (error) {
+      console.error('Erro no updateProfile:', error);
+      return { error };
     }
   };
 
   return {
-    handleSignIn,
-    handleSignUp,
-    handleSignOut,
-    handlePasswordReset,
-    loading,
+    signIn,
+    signUp,
+    signOut,
+    resetPassword,
+    updateProfile,
   };
 };

@@ -1,12 +1,10 @@
 
 import { useState } from "react";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { CreditCard, User, Calendar, Download, RefreshCw, AlertCircle, CheckCircle, QrCode } from "lucide-react";
+import { CreditCard, User, RefreshCw, AlertCircle, CheckCircle, QrCode } from "lucide-react";
 import { useCarteiraDigital } from "@/hooks/useCarteiraDigital";
 import { useStorage } from "@/hooks/useStorage";
 import { useAuth } from "@/contexts/AuthContext";
@@ -39,7 +37,6 @@ const CarteiraDigital = () => {
   } = useCarteiraDigital();
   const { uploadFile } = useStorage();
 
-  // Type the profile data properly
   const profile = rawProfile as ProfileData | null;
 
   const handleUpdatePhoto = async (file: File) => {
@@ -55,28 +52,24 @@ const CarteiraDigital = () => {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center py-12">
-          <LoadingSpinner size="lg" />
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center py-12">
+        <LoadingSpinner size="lg" />
+      </div>
     );
   }
 
   if (error) {
     return (
-      <DashboardLayout>
-        <ErrorMessage
-          title="Erro ao carregar carteira"
-          message={error.message || "Ocorreu um erro inesperado"}
-          retry={() => window.location.reload()}
-        />
-      </DashboardLayout>
+      <ErrorMessage
+        title="Erro ao carregar carteira"
+        message={error.message || "Ocorreu um erro inesperado"}
+        retry={() => window.location.reload()}
+      />
     );
   }
 
   return (
-    <DashboardLayout>
+    <div className="space-y-6">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-comademig-blue mb-2">
@@ -253,7 +246,7 @@ const CarteiraDigital = () => {
           </Card>
         </TabsContent>
       </Tabs>
-    </DashboardLayout>
+    </div>
   );
 };
 
