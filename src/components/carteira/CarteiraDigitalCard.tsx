@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar, Download, RefreshCw, QrCode } from 'lucide-react';
 import { UserAvatar } from '@/components/common/UserAvatar';
-import QRCodeDisplay from './QRCodeDisplay';
+import SimpleQRCode from './SimpleQRCode';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -90,7 +90,7 @@ export const CarteiraDigitalCard = ({
           {/* QR Code */}
           <div className="mt-6 flex justify-center">
             <div className="bg-white p-3 rounded-lg">
-              <QRCodeDisplay 
+              <SimpleQRCode 
                 value={carteira.qr_code} 
                 size={120}
                 className="rounded"
