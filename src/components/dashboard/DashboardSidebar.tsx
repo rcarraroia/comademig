@@ -24,6 +24,12 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
     { path: "/dashboard/suporte", label: "Suporte", icon: HelpCircle },
   ];
 
+  const adminMenuItems = [
+    { path: "/dashboard/admin", label: "Painel Admin", icon: Settings },
+    { path: "/dashboard/admin/usuarios", label: "Gerenciar Usuários", icon: Users },
+    { path: "/dashboard/admin/suporte", label: "Suporte Admin", icon: MessageSquare },
+  ];
+
   const isActive = (path: string) => location.pathname === path;
 
   return (
@@ -78,6 +84,30 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
               <span>{item.label}</span>
             </Link>
           ))}
+
+          {/* Admin Section */}
+          <div className="mt-6 pt-4 border-t border-blue-600">
+            <div className="text-xs font-semibold text-blue-200 mb-2 px-3">
+              ADMINISTRAÇÃO
+            </div>
+            {adminMenuItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={onClose}
+                className={`
+                  flex items-center space-x-3 p-2 lg:p-3 rounded-lg transition-colors duration-200 text-sm font-medium
+                  ${isActive(item.path) 
+                    ? 'bg-comademig-gold text-comademig-blue' 
+                    : 'text-white hover:bg-blue-600'
+                  }
+                `}
+              >
+                <item.icon size={18} />
+                <span>{item.label}</span>
+              </Link>
+            ))}
+          </div>
         </nav>
 
         {/* Bottom Section - Fixed at bottom */}
