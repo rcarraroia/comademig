@@ -21,19 +21,33 @@ serve(async (req) => {
 
     const { data: { user } } = await supabaseClient.auth.getUser()
     if (!user) {
-      return new Response('Não autorizado', { status: 401, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: 'Não autorizado' }), { 
+        status: 401, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
 
     const url = new URL(req.url)
     const method = req.method
     const pathSegments = url.pathname.split('/').filter(segment => segment !== '')
-    const endpoint = pathSegments[pathSegments.length - 1] // Pega o último segmento
+    
+    console.log('Full URL:', req.url)
+    console.log('Path segments:', pathSegments)
+    console.log('Method:', method)
 
-    console.log('Method:', method, 'Endpoint:', endpoint, 'Full path:', url.pathname)
+    // Determinar o endpoint baseado nos segmentos do path
+    let endpoint = 'affiliates-management' // default
+    if (pathSegments.length > 1) {
+      endpoint = pathSegments[pathSegments.length - 1]
+    }
 
-    // POST para criar afiliado (sem endpoint específico ou com 'create')
-    if (method === 'POST' && (endpoint === 'affiliates-management' || endpoint === 'create')) {
+    console.log('Determined endpoint:', endpoint)
+
+    // POST para criar afiliado
+    if (method === 'POST' && endpoint === 'affiliates-management') {
       const body = await req.json()
+      console.log('Creating affiliate with data:', body)
+      
       const { display_name, cpf_cnpj, asaas_wallet_id, contact_email, phone } = body
 
       // Validar se já existe afiliado para este usuário
@@ -66,19 +80,23 @@ serve(async (req) => {
         .single()
 
       if (error) {
+        console.error('Error creating affiliate:', error)
         return new Response(JSON.stringify({ error: error.message }), { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
 
+      console.log('Affiliate created successfully:', affiliate)
       return new Response(JSON.stringify({ success: true, affiliate }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    // GET para buscar dados do afiliado (endpoint 'me')
+    // GET para buscar dados do afiliado
     if (method === 'GET' && endpoint === 'me') {
+      console.log('Fetching affiliate data for user:', user.id)
+      
       const { data: affiliate, error } = await supabaseClient
         .from('affiliates')
         .select('*')
@@ -86,18 +104,20 @@ serve(async (req) => {
         .maybeSingle()
 
       if (error) {
+        console.error('Error fetching affiliate:', error)
         return new Response(JSON.stringify({ error: error.message }), { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
 
+      console.log('Affiliate data found:', affiliate)
       return new Response(JSON.stringify({ affiliate }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    // PUT para atualizar afiliado (endpoint 'update')
+    // PUT para atualizar afiliado
     if (method === 'PUT' && endpoint === 'update') {
       const body = await req.json()
       const { display_name, cpf_cnpj, asaas_wallet_id, contact_email, phone } = body
@@ -127,9 +147,8 @@ serve(async (req) => {
       })
     }
 
-    // GET para buscar indicações (endpoint 'referrals')
+    // GET para buscar indicações
     if (method === 'GET' && endpoint === 'referrals') {
-      // Primeiro busca o afiliado
       const { data: affiliate } = await supabaseClient
         .from('affiliates')
         .select('id')
@@ -159,9 +178,8 @@ serve(async (req) => {
       })
     }
 
-    // GET para buscar transações (endpoint 'transactions')
+    // GET para buscar transações
     if (method === 'GET' && endpoint === 'transactions') {
-      // Primeiro busca o afiliado
       const { data: affiliate } = await supabaseClient
         .from('affiliates')
         .select('id')
@@ -192,7 +210,8 @@ serve(async (req) => {
       })
     }
 
-    return new Response(JSON.stringify({ error: 'Endpoint não encontrado' }), { 
+    console.log('No matching endpoint found for:', method, endpoint)
+    return new Response(JSON.stringify({ error: 'Endpoint não encontrado', method, endpoint }), { 
       status: 404, 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })

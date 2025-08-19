@@ -1,18 +1,21 @@
 
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { UserPlus, Wallet, Info, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ExternalLink, DollarSign, Users, TrendingUp, Shield } from 'lucide-react';
 import { useAffiliate } from '@/hooks/useAffiliate';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 
-export const AffiliateRegistration = ({ onSuccess }: { onSuccess: () => void }) => {
+interface AffiliateRegistrationProps {
+  onSuccess: () => void;
+}
+
+export const AffiliateRegistration = ({ onSuccess }: AffiliateRegistrationProps) => {
   const [walletId, setWalletId] = useState('');
   const { createAffiliate, loading } = useAffiliate();
-  const { user, profile } = useAuth();
+  const { profile } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,98 +29,157 @@ export const AffiliateRegistration = ({ onSuccess }: { onSuccess: () => void }) 
         display_name: profile?.nome_completo || '',
         cpf_cnpj: profile?.cpf || '',
         asaas_wallet_id: walletId,
-        contact_email: user?.email || '',
+        contact_email: profile?.id ? '' : undefined, // Usar email do auth
         phone: profile?.telefone || ''
       });
-      onSuccess();
+      
+      // Aguardar um pouco e então chamar onSuccess para recarregar os dados
+      setTimeout(() => {
+        onSuccess();
+      }, 1000);
+      
     } catch (error) {
-      // Erro já tratado no hook
+      console.error('Erro ao criar afiliado:', error);
     }
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <UserPlus className="h-5 w-5" />
-          Programa de Afiliados - COMADEMIG
-        </CardTitle>
-        <CardDescription>
-          Ganhe 20% de comissão sobre cada indicação de novo membro
-        </CardDescription>
-      </CardHeader>
+    <div className="space-y-6">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold text-comademig-blue mb-2">
+          Programa de Afiliados COMADEMIG
+        </h1>
+        <p className="text-muted-foreground">
+          Indique novos membros e ganhe 20% de comissão sobre cada filiação
+        </p>
+      </div>
 
-      <CardContent className="space-y-6">
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Como funciona:</strong> Você receberá 20% do valor de cada filiação indicada por você. 
-            O pagamento é automático via Asaas assim que o pagamento for confirmado.
-          </AlertDescription>
-        </Alert>
+      {/* Benefícios do Programa */}
+      <div className="grid md:grid-cols-3 gap-4 mb-8">
+        <Card className="text-center">
+          <CardContent className="p-4">
+            <DollarSign className="h-8 w-8 mx-auto mb-2 text-green-600" />
+            <h3 className="font-semibold mb-1">20% de Comissão</h3>
+            <p className="text-sm text-muted-foreground">
+              Ganhe R$ 20 por cada indicação de filiação aprovada
+            </p>
+          </CardContent>
+        </Card>
 
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-          <h3 className="font-semibold text-green-900 mb-3">💰 Seus Ganhos por Indicação</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-green-700">Filiação Comum (R$ 80,00)</span>
-              <span className="font-bold text-green-900">R$ 16,00</span>
+        <Card className="text-center">
+          <CardContent className="p-4">
+            <TrendingUp className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+            <h3 className="font-semibold mb-1">Pagamento Automático</h3>
+            <p className="text-sm text-muted-foreground">
+              Receba via Asaas no momento da aprovação
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="text-center">
+          <CardContent className="p-4">
+            <Users className="h-8 w-8 mx-auto mb-2 text-purple-600" />
+            <h3 className="font-semibold mb-1">Indicações Ilimitadas</h3>
+            <p className="text-sm text-muted-foreground">
+              Sem limite de indicações ou ganhos mensais
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Como Funciona */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Como Funciona o Programa
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex gap-3">
+            <div className="flex-shrink-0 w-6 h-6 bg-comademig-blue text-white rounded-full flex items-center justify-center text-sm font-semibold">
+              1
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-green-700">Filiação Especial (R$ 120,00)</span>
-              <span className="font-bold text-green-900">R$ 24,00</span>
-            </div>
+            <p className="text-sm">Cadastre-se no programa com sua Wallet ID do Asaas</p>
           </div>
-        </div>
+          <div className="flex gap-3">
+            <div className="flex-shrink-0 w-6 h-6 bg-comademig-blue text-white rounded-full flex items-center justify-center text-sm font-semibold">
+              2
+            </div>
+            <p className="text-sm">Receba seu link personalizado de indicação</p>
+          </div>
+          <div className="flex gap-3">
+            <div className="flex-shrink-0 w-6 h-6 bg-comademig-blue text-white rounded-full flex items-center justify-center text-sm font-semibold">
+              3
+            </div>
+            <p className="text-sm">Compartilhe com pastores e líderes interessados</p>
+          </div>
+          <div className="flex gap-3">
+            <div className="flex-shrink-0 w-6 h-6 bg-comademig-blue text-white rounded-full flex items-center justify-center text-sm font-semibold">
+              4
+            </div>
+            <p className="text-sm">Ganhe R$ 20 automaticamente a cada filiação aprovada</p>
+          </div>
+        </CardContent>
+      </Card>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-4">
+      {/* Formulário de Cadastro */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Participar do Programa</CardTitle>
+          <CardDescription>
+            Para participar, você precisa ter uma conta no Asaas para receber as comissões
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="walletId" className="flex items-center gap-2">
-                <Wallet className="h-4 w-4" />
-                Wallet ID do Asaas *
-              </Label>
+              <Label htmlFor="walletId">Wallet ID do Asaas *</Label>
               <Input
                 id="walletId"
                 value={walletId}
                 onChange={(e) => setWalletId(e.target.value)}
-                placeholder="f9c7d1dd-9e52-4e81-8194-8b666f276405"
+                placeholder="Digite seu Wallet ID"
                 required
               />
-              <p className="text-sm text-muted-foreground">
-                ID da sua carteira no Asaas. Encontre em: Conta {'>'} Configurações {'>'} API/Integrações {'>'} Wallet ID
+              <p className="text-xs text-muted-foreground">
+                ID da sua carteira no Asaas. Encontre em: Conta → Configurações → API/Integrações → Wallet ID
               </p>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium text-blue-900">Não tem conta no Asaas?</h4>
-                  <p className="text-sm text-blue-700">Crie sua conta gratuita agora</p>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.open('https://www.asaas.com/r/51a27e42-08b8-495b-acfd-5f1369c2e104', '_blank')}
-                  className="flex items-center gap-2 border-blue-300 text-blue-700 hover:bg-blue-100"
-                >
-                  Criar Conta
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button 
+                type="submit" 
+                className="flex-1" 
+                disabled={loading || !walletId.trim()}
+              >
+                {loading ? 'Processando...' : 'Quero Participar'}
+              </Button>
+              
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => window.open('https://www.asaas.com/r/51a27e42-08b8-495b-acfd-5f1369c2e104', '_blank')}
+                className="flex items-center gap-2"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Criar Conta Asaas
+              </Button>
             </div>
-          </div>
+          </form>
+        </CardContent>
+      </Card>
 
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={loading || !walletId.trim()}
-          >
-            {loading ? 'Cadastrando...' : '🎯 Quero Participar'}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+      {/* Termos e Condições */}
+      <Card className="bg-muted/30">
+        <CardContent className="p-4">
+          <p className="text-xs text-muted-foreground text-center">
+            Ao participar do programa, você concorda em seguir as diretrizes da COMADEMIG. 
+            As comissões são pagas automaticamente via Asaas mediante confirmação do pagamento da filiação.
+            Indicações de membros já filiados não geram comissão.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
