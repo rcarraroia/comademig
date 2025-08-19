@@ -1,55 +1,38 @@
 
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAuthActions } from "@/hooks/useAuthActions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, CheckCircle } from "lucide-react";
 
 const Auth = () => {
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
   
-  const { signIn } = useAuth();
+  const { user } = useAuth();
+  const { handleSignIn, loading } = useAuthActions();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+  const confirmed = searchParams.get('confirmed');
 
-    try {
-      const { error } = await signIn(loginData.email, loginData.password);
-      
-      if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          setError('Email ou senha incorretos');
-        } else if (error.message.includes('Email not confirmed')) {
-          setError('Por favor, confirme seu email antes de fazer login');
-        } else {
-          setError(error.message);
-        }
-        return;
-      }
-      
-      toast({
-        title: "Login realizado com sucesso",
-        description: "Você será redirecionado para o dashboard.",
-      });
-      
+  useEffect(() => {
+    if (user) {
       navigate("/dashboard");
-    } catch (err) {
-      setError("Ocorreu um erro ao fazer login. Tente novamente.");
-      console.error(err);
-    } finally {
-      setLoading(false);
+    }
+  }, [user, navigate]);
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const result = await handleSignIn(loginData.email, loginData.password);
+    
+    if (result.success) {
+      navigate("/dashboard");
     }
   };
 
@@ -66,6 +49,15 @@ const Auth = () => {
             </p>
           </div>
 
+          {confirmed && (
+            <Alert className="mb-6 border-green-200 bg-green-50">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                Email confirmado com sucesso! Agora você pode fazer login.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <Card>
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl font-bold text-center">Fazer Login</CardTitle>
@@ -74,12 +66,7 @@ const Auth = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {error && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              <form onSubmit={handleLogin} className="space-y-4">
+              <form onSubmit={onSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-email">Email</Label>
                   <Input

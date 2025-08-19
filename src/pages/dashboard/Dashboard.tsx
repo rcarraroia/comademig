@@ -1,168 +1,233 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProfileValidation } from "@/hooks/useProfileValidation";
+import { ProfileCompletion } from "@/components/auth/ProfileCompletion";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  CreditCard, 
-  FileText, 
-  User, 
-  Calendar, 
-  DollarSign, 
-  Bell,
-  AlertCircle,
-  CheckCircle
-} from "lucide-react";
+import { Calendar, CreditCard, FileText, MessageSquare, Users, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Dashboard = () => {
+  const { profile, user } = useAuth();
+  const { getProfileCompletionPercentage, profileStatus, canAccessFeature } = useProfileValidation();
+
+  const completionPercentage = getProfileCompletionPercentage();
+
   const quickActions = [
     {
-      title: "Identificação Eclesiástica",
-      description: "Acesse sua carteirinha ministerial",
+      title: "Carteira Digital",
+      description: "Acesse sua identificação eclesiástica",
       icon: CreditCard,
-      link: "/dashboard/carteira-digital",
-      color: "bg-blue-500"
+      href: "/dashboard/carteira-digital",
+      feature: "carteira-digital"
     },
     {
-      title: "Meus Dados",
-      description: "Atualize suas informações",
-      icon: User,
-      link: "/dashboard/meus-dados",
-      color: "bg-green-500"
+      title: "Eventos",
+      description: "Veja eventos disponíveis",
+      icon: Calendar,
+      href: "/dashboard/eventos",
+      feature: "eventos"
     },
     {
-      title: "Financeiro",
-      description: "Consulte pagamentos e taxas",
-      icon: DollarSign,
-      link: "/dashboard/financeiro",
-      color: "bg-purple-500"
-    },
-    {
-      title: "Certidões",
-      description: "Solicite documentos oficiais",
+      title: "Financeiro", 
+      description: "Consulte sua situação financeira",
       icon: FileText,
-      link: "/dashboard/certidoes",
-      color: "bg-orange-500"
+      href: "/dashboard/financeiro",
+      feature: "financeiro"
+    },
+    {
+      title: "Mensagens",
+      description: "Comunicação interna",
+      icon: MessageSquare,
+      href: "/dashboard/comunicacao",
+      feature: "comunicacao"
     }
   ];
 
-  const notifications = [
-    {
-      type: "warning",
-      title: "Pagamento Pendente",
-      description: "Taxa anual de 2024 vence em 15 dias",
-      date: "Hoje"
-    },
-    {
-      type: "info",
-      title: "Novo Evento Disponível",
-      description: "Congresso Regional - Inscrições abertas",
-      date: "2 dias atrás"
-    },
-    {
-      type: "success",
-      title: "Carteira Atualizada",
-      description: "Sua carteirinha foi renovada com sucesso",
-      date: "1 semana atrás"
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'ativo':
+        return 'default';
+      case 'pendente':
+        return 'secondary';
+      case 'suspenso':
+        return 'destructive';
+      default:
+        return 'outline';
     }
-  ];
+  };
 
   return (
-    <div className="space-y-6 lg:space-y-8">
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-comademig-blue to-comademig-gold text-white p-6 lg:p-8 rounded-xl shadow-lg">
-        <h1 className="text-2xl lg:text-3xl xl:text-4xl font-bold mb-2">Bem-vindo, Pastor João Silva!</h1>
-        <p className="text-blue-100 text-base lg:text-lg">
-          Igreja Assembleia de Deus - Campo Regional de Belo Horizonte
-        </p>
+    <div className="space-y-6">
+      {/* Cabeçalho de boas-vindas */}
+      <div className="bg-white rounded-lg p-6 shadow-sm border">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-comademig-blue">
+              Olá, {profile?.nome_completo || user?.email}!
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Bem-vindo ao Portal COMADEMIG
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Badge variant={getStatusBadgeVariant(profileStatus)}>
+              Status: {profileStatus === 'ativo' ? 'Ativo' : 
+                      profileStatus === 'pendente' ? 'Pendente' : 
+                      profileStatus === 'suspenso' ? 'Suspenso' : profileStatus}
+            </Badge>
+            <Badge variant="outline">
+              {profile?.cargo || 'Cargo não informado'}
+            </Badge>
+          </div>
+        </div>
       </div>
 
-      {/* Quick Actions */}
+      {/* Componente de conclusão do perfil */}
+      <ProfileCompletion />
+
+      {/* Estatísticas rápidas */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Perfil</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-comademig-blue">
+              {completionPercentage}%
+            </div>
+            <p className="text-xs text-gray-600">
+              Completude
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Igreja</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-semibold text-comademig-blue truncate">
+              {profile?.igreja || 'Não informado'}
+            </div>
+            <p className="text-xs text-gray-600">
+              Congregação
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Localização</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-semibold text-comademig-blue">
+              {profile?.cidade ? `${profile.cidade}/${profile.estado}` : 'Não informado'}
+            </div>
+            <p className="text-xs text-gray-600">
+              Cidade/Estado
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Membro desde</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-semibold text-comademig-blue">
+              {profile?.data_ordenacao ? 
+                new Date(profile.data_ordenacao).getFullYear() : 
+                'N/A'
+              }
+            </div>
+            <p className="text-xs text-gray-600">
+              Ano de ordenação
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Ações rápidas */}
       <div>
-        <h2 className="text-xl lg:text-2xl font-semibold text-comademig-blue mb-4 lg:mb-6">Acesso Rápido</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-          {quickActions.map((action, index) => (
-            <Link key={index} to={action.link}>
-              <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer border-0 shadow-md hover:scale-105">
-                <CardContent className="p-4 lg:p-6">
-                  <div className="flex items-center space-x-3 lg:space-x-4">
-                    <div className={`p-3 lg:p-4 rounded-full ${action.color} text-white flex-shrink-0`}>
-                      <action.icon size={24} className="lg:w-7 lg:h-7" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="font-semibold text-comademig-blue text-base lg:text-lg truncate">{action.title}</h3>
-                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">{action.description}</p>
-                    </div>
+        <h2 className="text-lg font-semibold mb-4">Acesso Rápido</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {quickActions.map((action) => {
+            const hasAccess = canAccessFeature(action.feature);
+            const Icon = action.icon;
+            
+            return (
+              <Card key={action.href} className={`hover:shadow-md transition-shadow ${!hasAccess ? 'opacity-60' : ''}`}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <Icon className={`h-5 w-5 ${hasAccess ? 'text-comademig-blue' : 'text-gray-400'}`} />
+                    {!hasAccess && (
+                      <Badge variant="secondary" className="text-xs">
+                        Restrito
+                      </Badge>
+                    )}
                   </div>
+                  <CardTitle className="text-sm">{action.title}</CardTitle>
+                  <CardDescription className="text-xs">
+                    {action.description}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <Button 
+                    asChild={hasAccess} 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    disabled={!hasAccess}
+                  >
+                    {hasAccess ? (
+                      <Link to={action.href}>Acessar</Link>
+                    ) : (
+                      <span>Indisponível</span>
+                    )}
+                  </Button>
                 </CardContent>
               </Card>
-            </Link>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
-        <Card className="border-0 shadow-md">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Situação Financeira</CardTitle>
-            <DollarSign className="h-5 w-5 text-comademig-gold" />
+      {/* Avisos importantes */}
+      {profileStatus === 'pendente' && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardHeader>
+            <CardTitle className="text-amber-800">Análise em Andamento</CardTitle>
+            <CardDescription className="text-amber-700">
+              Sua documentação está sendo analisada pela nossa equipe. 
+              Este processo pode levar até 5 dias úteis. Você receberá um email quando for aprovado.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+
+      {canAccessFeature('regularizacao') && (
+        <Card className="border-green-200 bg-green-50">
+          <CardHeader>
+            <CardTitle className="text-green-800 flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Serviço de Regularização
+            </CardTitle>
+            <CardDescription className="text-green-700">
+              Como pastor filiado, você tem acesso ao nosso serviço completo 
+              de regularização e legalização de igrejas.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl lg:text-3xl font-bold text-green-600">Em Dia</div>
-            <p className="text-xs text-gray-500 mt-2">Última contribuição: Janeiro/2024</p>
+            <Button asChild className="bg-green-600 hover:bg-green-700">
+              <Link to="/dashboard/regularizacao">
+                Acessar Serviços de Regularização
+              </Link>
+            </Button>
           </CardContent>
         </Card>
-
-        <Card className="border-0 shadow-md">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Próximos Eventos</CardTitle>
-            <Calendar className="h-5 w-5 text-comademig-gold" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl lg:text-3xl font-bold text-comademig-blue">3</div>
-            <p className="text-xs text-gray-500 mt-2">Eventos disponíveis para inscrição</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-md">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Identificação Eclesiástica</CardTitle>
-            <CreditCard className="h-5 w-5 text-comademig-gold" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl lg:text-3xl font-bold text-green-600">Ativa</div>
-            <p className="text-xs text-gray-500 mt-2">Válida até: Dezembro/2024</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Notifications */}
-      <div>
-        <h2 className="text-xl lg:text-2xl font-semibold text-comademig-blue mb-4 lg:mb-6">Notificações Recentes</h2>
-        <div className="space-y-4">
-          {notifications.map((notification, index) => (
-            <Alert key={index} className={`border-0 shadow-md ${
-              notification.type === 'warning' ? 'bg-orange-50 border-l-4 border-l-orange-400' :
-              notification.type === 'success' ? 'bg-green-50 border-l-4 border-l-green-400' :
-              'bg-blue-50 border-l-4 border-l-blue-400'
-            }`}>
-              {notification.type === 'warning' && <AlertCircle className="h-5 w-5 text-orange-600" />}
-              {notification.type === 'success' && <CheckCircle className="h-5 w-5 text-green-600" />}
-              {notification.type === 'info' && <Bell className="h-5 w-5 text-blue-600" />}
-              <AlertDescription>
-                <div className="flex justify-between items-start gap-4">
-                  <div className="min-w-0 flex-1">
-                    <h4 className="font-semibold text-base lg:text-lg">{notification.title}</h4>
-                    <p className="text-sm mt-1">{notification.description}</p>
-                  </div>
-                  <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full whitespace-nowrap flex-shrink-0">{notification.date}</span>
-                </div>
-              </AlertDescription>
-            </Alert>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 };

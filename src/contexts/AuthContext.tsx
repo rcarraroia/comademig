@@ -31,6 +31,9 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
   updateProfile: (data: Partial<Profile>) => Promise<{ error: any }>;
+  refreshProfile: () => Promise<void>;
+  isAdmin: () => boolean;
+  hasPermission: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,17 +45,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    let mounted = true;
+
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        
+        if (!mounted) return;
+
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Defer profile fetch to prevent deadlock
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
+          await fetchProfile(session.user.id);
         } else {
           setProfile(null);
         }
@@ -61,21 +67,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
+    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      
       setSession(session);
       setUser(session?.user ?? null);
+      
       if (session?.user) {
         fetchProfile(session.user.id);
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log('Fetching profile for user:', userId);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -87,63 +102,125 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       
+      console.log('Profile fetched:', data);
       setProfile(data);
     } catch (error) {
       console.error('Erro ao buscar perfil:', error);
     }
   };
 
+  const refreshProfile = async () => {
+    if (user) {
+      await fetchProfile(user.id);
+    }
+  };
+
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ 
-      email, 
-      password 
-    });
-    return { error };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
+      });
+      
+      return { error };
+    } catch (error) {
+      console.error('Erro no signIn:', error);
+      return { error };
+    }
   };
 
   const signUp = async (email: string, password: string, userData: any) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: userData.nome_completo,
+    try {
+      const redirectUrl = `${window.location.origin}/auth?confirmed=true`;
+      
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: userData.nome_completo,
+          }
         }
-      }
-    });
-    return { error };
+      });
+      
+      return { error };
+    } catch (error) {
+      console.error('Erro no signUp:', error);
+      return { error };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setProfile(null);
+    try {
+      await supabase.auth.signOut();
+      setProfile(null);
+    } catch (error) {
+      console.error('Erro no signOut:', error);
+    }
   };
 
   const resetPassword = async (email: string) => {
-    const redirectUrl = `${window.location.origin}/reset-password`;
-    
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: redirectUrl,
-    });
-    return { error };
+    try {
+      const redirectUrl = `${window.location.origin}/reset-password`;
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+      });
+      
+      return { error };
+    } catch (error) {
+      console.error('Erro no resetPassword:', error);
+      return { error };
+    }
   };
 
   const updateProfile = async (data: Partial<Profile>) => {
     if (!user) return { error: { message: 'Usuário não autenticado' } };
     
-    const { error } = await supabase
-      .from('profiles')
-      .update(data)
-      .eq('id', user.id);
-    
-    if (!error && profile) {
-      setProfile({ ...profile, ...data });
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          ...data,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+      
+      if (!error && profile) {
+        setProfile({ ...profile, ...data });
+      }
+      
+      return { error };
+    } catch (error) {
+      console.error('Erro no updateProfile:', error);
+      return { error };
     }
+  };
+
+  const isAdmin = () => {
+    return profile?.tipo_membro === 'admin' || profile?.cargo?.toLowerCase().includes('admin');
+  };
+
+  const hasPermission = (permission: string) => {
+    if (!profile) return false;
     
-    return { error };
+    // Admin tem todas as permissões
+    if (isAdmin()) return true;
+    
+    // Verificações específicas por permissão
+    switch (permission) {
+      case 'manage_events':
+        return ['admin', 'moderador'].includes(profile.tipo_membro);
+      case 'manage_finance':
+        return ['admin', 'tesoureiro'].includes(profile.tipo_membro);
+      case 'view_reports':
+        return ['admin', 'moderador', 'tesoureiro'].includes(profile.tipo_membro);
+      case 'manage_users':
+        return profile.tipo_membro === 'admin';
+      default:
+        return false;
+    }
   };
 
   const value = {
@@ -156,6 +233,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     resetPassword,
     updateProfile,
+    refreshProfile,
+    isAdmin,
+    hasPermission,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
