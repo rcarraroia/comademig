@@ -1,24 +1,6 @@
--- Script para configurar admin e sistema de gerenciamento de conteúdo
--- Usuário: rcarrarocoach@gmail.com
--- UUID: c2e01b5c-f6af-4906-94e3-ea7cdf1ec02a
+-- Script para criar sistema de gerenciamento de conteúdo
 
--- 1. Configurar usuário como admin
-INSERT INTO public.user_roles (user_id, role)
-VALUES ('c2e01b5c-f6af-4906-94e3-ea7cdf1ec02a', 'admin'::app_role)
-ON CONFLICT (user_id, role) DO NOTHING;
-
--- 2. Atualizar perfil do usuário (sem coluna email)
-INSERT INTO public.profiles (id, nome_completo, status)
-VALUES (
-  'c2e01b5c-f6af-4906-94e3-ea7cdf1ec02a',
-  'Renato Magno Carraro Alves',
-  'ativo'
-)
-ON CONFLICT (id) DO UPDATE SET
-  nome_completo = EXCLUDED.nome_completo,
-  status = 'ativo';
-
--- 3. Criar tabela de gerenciamento de conteúdo (se não existir)
+-- 1. Criar tabela de gerenciamento de conteúdo
 CREATE TABLE IF NOT EXISTS public.content_management (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   page_name TEXT NOT NULL UNIQUE,
@@ -28,11 +10,14 @@ CREATE TABLE IF NOT EXISTS public.content_management (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- 4. Habilitar RLS
+-- 2. Habilitar RLS
 ALTER TABLE public.content_management ENABLE ROW LEVEL SECURITY;
 
--- 5. Criar políticas RLS (removendo existentes primeiro)
+-- 3. Remover políticas existentes (se houver)
 DROP POLICY IF EXISTS "Admins can manage content" ON public.content_management;
+DROP POLICY IF EXISTS "Public can read content" ON public.content_management;
+
+-- 4. Criar políticas RLS
 CREATE POLICY "Admins can manage content" ON public.content_management
 FOR ALL TO authenticated
 USING (
@@ -42,12 +27,11 @@ USING (
   )
 );
 
-DROP POLICY IF EXISTS "Public can read content" ON public.content_management;
 CREATE POLICY "Public can read content" ON public.content_management
 FOR SELECT TO anon, authenticated
 USING (true);
 
--- 6. Inserir dados iniciais das páginas
+-- 5. Inserir dados iniciais das páginas
 INSERT INTO public.content_management (page_name, content_json) VALUES
 ('home', '{"title": "Início", "description": "Página inicial do site"}'),
 ('about', '{"title": "Sobre", "description": "Informações sobre a COMADEMIG"}'),
@@ -58,7 +42,7 @@ INSERT INTO public.content_management (page_name, content_json) VALUES
 ('contact', '{"title": "Contato", "description": "Entre em contato conosco"}')
 ON CONFLICT (page_name) DO NOTHING;
 
--- 7. Criar função para atualizar timestamp (se não existir)
+-- 6. Criar função para atualizar timestamp
 CREATE OR REPLACE FUNCTION update_content_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -68,19 +52,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 8. Criar trigger para atualizar timestamp
+-- 7. Criar trigger
 DROP TRIGGER IF EXISTS update_content_management_timestamp ON public.content_management;
 CREATE TRIGGER update_content_management_timestamp
   BEFORE UPDATE ON public.content_management
   FOR EACH ROW
   EXECUTE FUNCTION update_content_timestamp();
 
--- 9. Verificar se tudo foi criado corretamente
+-- 8. Verificar resultado
 SELECT 
-  'Admin configurado' as status,
-  EXISTS(
-    SELECT 1 FROM user_roles 
-    WHERE user_id = 'c2e01b5c-f6af-4906-94e3-ea7cdf1ec02a' 
-    AND role = 'admin'::app_role
-  ) as is_admin,
-  (SELECT COUNT(*) FROM content_management) as pages_count;
+  'Sistema de conteúdo criado' as resultado,
+  (SELECT COUNT(*) FROM content_management) as total_pages;
