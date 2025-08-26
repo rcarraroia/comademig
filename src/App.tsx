@@ -77,7 +77,7 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/dashboard/perfil" element={<Perfil />} />
               <Route path="/dashboard/meus-dados" element={<MeusDados />} />
-              <Route path="/dashboard/carteira" element={<CarteiraDigital />} />
+              <Route path="/dashboard/carteira-digital" element={<CarteiraDigital />} />
               <Route path="/dashboard/comunicacao" element={<Comunicacao />} />
               <Route path="/dashboard/comunicacao-dashboard" element={<ComunicacaoDashboard />} />
               <Route path="/dashboard/eventos" element={<EventosDashboard />} />
