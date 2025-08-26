@@ -47,6 +47,7 @@ import Notifications from '@/pages/dashboard/Notifications';
 import PerfilPublico from '@/pages/dashboard/PerfilPublico';
 import PerfilCompleto from '@/pages/dashboard/PerfilCompleto';
 import HomeContentEdit from '@/pages/dashboard/HomeContentEdit';
+import SobreContentEdit from '@/pages/dashboard/SobreContentEdit';
 
 // Layouts
 import Layout from '@/components/Layout';
@@ -107,6 +108,7 @@ function App() {
               <Route path="/dashboard/notifications" element={<Notifications />} />
               <Route path="/dashboard/admin/content/:pageName/edit" element={<ContentEdit />} />
               <Route path="/dashboard/admin/content/home-editor" element={<HomeContentEdit />} />
+              <Route path="/dashboard/admin/content/sobre-editor" element={<SobreContentEdit />} />
               <Route path="/dashboard/perfil-publico/:userId?" element={<PerfilPublico />} />
               <Route path="/dashboard/perfil-completo" element={<PerfilCompleto />} />
             </Route>
