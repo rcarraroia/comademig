@@ -224,6 +224,33 @@ export type Database = {
         }
         Relationships: []
       }
+      content_management: {
+        Row: {
+          id: string
+          page_name: string
+          content_json: Json
+          last_updated_at: string | null
+          last_updated_by: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          page_name: string
+          content_json?: Json
+          last_updated_at?: string | null
+          last_updated_by?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          page_name?: string
+          content_json?: Json
+          last_updated_at?: string | null
+          last_updated_by?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
       certidoes: {
         Row: {
           created_at: string | null
