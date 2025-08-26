@@ -42,6 +42,10 @@ import AdminUsersPage from '@/pages/dashboard/AdminUsers';
 import AdminSupportPage from '@/pages/dashboard/AdminSupportPage';
 import ContentManagement from '@/pages/dashboard/ContentManagement';
 import ContentEdit from '@/pages/dashboard/ContentEdit';
+import UserManagement from '@/pages/dashboard/UserManagement';
+import Notifications from '@/pages/dashboard/Notifications';
+import PerfilPublico from '@/pages/dashboard/PerfilPublico';
+import PerfilCompleto from '@/pages/dashboard/PerfilCompleto';
 
 // Layouts
 import Layout from '@/components/Layout';
@@ -98,7 +102,11 @@ function App() {
               <Route path="/dashboard/admin/usuarios" element={<AdminUsersPage />} />
               <Route path="/dashboard/admin/suporte" element={<AdminSupportPage />} />
               <Route path="/dashboard/admin/content" element={<ContentManagement />} />
+              <Route path="/dashboard/admin/user-management" element={<UserManagement />} />
+              <Route path="/dashboard/notifications" element={<Notifications />} />
               <Route path="/dashboard/admin/content/:pageName/edit" element={<ContentEdit />} />
+              <Route path="/dashboard/perfil-publico/:userId?" element={<PerfilPublico />} />
+              <Route path="/dashboard/perfil-completo" element={<PerfilCompleto />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />

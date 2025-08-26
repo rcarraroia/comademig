@@ -38,16 +38,24 @@ const MeusDados = () => {
     data_ordenacao: profile?.data_ordenacao || "",
   });
 
-  // Calculate completion percentage
+  // Calculate completion percentage - SINCRONIZADO COM DASHBOARD
   const calculateCompletionPercentage = () => {
-    const requiredFields = [
-      'nome_completo', 'cpf', 'telefone', 'endereco', 
-      'cidade', 'estado', 'cep', 'igreja'
+    if (!profile) return 0;
+    
+    const allFields = [
+      'nome_completo', 'cpf', 'rg', 'data_nascimento',
+      'endereco', 'cidade', 'estado', 'cep', 'telefone',
+      'igreja', 'cargo', 'data_ordenacao'
     ];
-    const completedFields = requiredFields.filter(field => formData[field as keyof typeof formData]);
+    
+    const filledFields = allFields.filter(field => 
+      profile[field as keyof typeof profile] && 
+      profile[field as keyof typeof profile] !== ''
+    );
+    
     // Add photo to completion calculation
     const photoComplete = profile?.foto_url ? 1 : 0;
-    return ((completedFields.length + photoComplete) / (requiredFields.length + 1)) * 100;
+    return Math.round(((filledFields.length + photoComplete) / (allFields.length + 1)) * 100);
   };
 
   const completionPercentage = calculateCompletionPercentage();

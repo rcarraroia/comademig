@@ -8,6 +8,9 @@ import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { 
   User, 
   Lock, 
@@ -23,6 +26,9 @@ import {
 } from "lucide-react";
 
 const Perfil = () => {
+  const { user, profile } = useAuth();
+  const { toast } = useToast();
+  
   const [notifications, setNotifications] = useState({
     email: true,
     sms: false,
@@ -44,6 +50,60 @@ const Perfil = () => {
 
   const handlePrivacyChange = (key: string, value: boolean) => {
     setPrivacy(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleDownloadData = async () => {
+    try {
+      // Buscar todos os dados do usuário
+      const { data: userData, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user?.id)
+        .single();
+
+      if (error) throw error;
+
+      // Criar objeto com todos os dados
+      const allData = {
+        usuario: {
+          id: user?.id,
+          email: user?.email,
+          created_at: user?.created_at
+        },
+        perfil: userData,
+        data_exportacao: new Date().toISOString(),
+        observacoes: "Dados exportados conforme LGPD - Lei Geral de Proteção de Dados"
+      };
+
+      // Converter para JSON e criar arquivo
+      const dataStr = JSON.stringify(allData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      
+      // Criar link de download
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `meus-dados-comademig-${new Date().toISOString().split('T')[0]}.json`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Download concluído",
+        description: "Seus dados foram baixados com sucesso",
+      });
+
+    } catch (error: any) {
+      console.error('Erro ao baixar dados:', error);
+      toast({
+        title: "Erro no download",
+        description: "Não foi possível baixar seus dados",
+        variant: "destructive",
+      });
+    }
   };
 
   const activities = [
@@ -115,11 +175,19 @@ const Perfil = () => {
             <Separator />
 
             <div className="space-y-2">
-              <Button variant="outline" className="w-full justify-start">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => window.open(`/dashboard/perfil-publico/${user?.id}`, '_blank')}
+              >
                 <Eye className="mr-2 h-4 w-4" />
                 Ver Perfil Público
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={handleDownloadData}
+              >
                 <Download className="mr-2 h-4 w-4" />
                 Baixar Meus Dados
               </Button>

@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { X, Home, User, CreditCard, FileText, Calendar, MessageSquare, HelpCircle, Settings, Globe, Building, Users } from "lucide-react";
+import { X, Home, User, CreditCard, FileText, Calendar, MessageSquare, HelpCircle, Settings, Globe, Building, Users, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface DashboardSidebarProps {
@@ -13,7 +13,7 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
 
   const menuItems = [
     { path: "/dashboard", label: "Dashboard", icon: Home },
-    { path: "/dashboard/meus-dados", label: "Meus Dados", icon: User },
+    { path: "/dashboard/perfil-completo", label: "Meu Perfil", icon: User },
     { path: "/dashboard/carteira-digital", label: "Identificação Eclesiástica", icon: CreditCard },
     { path: "/dashboard/financeiro", label: "Financeiro", icon: FileText },
     { path: "/dashboard/certidoes", label: "Certidões", icon: FileText },
@@ -21,10 +21,12 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
     { path: "/dashboard/eventos", label: "Eventos", icon: Calendar },
     { path: "/dashboard/afiliados", label: "Afiliados", icon: Users },
     { path: "/dashboard/comunicacao", label: "Comunicação", icon: MessageSquare },
+    { path: "/dashboard/notifications", label: "Notificações", icon: Bell },
     { path: "/dashboard/suporte", label: "Suporte", icon: HelpCircle },
   ];
 
   const adminMenuItems = [
+    { path: "/dashboard/admin/user-management", label: "Gestão de Usuários", icon: Users },
     { path: "/dashboard/admin/usuarios", label: "Gerenciar Usuários", icon: Users },
     { path: "/dashboard/admin/suporte", label: "Atendimento ao Membro", icon: MessageSquare },
     { path: "/dashboard/admin/content", label: "Gerenciar Conteúdo", icon: FileText },
