@@ -55,6 +55,7 @@ const ContentManagement = () => {
                 <Link to={
                   page.key === 'home' ? '/dashboard/admin/content/home-editor' :
                   page.key === 'sobre' ? '/dashboard/admin/content/sobre-editor' :
+                  page.key === 'eventos' ? '/dashboard/admin/content/eventos-editor' :
                   page.key === 'noticias' ? '/dashboard/admin/content/noticias-editor' :
                   `/dashboard/admin/content/${page.key}/edit`
                 }>

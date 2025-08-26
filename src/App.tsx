@@ -48,6 +48,7 @@ import PerfilPublico from '@/pages/dashboard/PerfilPublico';
 import PerfilCompleto from '@/pages/dashboard/PerfilCompleto';
 import HomeContentEdit from '@/pages/dashboard/HomeContentEdit';
 import SobreContentEdit from '@/pages/dashboard/SobreContentEdit';
+import EventosContentEdit from '@/pages/dashboard/EventosContentEdit';
 import NoticiasContentEdit from '@/pages/dashboard/NoticiasContentEdit';
 
 // Layouts
@@ -110,6 +111,7 @@ function App() {
               <Route path="/dashboard/admin/content/:pageName/edit" element={<ContentEdit />} />
               <Route path="/dashboard/admin/content/home-editor" element={<HomeContentEdit />} />
               <Route path="/dashboard/admin/content/sobre-editor" element={<SobreContentEdit />} />
+              <Route path="/dashboard/admin/content/eventos-editor" element={<EventosContentEdit />} />
               <Route path="/dashboard/admin/content/noticias-editor" element={<NoticiasContentEdit />} />
               <Route path="/dashboard/perfil-publico/:userId?" element={<PerfilPublico />} />
               <Route path="/dashboard/perfil-completo" element={<PerfilCompleto />} />
