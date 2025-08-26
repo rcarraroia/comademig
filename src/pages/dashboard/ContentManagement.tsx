@@ -52,7 +52,7 @@ const ContentManagement = () => {
                     <CardDescription>{page.description}</CardDescription>
                   </div>
                 </div>
-                <Link to={`/dashboard/admin/content/${page.key}/edit`}>
+                <Link to={page.key === 'home' ? '/dashboard/admin/content/home-editor' : `/dashboard/admin/content/${page.key}/edit`}>
                   <Button variant="outline" size="sm" className="flex items-center space-x-2">
                     <Edit className="h-4 w-4" />
                     <span>Editar</span>

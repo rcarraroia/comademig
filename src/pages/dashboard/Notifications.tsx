@@ -18,7 +18,7 @@ import {
   Clock,
   Settings,
   Trash2,
-  MarkAsRead
+  Check
 } from 'lucide-react';
 
 interface Notification {
@@ -212,7 +212,7 @@ export default function Notifications() {
             </Badge>
           )}
           <Button variant="outline" onClick={markAllAsRead}>
-            <MarkAsRead className="w-4 h-4 mr-2" />
+            <Check className="w-4 h-4 mr-2" />
             Marcar todas como lidas
           </Button>
         </div>
