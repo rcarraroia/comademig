@@ -1,17 +1,21 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfileValidation } from "@/hooks/useProfileValidation";
+import { useUserRoles } from "@/hooks/useUserRoles";
+import { useAdminData } from "@/hooks/useAdminData";
 import { ProfileCompletion } from "@/components/auth/ProfileCompletion";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, CreditCard, FileText, MessageSquare, Users, TrendingUp } from "lucide-react";
+import { Calendar, CreditCard, FileText, MessageSquare, Users, TrendingUp, AlertCircle, Clock, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Dashboard = () => {
   const { profile, user } = useAuth();
   const { getProfileCompletionPercentage, profileStatus, canAccessFeature } = useProfileValidation();
+  const { isAdmin } = useUserRoles();
+  const { stats, isLoading: adminLoading } = useAdminData();
 
   const completionPercentage = getProfileCompletionPercentage();
 
@@ -150,6 +154,82 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Métricas Administrativas - Apenas para Admins */}
+      {isAdmin() && !adminLoading && stats && (
+        <div>
+          <h2 className="text-lg font-semibold mb-4 text-comademig-blue">Métricas Administrativas</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Users className="h-4 w-4 text-blue-600" />
+                  Total de Usuários
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-comademig-blue">
+                  {stats.totalUsers || 0}
+                </div>
+                <p className="text-xs text-gray-600">
+                  Membros registrados
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  Tickets Abertos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">
+                  {stats.openTickets || 0}
+                </div>
+                <p className="text-xs text-gray-600">
+                  Aguardando atendimento
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-purple-600" />
+                  Eventos Ativos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-purple-600">
+                  {stats.activeEvents || 0}
+                </div>
+                <p className="text-xs text-gray-600">
+                  Em andamento
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  Taxa de Resolução
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {stats.resolutionRate || '0%'}
+                </div>
+                <p className="text-xs text-gray-600">
+                  Tickets resolvidos
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
 
       {/* Ações rápidas */}
       <div>

@@ -37,6 +37,12 @@ import CheckoutRegularizacao from '@/pages/dashboard/CheckoutRegularizacao';
 import Suporte from '@/pages/dashboard/Suporte';
 import Afiliados from '@/pages/dashboard/Afiliados';
 
+// Admin Pages
+import AdminUsersPage from '@/pages/dashboard/AdminUsers';
+import AdminSupportPage from '@/pages/dashboard/AdminSupportPage';
+import ContentManagement from '@/pages/dashboard/ContentManagement';
+import ContentEdit from '@/pages/dashboard/ContentEdit';
+
 // Layouts
 import Layout from '@/components/Layout';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -87,6 +93,12 @@ function App() {
               <Route path="/dashboard/checkout-regularizacao" element={<CheckoutRegularizacao />} />
               <Route path="/dashboard/suporte" element={<Suporte />} />
               <Route path="/dashboard/afiliados" element={<Afiliados />} />
+              
+              {/* Admin routes */}
+              <Route path="/dashboard/admin/usuarios" element={<AdminUsersPage />} />
+              <Route path="/dashboard/admin/suporte" element={<AdminSupportPage />} />
+              <Route path="/dashboard/admin/content" element={<ContentManagement />} />
+              <Route path="/dashboard/admin/content/:pageName/edit" element={<ContentEdit />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
