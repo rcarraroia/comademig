@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { AffiliateRegistration } from '@/components/affiliates/AffiliateRegistration';
 import { AffiliatePanel } from '@/components/affiliates/AffiliatePanel';
@@ -39,11 +38,9 @@ export default function Afiliados() {
 
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <LoadingSpinner />
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner />
+      </div>
     );
   }
 
@@ -51,25 +48,23 @@ export default function Afiliados() {
   const canParticipate = profile?.status === 'ativo';
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        {!canParticipate && (
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              Para participar do Programa de Afiliados, você precisa estar com a filiação ativa e em dia com suas obrigações.
-            </AlertDescription>
-          </Alert>
-        )}
+    <div className="space-y-6">
+      {!canParticipate && (
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Para participar do Programa de Afiliados, você precisa estar com a filiação ativa e em dia com suas obrigações.
+          </AlertDescription>
+        </Alert>
+      )}
 
-        {canParticipate && (
-          affiliate ? (
-            <AffiliatePanel affiliate={affiliate} />
-          ) : (
-            <AffiliateRegistration onSuccess={handleRegistrationSuccess} />
-          )
-        )}
-      </div>
-    </DashboardLayout>
+      {canParticipate && (
+        affiliate ? (
+          <AffiliatePanel affiliate={affiliate} />
+        ) : (
+          <AffiliateRegistration onSuccess={handleRegistrationSuccess} />
+        )
+      )}
+    </div>
   );
 }

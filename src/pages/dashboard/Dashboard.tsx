@@ -2,6 +2,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfileValidation } from "@/hooks/useProfileValidation";
 import { ProfileCompletion } from "@/components/auth/ProfileCompletion";
+import { AdminDebug } from "@/components/debug/AdminDebug";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,9 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Debug temporário */}
+      <AdminDebug />
+      
       {/* Cabeçalho de boas-vindas */}
       <div className="bg-white rounded-lg p-6 shadow-sm border">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

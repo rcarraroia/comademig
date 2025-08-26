@@ -1,6 +1,5 @@
 
 import AdminDashboard from "@/components/admin/AdminDashboard";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { Navigate } from "react-router-dom";
 
@@ -19,11 +18,7 @@ const AdminDashboardPage = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return (
-    <DashboardLayout>
-      <AdminDashboard />
-    </DashboardLayout>
-  );
+  return <AdminDashboard />;
 };
 
 export default AdminDashboardPage;
