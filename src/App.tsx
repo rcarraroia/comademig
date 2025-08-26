@@ -73,7 +73,7 @@ function App() {
             <Route path="/validar-certidao/:numeroProtocolo" element={<ValidarCertidao />} />
 
             {/* Protected routes */}
-            <Route element={<ProtectedRoute><DashboardLayout><Outlet /></DashboardLayout></ProtectedRoute>}>
+            <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/dashboard/perfil" element={<Perfil />} />
               <Route path="/dashboard/meus-dados" element={<MeusDados />} />
