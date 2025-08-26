@@ -3,15 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, MessageSquare, Calendar, TrendingUp } from "lucide-react";
 import { useAdminData } from "@/hooks/useAdminData";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import { memo, useMemo } from "react";
 
-const AdminDashboard = () => {
+const AdminDashboard = memo(() => {
   const { stats, isLoading } = useAdminData();
 
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
-  const dashboardCards = [
+  const dashboardCards = useMemo(() => [
     {
       title: "Total de Usuários",
       value: stats?.totalUsers || 0,
@@ -40,7 +37,11 @@ const AdminDashboard = () => {
       color: "text-orange-600",
       bgColor: "bg-orange-50",
     },
-  ];
+  ], [stats]);
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <div className="space-y-6">
@@ -75,21 +76,21 @@ const AdminDashboard = () => {
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center space-x-4">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
                 <div>
                   <p className="text-sm font-medium">Novo usuário registrado</p>
                   <p className="text-xs text-gray-500">Há 2 minutos</p>
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
                 <div>
                   <p className="text-sm font-medium">Ticket resolvido</p>
                   <p className="text-xs text-gray-500">Há 15 minutos</p>
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <div className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0"></div>
                 <div>
                   <p className="text-sm font-medium">Evento criado</p>
                   <p className="text-xs text-gray-500">Há 1 hora</p>
@@ -123,6 +124,8 @@ const AdminDashboard = () => {
       </div>
     </div>
   );
-};
+});
+
+AdminDashboard.displayName = 'AdminDashboard';
 
 export default AdminDashboard;
