@@ -315,33 +315,6 @@ export type Database = {
           },
         ]
       }
-      content_management: {
-        Row: {
-          content_json: Json
-          created_at: string
-          id: string
-          last_updated_at: string
-          last_updated_by: string | null
-          page_name: string
-        }
-        Insert: {
-          content_json?: Json
-          created_at?: string
-          id?: string
-          last_updated_at?: string
-          last_updated_by?: string | null
-          page_name: string
-        }
-        Update: {
-          content_json?: Json
-          created_at?: string
-          id?: string
-          last_updated_at?: string
-          last_updated_by?: string | null
-          page_name?: string
-        }
-        Relationships: []
-      }
       eventos: {
         Row: {
           carga_horaria: number | null
