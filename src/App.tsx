@@ -1,117 +1,99 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import { Suspense, lazy } from "react";
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, Outlet } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from '@/components/ui/toaster';
 
-// Lazy load components for better performance
-const Index = lazy(() => import("./pages/Index"));
-const Home = lazy(() => import("./pages/Home"));
-const Sobre = lazy(() => import("./pages/Sobre"));
-const Lideranca = lazy(() => import("./pages/Lideranca"));
-const Noticias = lazy(() => import("./pages/Noticias"));
-const Eventos = lazy(() => import("./pages/Eventos"));
-const Multimidia = lazy(() => import("./pages/Multimidia"));
-const Contato = lazy(() => import("./pages/Contato"));
-const Filiacao = lazy(() => import("./pages/Filiacao"));
-const Auth = lazy(() => import("./pages/Auth"));
-const Dashboard = lazy(() => import("./pages/dashboard/Dashboard"));
-const MeusDados = lazy(() => import("./pages/dashboard/MeusDados"));
-const CarteiraDigital = lazy(() => import("./pages/dashboard/CarteiraDigital"));
-const Financeiro = lazy(() => import("./pages/dashboard/Financeiro"));
-const Certidoes = lazy(() => import("./pages/dashboard/Certidoes"));
-const Regularizacao = lazy(() => import("./pages/dashboard/Regularizacao"));
-const EventosDashboard = lazy(() => import("./pages/dashboard/EventosDashboard"));
-const Afiliados = lazy(() => import("./pages/dashboard/Afiliados"));
-const Comunicacao = lazy(() => import("./pages/dashboard/Comunicacao"));
-const ComunicacaoDashboard = lazy(() => import("./pages/dashboard/ComunicacaoDashboard"));
-const Suporte = lazy(() => import("./pages/dashboard/Suporte"));
-const Perfil = lazy(() => import("./pages/dashboard/Perfil"));
-const AdminDashboard = lazy(() => import("./pages/dashboard/AdminDashboard"));
-const AdminUsers = lazy(() => import("./pages/dashboard/AdminUsers"));
-const ContentManagement = lazy(() => import("./pages/dashboard/ContentManagement"));
-const ContentEdit = lazy(() => import("./pages/dashboard/ContentEdit"));
-const AdminSupportPage = lazy(() => import("./pages/dashboard/AdminSupportPage"));
-const CheckoutRegularizacao = lazy(() => import("./pages/dashboard/CheckoutRegularizacao"));
-const Checkout = lazy(() => import("./pages/Checkout"));
-const PagamentoSucesso = lazy(() => import("./pages/PagamentoSucesso"));
-const ValidarCarteira = lazy(() => import("./pages/ValidarCarteira"));
-const ValidarCertidao = lazy(() => import("./pages/ValidarCertidao"));
-const ValidarCertificado = lazy(() => import("./pages/ValidarCertificado"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+// Public Pages
+import Index from '@/pages/Index';
+import Home from '@/pages/Home';
+import Sobre from '@/pages/Sobre';
+import Lideranca from '@/pages/Lideranca';
+import Noticias from '@/pages/Noticias';
+import Eventos from '@/pages/Eventos';
+import Multimidia from '@/pages/Multimidia';
+import Contato from '@/pages/Contato';
+import Filiacao from '@/pages/Filiacao';
+import Auth from '@/pages/Auth';
+import Checkout from '@/pages/Checkout';
+import PagamentoSucesso from '@/pages/PagamentoSucesso';
+import ValidarCarteira from '@/pages/ValidarCarteira';
+import ValidarCertificado from '@/pages/ValidarCertificado';
+import ValidarCertidao from '@/pages/ValidarCertidao';
+import NotFound from '@/pages/NotFound';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 10, // 10 minutes
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-});
+// Dashboard Pages
+import Dashboard from '@/pages/dashboard/Dashboard';
+import Perfil from '@/pages/dashboard/Perfil';
+import MeusDados from '@/pages/dashboard/MeusDados';
+import CarteiraDigital from '@/pages/dashboard/CarteiraDigital';
+import Comunicacao from '@/pages/dashboard/Comunicacao';
+import ComunicacaoDashboard from '@/pages/dashboard/ComunicacaoDashboard';
+import EventosDashboard from '@/pages/dashboard/EventosDashboard';
+import Certidoes from '@/pages/dashboard/Certidoes';
+import Financeiro from '@/pages/dashboard/Financeiro';
+import Regularizacao from '@/pages/dashboard/Regularizacao';
+import CheckoutRegularizacao from '@/pages/dashboard/CheckoutRegularizacao';
+import Suporte from '@/pages/dashboard/Suporte';
+import Afiliados from '@/pages/dashboard/Afiliados';
+
+// Layouts
+import Layout from '@/components/Layout';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
+
+// Contexts
+import { AuthProvider } from '@/contexts/AuthContext';
+
+// Components
+import ProtectedRoute from '@/components/ProtectedRoute';
+
+const queryClient = new QueryClient();
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Layout><Index /></Layout>} />
+            <Route path="/home" element={<Layout><Home /></Layout>} />
+            <Route path="/sobre" element={<Layout><Sobre /></Layout>} />
+            <Route path="/lideranca" element={<Layout><Lideranca /></Layout>} />
+            <Route path="/noticias" element={<Layout><Noticias /></Layout>} />
+            <Route path="/eventos" element={<Layout><Eventos /></Layout>} />
+            <Route path="/multimidia" element={<Layout><Multimidia /></Layout>} />
+            <Route path="/contato" element={<Layout><Contato /></Layout>} />
+            <Route path="/filiacao" element={<Layout><Filiacao /></Layout>} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/pagamento-sucesso" element={<PagamentoSucesso />} />
+            <Route path="/validar-carteira/:numeroCarteira" element={<ValidarCarteira />} />
+            <Route path="/validar-certificado/:numeroCertificado" element={<ValidarCertificado />} />
+            <Route path="/validar-certidao/:numeroProtocolo" element={<ValidarCertidao />} />
+
+            {/* Protected routes */}
+            <Route element={<ProtectedRoute><DashboardLayout><Outlet /></DashboardLayout></ProtectedRoute>}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/dashboard/perfil" element={<Perfil />} />
+              <Route path="/dashboard/meus-dados" element={<MeusDados />} />
+              <Route path="/dashboard/carteira" element={<CarteiraDigital />} />
+              <Route path="/dashboard/comunicacao" element={<Comunicacao />} />
+              <Route path="/dashboard/comunicacao-dashboard" element={<ComunicacaoDashboard />} />
+              <Route path="/dashboard/eventos" element={<EventosDashboard />} />
+              <Route path="/dashboard/certidoes" element={<Certidoes />} />
+              <Route path="/dashboard/financeiro" element={<Financeiro />} />
+              <Route path="/dashboard/regularizacao" element={<Regularizacao />} />
+              <Route path="/dashboard/checkout-regularizacao" element={<CheckoutRegularizacao />} />
+              <Route path="/dashboard/suporte" element={<Suporte />} />
+              <Route path="/dashboard/afiliados" element={<Afiliados />} />
+            </Route>
+            
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Router>
         <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <Suspense fallback={
-              <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-              </div>
-            }>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/home" element={<Home />} />
-                <Route path="/sobre" element={<Sobre />} />
-                <Route path="/lideranca" element={<Lideranca />} />
-                <Route path="/noticias" element={<Noticias />} />
-                <Route path="/eventos" element={<Eventos />} />
-                <Route path="/multimidia" element={<Multimidia />} />
-                <Route path="/contato" element={<Contato />} />
-                <Route path="/filiacao" element={<Filiacao />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/pagamento-sucesso" element={<PagamentoSucesso />} />
-                <Route path="/validar-carteira" element={<ValidarCarteira />} />
-                <Route path="/validar-certidao" element={<ValidarCertidao />} />
-                <Route path="/validar-certificado" element={<ValidarCertificado />} />
-                
-                {/* Protected Dashboard Routes */}
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/dashboard/meus-dados" element={<ProtectedRoute><MeusDados /></ProtectedRoute>} />
-                <Route path="/dashboard/carteira-digital" element={<ProtectedRoute><CarteiraDigital /></ProtectedRoute>} />
-                <Route path="/dashboard/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
-                <Route path="/dashboard/certidoes" element={<ProtectedRoute><Certidoes /></ProtectedRoute>} />
-                <Route path="/dashboard/regularizacao" element={<ProtectedRoute><Regularizacao /></ProtectedRoute>} />
-                <Route path="/dashboard/regularizacao/checkout" element={<ProtectedRoute><CheckoutRegularizacao /></ProtectedRoute>} />
-                <Route path="/dashboard/eventos" element={<ProtectedRoute><EventosDashboard /></ProtectedRoute>} />
-                <Route path="/dashboard/afiliados" element={<ProtectedRoute><Afiliados /></ProtectedRoute>} />
-                <Route path="/dashboard/comunicacao" element={<ProtectedRoute><ComunicacaoDashboard /></ProtectedRoute>} />
-                <Route path="/dashboard/suporte" element={<ProtectedRoute><Suporte /></ProtectedRoute>} />
-                <Route path="/dashboard/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
-                
-                {/* Admin Routes */}
-                <Route path="/dashboard/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-                <Route path="/dashboard/admin/usuarios" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
-                <Route path="/dashboard/admin/content" element={<ProtectedRoute><ContentManagement /></ProtectedRoute>} />
-                <Route path="/dashboard/admin/content/:pageName/edit" element={<ProtectedRoute><ContentEdit /></ProtectedRoute>} />
-                <Route path="/dashboard/admin/suporte" element={<ProtectedRoute><AdminSupportPage /></ProtectedRoute>} />
-                
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

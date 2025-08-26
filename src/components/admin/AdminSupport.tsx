@@ -1,5 +1,5 @@
 
-import { useState, useMemo, useCallback } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,28 +18,23 @@ const AdminSupport = () => {
   const [selectedPriority, setSelectedPriority] = useState<string>("all");
   const [selectedTicket, setSelectedTicket] = useState<AdminTicket | null>(null);
 
-  const filteredTickets = useMemo(() => {
-    return tickets.filter((ticket: AdminTicket) => {
-      const matchesSearch = ticket.assunto
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-        ticket.profiles?.nome_completo?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesStatus = selectedStatus === "all" || ticket.status === selectedStatus;
-      const matchesPriority = selectedPriority === "all" || ticket.prioridade === selectedPriority;
-      
-      return matchesSearch && matchesStatus && matchesPriority;
-    });
-  }, [tickets, searchTerm, selectedStatus, selectedPriority]);
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
 
-  const stats = useMemo(() => ({
-    total: tickets.length,
-    abertos: tickets.filter(t => t.status === 'aberto').length,
-    emAndamento: tickets.filter(t => t.status === 'em_andamento').length,
-    resolvidos: tickets.filter(t => t.status === 'resolvido').length,
-  }), [tickets]);
+  const filteredTickets = tickets.filter((ticket: AdminTicket) => {
+    const matchesSearch = ticket.assunto
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase()) ||
+      ticket.profiles?.nome_completo?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = selectedStatus === "all" || ticket.status === selectedStatus;
+    const matchesPriority = selectedPriority === "all" || ticket.prioridade === selectedPriority;
+    
+    return matchesSearch && matchesStatus && matchesPriority;
+  });
 
-  const getStatusColor = useCallback((status: string) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'aberto': return 'bg-red-100 text-red-800';
       case 'em_andamento': return 'bg-yellow-100 text-yellow-800';
@@ -47,34 +42,32 @@ const AdminSupport = () => {
       case 'fechado': return 'bg-gray-100 text-gray-800';
       default: return 'bg-blue-100 text-blue-800';
     }
-  }, []);
+  };
 
-  const getPriorityColor = useCallback((priority: string) => {
+  const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'alta': return 'bg-red-100 text-red-800';
       case 'media': return 'bg-yellow-100 text-yellow-800';
       case 'baixa': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
-  }, []);
+  };
 
-  const getStatusIcon = useCallback((status: string) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'aberto': return <AlertCircle className="h-4 w-4" />;
       case 'em_andamento': return <Clock className="h-4 w-4" />;
       case 'resolvido': return <CheckCircle className="h-4 w-4" />;
       default: return <MessageCircle className="h-4 w-4" />;
     }
-  }, []);
+  };
 
-  const handleTicketUpdate = useCallback(() => {
-    refetchTickets();
-    setSelectedTicket(null);
-  }, [refetchTickets]);
-
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
+  const stats = {
+    total: tickets.length,
+    abertos: tickets.filter(t => t.status === 'aberto').length,
+    emAndamento: tickets.filter(t => t.status === 'em_andamento').length,
+    resolvidos: tickets.filter(t => t.status === 'resolvido').length,
+  };
 
   return (
     <div className="space-y-6">
@@ -147,7 +140,7 @@ const AdminSupport = () => {
                 </div>
               </div>
               <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-                {Math.round((stats.resolvidos / stats.total) * 100) || 0}% taxa
+                {Math.round((stats.resolvidos / stats.total) * 100)}% taxa
               </div>
             </div>
           </CardContent>
@@ -269,7 +262,10 @@ const AdminSupport = () => {
         <TicketResponse
           ticket={selectedTicket}
           onClose={() => setSelectedTicket(null)}
-          onUpdate={handleTicketUpdate}
+          onUpdate={() => {
+            refetchTickets();
+            setSelectedTicket(null);
+          }}
         />
       )}
     </div>
