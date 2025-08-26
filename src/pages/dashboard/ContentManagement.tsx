@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Edit, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { Navigate } from "react-router-dom";
 
@@ -33,40 +32,38 @@ const ContentManagement = () => {
   ];
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-comademig-blue">Gerenciar Conteúdo do Site</h1>
-          <p className="text-gray-600 mt-2">
-            Gerencie o conteúdo das páginas públicas do site COMADEMIG
-          </p>
-        </div>
-
-        <div className="grid gap-4">
-          {pages.map((page) => (
-            <Card key={page.key} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <FileText className="h-5 w-5 text-comademig-blue" />
-                    <div>
-                      <CardTitle className="text-lg">{page.name}</CardTitle>
-                      <CardDescription>{page.description}</CardDescription>
-                    </div>
-                  </div>
-                  <Link to={`/dashboard/admin/content/${page.key}/edit`}>
-                    <Button variant="outline" size="sm" className="flex items-center space-x-2">
-                      <Edit className="h-4 w-4" />
-                      <span>Editar</span>
-                    </Button>
-                  </Link>
-                </div>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-comademig-blue">Gerenciar Conteúdo do Site</h1>
+        <p className="text-gray-600 mt-2">
+          Gerencie o conteúdo das páginas públicas do site COMADEMIG
+        </p>
       </div>
-    </DashboardLayout>
+
+      <div className="grid gap-4">
+        {pages.map((page) => (
+          <Card key={page.key} className="hover:shadow-md transition-shadow">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <FileText className="h-5 w-5 text-comademig-blue" />
+                  <div>
+                    <CardTitle className="text-lg">{page.name}</CardTitle>
+                    <CardDescription>{page.description}</CardDescription>
+                  </div>
+                </div>
+                <Link to={`/dashboard/admin/content/${page.key}/edit`}>
+                  <Button variant="outline" size="sm" className="flex items-center space-x-2">
+                    <Edit className="h-4 w-4" />
+                    <span>Editar</span>
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+          </Card>
+        ))}
+      </div>
+    </div>
   );
 };
 
