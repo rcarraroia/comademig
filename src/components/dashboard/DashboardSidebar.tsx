@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { X, Home, User, CreditCard, FileText, Calendar, MessageSquare, HelpCircle, Settings, Globe, Building, Users } from "lucide-react";
+import { X, Home, User, CreditCard, FileText, Calendar, MessageSquare, HelpCircle, Settings, Globe, Building, Users, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface DashboardSidebarProps {
@@ -27,6 +27,7 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
   const adminMenuItems = [
     { path: "/dashboard/admin", label: "Painel Admin", icon: Settings },
     { path: "/dashboard/admin/usuarios", label: "Gerenciar Usuários", icon: Users },
+    { path: "/dashboard/admin/content", label: "Gerenciar Conteúdo do Site", icon: Edit },
     { path: "/dashboard/admin/suporte", label: "Suporte Admin", icon: MessageSquare },
   ];
 
