@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AdminProfile } from "@/hooks/useAdminData";
 import { useSupabaseMutation } from "@/hooks/useSupabaseQuery";
 import { supabase } from "@/integrations/supabase/client";
+import { useMemberTypes } from "@/hooks/useMemberTypes";
 
 interface EditUserModalProps {
   user: AdminProfile | null;
@@ -19,6 +20,9 @@ interface EditUserModalProps {
 type UserRole = "membro" | "admin" | "moderador" | "tesoureiro";
 
 export const EditUserModal = ({ user, isOpen, onClose, onSuccess }: EditUserModalProps) => {
+  const { getTypesWithFallback } = useMemberTypes();
+  const memberTypes = getTypesWithFallback();
+  
   const [formData, setFormData] = useState({
     nome_completo: user?.nome_completo || "",
     cpf: user?.cpf || "",
@@ -178,10 +182,11 @@ export const EditUserModal = ({ user, isOpen, onClose, onSuccess }: EditUserModa
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="membro">Membro</SelectItem>
-                  <SelectItem value="tesoureiro">Tesoureiro</SelectItem>
-                  <SelectItem value="moderador">Moderador</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
+                  {memberTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.name.toLowerCase()}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

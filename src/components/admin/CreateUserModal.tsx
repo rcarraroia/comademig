@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { useMemberTypes } from '@/hooks/useMemberTypes';
 
 interface CreateUserModalProps {
   isOpen: boolean;
@@ -16,6 +17,8 @@ interface CreateUserModalProps {
 
 export const CreateUserModal = ({ isOpen, onClose, onSuccess }: CreateUserModalProps) => {
   const { toast } = useToast();
+  const { getTypesWithFallback } = useMemberTypes();
+  const memberTypes = getTypesWithFallback();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -248,10 +251,11 @@ export const CreateUserModal = ({ isOpen, onClose, onSuccess }: CreateUserModalP
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="membro">Membro</SelectItem>
-                    <SelectItem value="moderador">Moderador</SelectItem>
-                    <SelectItem value="tesoureiro">Tesoureiro</SelectItem>
-                    <SelectItem value="admin">Administrador</SelectItem>
+                    {memberTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.name.toLowerCase()}>
+                        {type.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
