@@ -51,4 +51,282 @@ export const useUserSubscriptions = () => {
     isLoading, 
     error, 
     refetch 
-  } = useSupabaseQuery<UserSubscription[]>(\n    ['user-subscriptions', user?.id],\n    async (): Promise<UserSubscription[]> => {\n      if (!user) return [];\n\n      const { data, error } = await supabase\n        .from('user_subscriptions')\n        .select(`\n          *,\n          subscription_plans(\n            id,\n            name,\n            price,\n            recurrence,\n            permissions\n          ),\n          member_types(\n            id,\n            name,\n            description\n          )\n        `)\n        .eq('user_id', user.id)\n        .order('created_at', { ascending: false });\n\n      if (error) {\n        console.error('Erro ao buscar assinaturas do usuário:', error);\n        throw error;\n      }\n\n      return data || [];\n    },\n    {\n      enabled: !!user,\n      staleTime: 5 * 60 * 1000, // Cache por 5 minutos\n      cacheTime: 10 * 60 * 1000 // Manter em cache por 10 minutos\n    }\n  );\n\n  // Query para buscar assinatura ativa do usuário\n  const { \n    data: activeSubscription, \n    isLoading: loadingActiveSubscription \n  } = useSupabaseQuery<UserSubscription | null>(\n    ['active-subscription', user?.id],\n    async (): Promise<UserSubscription | null> => {\n      if (!user) return null;\n\n      const { data, error } = await supabase\n        .from('user_subscriptions')\n        .select(`\n          *,\n          subscription_plans(\n            id,\n            name,\n            price,\n            recurrence,\n            permissions\n          ),\n          member_types(\n            id,\n            name,\n            description\n          )\n        `)\n        .eq('user_id', user.id)\n        .eq('status', 'active')\n        .single();\n\n      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned\n        console.error('Erro ao buscar assinatura ativa:', error);\n        throw error;\n      }\n\n      return data || null;\n    },\n    {\n      enabled: !!user,\n      staleTime: 5 * 60 * 1000,\n      cacheTime: 10 * 60 * 1000\n    }\n  );\n\n  // Mutation para criar nova assinatura\n  const createUserSubscription = useSupabaseMutation<UserSubscription, CreateUserSubscriptionData>(\n    async (subscriptionData: CreateUserSubscriptionData): Promise<UserSubscription> => {\n      const { data, error } = await supabase\n        .from('user_subscriptions')\n        .insert({\n          ...subscriptionData,\n          start_date: subscriptionData.start_date || new Date().toISOString(),\n          status: subscriptionData.status || 'pending'\n        })\n        .select(`\n          *,\n          subscription_plans(\n            id,\n            name,\n            price,\n            recurrence,\n            permissions\n          ),\n          member_types(\n            id,\n            name,\n            description\n          )\n        `)\n        .single();\n\n      if (error) {\n        console.error('Erro ao criar assinatura:', error);\n        throw error;\n      }\n\n      return data;\n    },\n    {\n      onSuccess: () => {\n        toast.success('Assinatura criada com sucesso!');\n        refetch();\n      },\n      onError: (error) => {\n        console.error('Erro ao criar assinatura:', error);\n        toast.error('Erro ao criar assinatura. Tente novamente.');\n      }\n    }\n  );\n\n  // Mutation para atualizar status da assinatura\n  const updateSubscriptionStatus = useSupabaseMutation<UserSubscription, { id: string; status: string; payment_reference?: string }>(\n    async ({ id, status, payment_reference }): Promise<UserSubscription> => {\n      const updateData: any = { status, updated_at: new Date().toISOString() };\n      \n      if (payment_reference) {\n        updateData.payment_reference = payment_reference;\n      }\n      \n      if (status === 'active' && !payment_reference) {\n        updateData.start_date = new Date().toISOString();\n      }\n\n      const { data, error } = await supabase\n        .from('user_subscriptions')\n        .update(updateData)\n        .eq('id', id)\n        .select(`\n          *,\n          subscription_plans(\n            id,\n            name,\n            price,\n            recurrence,\n            permissions\n          ),\n          member_types(\n            id,\n            name,\n            description\n          )\n        `)\n        .single();\n\n      if (error) {\n        console.error('Erro ao atualizar status da assinatura:', error);\n        throw error;\n      }\n\n      return data;\n    },\n    {\n      onSuccess: () => {\n        toast.success('Status da assinatura atualizado!');\n        refetch();\n      },\n      onError: (error) => {\n        console.error('Erro ao atualizar assinatura:', error);\n        toast.error('Erro ao atualizar assinatura. Tente novamente.');\n      }\n    }\n  );\n\n  // Mutation para cancelar assinatura\n  const cancelSubscription = useSupabaseMutation<UserSubscription, string>(\n    async (subscriptionId: string): Promise<UserSubscription> => {\n      const { data, error } = await supabase\n        .from('user_subscriptions')\n        .update({ \n          status: 'cancelled',\n          end_date: new Date().toISOString(),\n          updated_at: new Date().toISOString()\n        })\n        .eq('id', subscriptionId)\n        .select(`\n          *,\n          subscription_plans(\n            id,\n            name,\n            price,\n            recurrence,\n            permissions\n          ),\n          member_types(\n            id,\n            name,\n            description\n          )\n        `)\n        .single();\n\n      if (error) {\n        console.error('Erro ao cancelar assinatura:', error);\n        throw error;\n      }\n\n      return data;\n    },\n    {\n      onSuccess: () => {\n        toast.success('Assinatura cancelada com sucesso!');\n        refetch();\n      },\n      onError: (error) => {\n        console.error('Erro ao cancelar assinatura:', error);\n        toast.error('Erro ao cancelar assinatura. Tente novamente.');\n      }\n    }\n  );\n\n  // Função utilitária para verificar se usuário tem assinatura ativa\n  const hasActiveSubscription = (): boolean => {\n    return activeSubscription !== null && activeSubscription !== undefined;\n  };\n\n  // Função utilitária para obter permissões da assinatura ativa\n  const getActivePermissions = (): Record<string, boolean> => {\n    if (!activeSubscription?.subscription_plans?.permissions) {\n      return {};\n    }\n    return activeSubscription.subscription_plans.permissions;\n  };\n\n  // Função utilitária para verificar se tem uma permissão específica\n  const hasPermission = (permission: string): boolean => {\n    const permissions = getActivePermissions();\n    return permissions[permission] === true;\n  };\n\n  return {\n    // Data\n    userSubscriptions,\n    activeSubscription,\n    isLoading,\n    loadingActiveSubscription,\n    error,\n    \n    // Actions\n    createUserSubscription,\n    updateSubscriptionStatus,\n    cancelSubscription,\n    refetch,\n    \n    // Utilities\n    hasActiveSubscription,\n    getActivePermissions,\n    hasPermission\n  };\n};\n\n// Hook simplificado para verificar apenas se tem assinatura ativa\nexport const useActiveSubscription = () => {\n  const { activeSubscription, loadingActiveSubscription, hasActiveSubscription } = useUserSubscriptions();\n  \n  return {\n    subscription: activeSubscription,\n    isLoading: loadingActiveSubscription,\n    hasSubscription: hasActiveSubscription()\n  };\n};"
+  } = useSupabaseQuery<UserSubscription[]>(
+    ['user-subscriptions', user?.id],
+    async (): Promise<UserSubscription[]> => {
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .select(`
+          *,
+          subscription_plans(
+            id,
+            name,
+            price,
+            recurrence,
+            permissions
+          ),
+          member_types(
+            id,
+            name,
+            description
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Erro ao buscar assinaturas do usuário:', error);
+        throw error;
+      }
+
+      return data || [];
+    },
+    {
+      enabled: !!user,
+      staleTime: 5 * 60 * 1000, // Cache por 5 minutos
+      cacheTime: 10 * 60 * 1000 // Manter em cache por 10 minutos
+    }
+  );
+
+  // Query para buscar assinatura ativa do usuário
+  const { 
+    data: activeSubscription, 
+    isLoading: loadingActiveSubscription 
+  } = useSupabaseQuery<UserSubscription | null>(
+    ['active-subscription', user?.id],
+    async (): Promise<UserSubscription | null> => {
+      if (!user) return null;
+
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .select(`
+          *,
+          subscription_plans(
+            id,
+            name,
+            price,
+            recurrence,
+            permissions
+          ),
+          member_types(
+            id,
+            name,
+            description
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.error('Erro ao buscar assinatura ativa:', error);
+        throw error;
+      }
+
+      return data || null;
+    },
+    {
+      enabled: !!user,
+      staleTime: 5 * 60 * 1000,
+      cacheTime: 10 * 60 * 1000
+    }
+  );
+
+  // Mutation para criar nova assinatura
+  const createUserSubscription = useSupabaseMutation<UserSubscription, CreateUserSubscriptionData>(
+    async (subscriptionData: CreateUserSubscriptionData): Promise<UserSubscription> => {
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .insert({
+          ...subscriptionData,
+          start_date: subscriptionData.start_date || new Date().toISOString(),
+          status: subscriptionData.status || 'pending'
+        })
+        .select(`
+          *,
+          subscription_plans(
+            id,
+            name,
+            price,
+            recurrence,
+            permissions
+          ),
+          member_types(
+            id,
+            name,
+            description
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error('Erro ao criar assinatura:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    {
+      onSuccess: () => {
+        toast.success('Assinatura criada com sucesso!');
+        refetch();
+      },
+      onError: (error) => {
+        console.error('Erro ao criar assinatura:', error);
+        toast.error('Erro ao criar assinatura. Tente novamente.');
+      }
+    }
+  );
+
+  // Mutation para atualizar status da assinatura
+  const updateSubscriptionStatus = useSupabaseMutation<UserSubscription, { id: string; status: string; payment_reference?: string }>(
+    async ({ id, status, payment_reference }): Promise<UserSubscription> => {
+      const updateData: any = { status, updated_at: new Date().toISOString() };
+      
+      if (payment_reference) {
+        updateData.payment_reference = payment_reference;
+      }
+      
+      if (status === 'active' && !payment_reference) {
+        updateData.start_date = new Date().toISOString();
+      }
+
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .update(updateData)
+        .eq('id', id)
+        .select(`
+          *,
+          subscription_plans(
+            id,
+            name,
+            price,
+            recurrence,
+            permissions
+          ),
+          member_types(
+            id,
+            name,
+            description
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error('Erro ao atualizar status da assinatura:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    {
+      onSuccess: () => {
+        toast.success('Status da assinatura atualizado!');
+        refetch();
+      },
+      onError: (error) => {
+        console.error('Erro ao atualizar assinatura:', error);
+        toast.error('Erro ao atualizar assinatura. Tente novamente.');
+      }
+    }
+  );
+
+  // Mutation para cancelar assinatura
+  const cancelSubscription = useSupabaseMutation<UserSubscription, string>(
+    async (subscriptionId: string): Promise<UserSubscription> => {
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .update({ 
+          status: 'cancelled',
+          end_date: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', subscriptionId)
+        .select(`
+          *,
+          subscription_plans(
+            id,
+            name,
+            price,
+            recurrence,
+            permissions
+          ),
+          member_types(
+            id,
+            name,
+            description
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error('Erro ao cancelar assinatura:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    {
+      onSuccess: () => {
+        toast.success('Assinatura cancelada com sucesso!');
+        refetch();
+      },
+      onError: (error) => {
+        console.error('Erro ao cancelar assinatura:', error);
+        toast.error('Erro ao cancelar assinatura. Tente novamente.');
+      }
+    }
+  );
+
+  // Função utilitária para verificar se usuário tem assinatura ativa
+  const hasActiveSubscription = (): boolean => {
+    return activeSubscription !== null && activeSubscription !== undefined;
+  };
+
+  // Função utilitária para obter permissões da assinatura ativa
+  const getActivePermissions = (): Record<string, boolean> => {
+    if (!activeSubscription?.subscription_plans?.permissions) {
+      return {};
+    }
+    return activeSubscription.subscription_plans.permissions;
+  };
+
+  // Função utilitária para verificar se tem uma permissão específica
+  const hasPermission = (permission: string): boolean => {
+    const permissions = getActivePermissions();
+    return permissions[permission] === true;
+  };
+
+  return {
+    // Data
+    userSubscriptions,
+    activeSubscription,
+    isLoading,
+    loadingActiveSubscription,
+    error,
+    
+    // Actions
+    createUserSubscription,
+    updateSubscriptionStatus,
+    cancelSubscription,
+    refetch,
+    
+    // Utilities
+    hasActiveSubscription,
+    getActivePermissions,
+    hasPermission
+  };
+};
+
+// Hook simplificado para verificar apenas se tem assinatura ativa
+export const useActiveSubscription = () => {
+  const { activeSubscription, loadingActiveSubscription, hasActiveSubscription } = useUserSubscriptions();
+  
+  return {
+    subscription: activeSubscription,
+    isLoading: loadingActiveSubscription,
+    hasSubscription: hasActiveSubscription()
+  };
+};
