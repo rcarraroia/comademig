@@ -11,19 +11,25 @@ import { Navigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-interface SobreContentData {
+interface ContatoContentData {
   titulo: string;
   descricao: string;
+  endereco: string;
+  telefone: string;
+  email: string;
 }
 
-const SobreContentEdit = () => {
+const ContatoContentEdit = () => {
   const { isAdmin, loading } = useUserRoles();
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [contentData, setContentData] = useState<SobreContentData>({
+  const [contentData, setContentData] = useState<ContatoContentData>({
     titulo: '',
-    descricao: ''
+    descricao: '',
+    endereco: '',
+    telefone: '',
+    email: ''
   });
   
   const [isLoading, setIsLoading] = useState(true);
@@ -40,7 +46,7 @@ const SobreContentEdit = () => {
       const { data, error } = await supabase
         .from('content_management')
         .select('content_json')
-        .eq('page_name', 'about')
+        .eq('page_name', 'contact')
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -60,15 +66,14 @@ const SobreContentEdit = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleSave = async () => {
+  };  
+const handleSave = async () => {
     setIsSaving(true);
     try {
       const { error } = await supabase
         .from('content_management')
         .upsert({
-          page_name: 'about',
+          page_name: 'contact',
           content_json: contentData as any
         });
 
@@ -78,7 +83,7 @@ const SobreContentEdit = () => {
 
       toast({
         title: "Sucesso",
-        description: "Conteúdo da página Sobre salvo com sucesso!",
+        description: "Conteúdo da página Contato salvo com sucesso!",
       });
       
       navigate('/dashboard/admin/content');
@@ -117,19 +122,18 @@ const SobreContentEdit = () => {
         </Link>
         <div>
           <h1 className="text-3xl font-bold text-comademig-blue">
-            Editar Página: Sobre
+            Editar Página: Contato
           </h1>
           <p className="text-gray-600 mt-2">
-            Configure o conteúdo da página "Sobre a COMADEMIG"
+            Configure o conteúdo da página de Contato
           </p>
         </div>
-      </div>
-
-      <Card>
+      </div>  
+    <Card>
         <CardHeader>
-          <CardTitle>Conteúdo da Página Sobre</CardTitle>
+          <CardTitle>Conteúdo da Página Contato</CardTitle>
           <CardDescription>
-            Configure o conteúdo básico da página sobre
+            Configure o conteúdo básico da página contato
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -159,10 +163,49 @@ const SobreContentEdit = () => {
               rows={6}
             />
           </div>
-        </CardContent>
-      </Card>
 
-      <div className="flex justify-end space-x-2">
+          <div>
+            <Label htmlFor="endereco">Endereço</Label>
+            <Input
+              id="endereco"
+              value={contentData.endereco}
+              onChange={(e) => setContentData(prev => ({
+                ...prev,
+                endereco: e.target.value
+              }))}
+              placeholder="Endereço completo"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="telefone">Telefone</Label>
+            <Input
+              id="telefone"
+              value={contentData.telefone}
+              onChange={(e) => setContentData(prev => ({
+                ...prev,
+                telefone: e.target.value
+              }))}
+              placeholder="(11) 99999-9999"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="email">E-mail</Label>
+            <Input
+              id="email"
+              type="email"
+              value={contentData.email}
+              onChange={(e) => setContentData(prev => ({
+                ...prev,
+                email: e.target.value
+              }))}
+              placeholder="contato@exemplo.com"
+            />
+          </div>
+        </CardContent>
+      </Card>    
+  <div className="flex justify-end space-x-2">
         <Link to="/dashboard/admin/content">
           <Button variant="outline">Cancelar</Button>
         </Link>
@@ -175,4 +218,4 @@ const SobreContentEdit = () => {
   );
 };
 
-export default SobreContentEdit;
+export default ContatoContentEdit;

@@ -33,12 +33,18 @@ export const useUserRoles = () => {
 
         if (error) {
           console.error('Erro ao buscar roles:', error);
+          // Se a tabela user_roles não existir ou houver erro de política,
+          // continuar sem roles (fallback para tipo_membro)
+          setRoles([]);
+          setLoading(false);
           return;
         }
 
         setRoles(data?.map(r => r.role) || []);
       } catch (error) {
         console.error('Erro ao buscar roles:', error);
+        // Fallback gracioso em caso de erro
+        setRoles([]);
       } finally {
         setLoading(false);
       }

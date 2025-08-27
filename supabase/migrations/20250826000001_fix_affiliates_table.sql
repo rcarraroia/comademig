@@ -23,10 +23,23 @@ ALTER COLUMN display_name SET NOT NULL;
 ALTER TABLE public.affiliates 
 ALTER COLUMN cpf_cnpj SET NOT NULL;
 
--- 3. Adicionar constraint para validar formato do Wallet ID (opcional)
-ALTER TABLE public.affiliates 
-ADD CONSTRAINT check_asaas_wallet_id_format 
-CHECK (length(asaas_wallet_id) > 0 AND asaas_wallet_id ~ '^[a-zA-Z0-9\-]+$');
+-- 3. Adicionar constraint para validar formato do Wallet ID (se não existir)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.check_constraints 
+        WHERE constraint_name = 'check_asaas_wallet_id_format'
+        AND table_name = 'affiliates'
+    ) THEN
+        ALTER TABLE public.affiliates 
+        ADD CONSTRAINT check_asaas_wallet_id_format 
+        CHECK (length(asaas_wallet_id) > 0 AND asaas_wallet_id ~ '^[a-zA-Z0-9\-]+$');
+        
+        RAISE NOTICE 'Constraint check_asaas_wallet_id_format criada com sucesso';
+    ELSE
+        RAISE NOTICE 'Constraint check_asaas_wallet_id_format já existe, pulando criação';
+    END IF;
+END $$;
 
 -- 4. Comentários para documentação
 COMMENT ON COLUMN public.affiliates.asaas_wallet_id IS 'Wallet ID da Asaas (formato string) para recebimento de comissões';

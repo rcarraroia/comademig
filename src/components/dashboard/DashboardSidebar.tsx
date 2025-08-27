@@ -2,6 +2,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { X, Home, User, CreditCard, FileText, Calendar, MessageSquare, HelpCircle, Settings, Globe, Building, Users, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useUserRoles } from "@/hooks/useUserRoles";
 
 interface DashboardSidebarProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface DashboardSidebarProps {
 
 const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
   const location = useLocation();
+  const { isAdmin, loading } = useUserRoles();
 
   const menuItems = [
     { path: "/dashboard", label: "Dashboard", icon: Home },
@@ -86,29 +88,31 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
             </Link>
           ))}
 
-          {/* Admin Section */}
-          <div className="mt-6 pt-4 border-t border-blue-600">
-            <div className="text-xs font-semibold text-blue-200 mb-2 px-3">
-              ADMINISTRAÇÃO
+          {/* Admin Section - Visível apenas para administradores */}
+          {!loading && isAdmin() && (
+            <div className="mt-6 pt-4 border-t border-blue-600">
+              <div className="text-xs font-semibold text-blue-200 mb-2 px-3">
+                ADMINISTRAÇÃO
+              </div>
+              {adminMenuItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={onClose}
+                  className={`
+                    flex items-center space-x-3 p-2 lg:p-3 rounded-lg transition-colors duration-200 text-sm font-medium
+                    ${isActive(item.path) 
+                      ? 'bg-comademig-gold text-comademig-blue' 
+                      : 'text-white hover:bg-blue-600'
+                    }
+                  `}
+                >
+                  <item.icon size={18} />
+                  <span>{item.label}</span>
+                </Link>
+              ))}
             </div>
-            {adminMenuItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={onClose}
-                className={`
-                  flex items-center space-x-3 p-2 lg:p-3 rounded-lg transition-colors duration-200 text-sm font-medium
-                  ${isActive(item.path) 
-                    ? 'bg-comademig-gold text-comademig-blue' 
-                    : 'text-white hover:bg-blue-600'
-                  }
-                `}
-              >
-                <item.icon size={18} />
-                <span>{item.label}</span>
-              </Link>
-            ))}
-          </div>
+          )}
         </nav>
 
         {/* Bottom Section - Fixed at bottom */}

@@ -15,7 +15,7 @@ interface AffiliateRegistrationProps {
 export const AffiliateRegistration = ({ onSuccess }: AffiliateRegistrationProps) => {
   const [walletId, setWalletId] = useState('');
   const { createAffiliate, loading } = useAffiliate();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +40,7 @@ export const AffiliateRegistration = ({ onSuccess }: AffiliateRegistrationProps)
         display_name: profile.nome_completo.trim(),
         cpf_cnpj: profile.cpf.trim(),
         asaas_wallet_id: walletId.trim(),
-        contact_email: profile.email || '',
+        contact_email: user?.email || '',
         phone: profile.telefone?.trim() || ''
       });
       
