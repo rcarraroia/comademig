@@ -8,12 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Save, Edit, User, MapPin, Church, Settings, Eye, Download, Bell, Shield, Lock, Activity, AlertTriangle, LogOut, Trash2, Link as LinkIcon, Camera, Globe } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Save, Edit, User, MapPin, Church, Settings, Eye, Download, Bell, Shield, Lock, Activity, AlertTriangle, LogOut, Trash2, Link as LinkIcon, Camera, Globe, CreditCard, Info } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useLoadingState } from "@/hooks/useLoadingState";
 import { useAccessibility } from "@/hooks/useAccessibility";
 import { useProfileValidation } from "@/hooks/useProfileValidation";
+import { useActiveSubscription } from "@/hooks/useUserSubscriptions";
 import { PhotoUpload } from "@/components/forms/PhotoUpload";
 import { UserAvatar } from "@/components/common/UserAvatar";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
@@ -27,6 +29,7 @@ const PerfilCompleto = () => {
   const { setLoading, isLoading } = useLoadingState();
   const { announceToScreenReader } = useAccessibility();
   const { getProfileCompletionPercentage } = useProfileValidation();
+  const { subscription, isLoading: loadingSubscription, hasSubscription } = useActiveSubscription();
   const { toast } = useToast();
   
   const [isEditing, setIsEditing] = useState(false);
@@ -529,6 +532,44 @@ const PerfilCompleto = () => {
               </CardContent>
             </Card>
 
+            {/* Subscription Info */}
+            {hasSubscription && subscription && (
+              <Card className="lg:col-span-3">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard size={20} />
+                    Assinatura Ativa
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Alert className="border-green-200 bg-green-50">
+                    <CreditCard className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-green-800">
+                      <div className="space-y-2">
+                        <div>
+                          <strong>Plano:</strong> {subscription.subscription_plans?.name}
+                        </div>
+                        <div>
+                          <strong>Cargo Ministerial:</strong> {subscription.member_types?.name}
+                        </div>
+                        <div>
+                          <strong>Status:</strong> <Badge className="ml-1">{subscription.status === 'active' ? 'Ativo' : subscription.status}</Badge>
+                        </div>
+                        <div>
+                          <strong>Início:</strong> {new Date(subscription.start_date).toLocaleDateString('pt-BR')}
+                        </div>
+                        {subscription.end_date && (
+                          <div>
+                            <strong>Término:</strong> {new Date(subscription.end_date).toLocaleDateString('pt-BR')}
+                          </div>
+                        )}
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Ministry Data */}
             <Card className="lg:col-span-3">
               <CardHeader>
@@ -555,8 +596,15 @@ const PerfilCompleto = () => {
                       id="cargo"
                       value={formData.cargo}
                       onChange={(e) => handleInputChange('cargo', e.target.value)}
-                      disabled={!isEditing}
+                      disabled={!isEditing || (hasSubscription && subscription?.member_types?.name)}
+                      className={hasSubscription && subscription?.member_types?.name ? 'bg-gray-100' : ''}
                     />
+                    {hasSubscription && subscription?.member_types?.name && (
+                      <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                        <Info className="h-3 w-3" />
+                        Cargo definido pela assinatura ativa: {subscription.member_types.name}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="data_ordenacao">Data de Ordenação</Label>

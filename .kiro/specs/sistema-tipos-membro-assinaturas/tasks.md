@@ -70,30 +70,34 @@
   - ✅ Preservadas funcionalidades existentes
   - _Requirements: 3.1, 7.1_
 
-## Fase 3: Integração - Formulário de Filiação Aprimorado
+## ✅ Fase 3: Integração - Formulário de Filiação Aprimorado (CONCLUÍDA)
 
-- [ ] 11. Atualizar PaymentForm com seleção de cargo ministerial
-  - Transformar campo cargo de texto livre para dropdown
-  - Implementar carregamento dinâmico de tipos de membro
-  - Manter compatibilidade com formulários existentes
+- [x] 11. Atualizar PaymentForm com seleção de cargo ministerial
+  - ✅ Transformado campo cargo de texto livre para dropdown dinâmico
+  - ✅ Implementado carregamento dinâmico de tipos de membro
+  - ✅ Mantida compatibilidade com formulários existentes
+  - ✅ Adicionada prop showMemberTypeSelection para controle
   - _Requirements: 2.1, 2.2, 6.4_
 
-- [ ] 12. Implementar lógica de filtro de assinaturas por cargo
-  - Criar função de filtro baseada em relacionamentos
-  - Implementar atualização dinâmica de opções disponíveis
-  - Adicionar loading states e tratamento de erros
+- [x] 12. Implementar lógica de filtro de assinaturas por cargo
+  - ✅ Criada função de filtro baseada em relacionamentos
+  - ✅ Implementada atualização dinâmica de opções disponíveis
+  - ✅ Adicionados loading states e tratamento de erros
+  - ✅ Integração com useSubscriptionPlans.getPlansForMemberType
   - _Requirements: 2.2, 5.2, 7.4_
 
-- [ ] 13. Integrar criação automática de user_subscription
-  - Modificar fluxo de pagamento para incluir assinatura
-  - Implementar atribuição automática de permissões
-  - Criar logs de auditoria para rastreamento
+- [x] 13. Integrar criação automática de user_subscription
+  - ✅ Modificado fluxo de pagamento para incluir assinatura
+  - ✅ Implementada atribuição automática de permissões
+  - ✅ Criado hook useUserSubscriptions completo
+  - ✅ Integração com página de Filiação funcionando
   - _Requirements: 4.1, 4.2, 8.2_
 
-- [ ] 14. Atualizar página PerfilCompleto com campo cargo readonly
-  - Tornar campo cargo somente leitura se preenchido via filiação
-  - Manter editabilidade para usuários existentes
-  - Exibir origem do dado (manual vs filiação)
+- [x] 14. Atualizar página PerfilCompleto com campo cargo readonly
+  - ✅ Campo cargo tornado somente leitura quando definido via assinatura
+  - ✅ Mantida editabilidade para usuários existentes
+  - ✅ Exibida origem do dado (manual vs filiação)
+  - ✅ Adicionada seção de informações da assinatura ativa
   - _Requirements: 2.3, 2.4, 6.4_
 
 ## Fase 4: Refinamento e Otimização

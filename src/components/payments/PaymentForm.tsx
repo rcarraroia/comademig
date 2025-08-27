@@ -1,26 +1,41 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAsaasPayments, PaymentData } from '@/hooks/useAsaasPayments';
-import { CreditCard, FileText, Smartphone, CheckCircle, Info } from 'lucide-react';
+import { useMemberTypes } from '@/hooks/useMemberTypes';
+import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
+import { CreditCard, FileText, Smartphone, CheckCircle, Info, Users } from 'lucide-react';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
 interface PaymentFormProps {
   defaultData?: Partial<PaymentData>;
-  onSuccess?: (cobranca: any) => void;
+  onSuccess?: (cobranca: any, selectedMemberType?: string, selectedPlan?: string) => void;
   onCancel?: () => void;
   showTitle?: boolean;
+  showMemberTypeSelection?: boolean; // Nova prop para controlar se mostra seleção de cargo
 }
 
-export const PaymentForm = ({ defaultData, onSuccess, onCancel, showTitle = true }: PaymentFormProps) => {
+export const PaymentForm = ({ 
+  defaultData, 
+  onSuccess, 
+  onCancel, 
+  showTitle = true, 
+  showMemberTypeSelection = false 
+}: PaymentFormProps) => {
   const { createPayment, loading } = useAsaasPayments();
+  const { memberTypes, isLoading: loadingMemberTypes } = useMemberTypes();
+  const { getPlansForMemberType, formatPrice } = useSubscriptionPlans();
   const [paymentResult, setPaymentResult] = useState<any>(null);
+  const [selectedMemberType, setSelectedMemberType] = useState<string>('');
+  const [selectedPlan, setSelectedPlan] = useState<string>('');
+  const [availablePlans, setAvailablePlans] = useState<any[]>([]);
   
   const [formData, setFormData] = useState<PaymentData>({
     customer: {
@@ -43,13 +58,63 @@ export const PaymentForm = ({ defaultData, onSuccess, onCancel, showTitle = true
     affiliateId: defaultData?.affiliateId
   });
 
+  // Carregar planos quando o tipo de membro for selecionado
+  useEffect(() => {
+    if (selectedMemberType && showMemberTypeSelection) {
+      loadPlansForMemberType(selectedMemberType);
+    }
+  }, [selectedMemberType, showMemberTypeSelection]);
+
+  const loadPlansForMemberType = async (memberTypeId: string) => {
+    try {
+      const plans = await getPlansForMemberType(memberTypeId);
+      setAvailablePlans(plans);
+      
+      // Reset selected plan when member type changes
+      setSelectedPlan('');
+      
+      // Reset form value when member type changes
+      if (showMemberTypeSelection) {
+        setFormData(prev => ({ ...prev, value: 0 }));
+      }
+    } catch (error) {
+      console.error('Erro ao carregar planos:', error);
+      setAvailablePlans([]);
+    }
+  };
+
+  // Atualizar valor quando plano for selecionado
+  useEffect(() => {
+    if (selectedPlan && availablePlans.length > 0) {
+      const plan = availablePlans.find(p => p.id === selectedPlan);
+      if (plan) {
+        setFormData(prev => ({ 
+          ...prev, 
+          value: plan.price,
+          description: `${plan.name} - ${formatPrice(plan.price, plan.recurrence)}`
+        }));
+      }
+    }
+  }, [selectedPlan, availablePlans, formatPrice]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validação adicional para seleção de cargo ministerial
+    if (showMemberTypeSelection && !selectedMemberType) {
+      alert('Por favor, selecione seu cargo ministerial.');
+      return;
+    }
+    
+    if (showMemberTypeSelection && !selectedPlan) {
+      alert('Por favor, selecione um plano de assinatura.');
+      return;
+    }
     
     try {
       const cobranca = await createPayment(formData);
       setPaymentResult(cobranca);
-      onSuccess?.(cobranca);
+      onSuccess?.(cobranca, selectedMemberType, selectedPlan);
     } catch (error) {
       console.error('Erro ao criar pagamento:', error);
     }
@@ -185,6 +250,100 @@ export const PaymentForm = ({ defaultData, onSuccess, onCancel, showTitle = true
       )}
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Seleção de Cargo Ministerial */}
+          {showMemberTypeSelection && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Cargo Ministerial e Plano de Assinatura
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="memberType">Cargo Ministerial *</Label>
+                  <Select 
+                    value={selectedMemberType} 
+                    onValueChange={setSelectedMemberType}
+                    disabled={loadingMemberTypes}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione seu cargo ministerial" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {memberTypes.map((type) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          <div>
+                            <div className="font-medium">{type.name}</div>
+                            {type.description && (
+                              <div className="text-sm text-gray-500">{type.description}</div>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {loadingMemberTypes && (
+                    <p className="text-sm text-gray-500 mt-1">Carregando cargos...</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="subscriptionPlan">Plano de Assinatura *</Label>
+                  <Select 
+                    value={selectedPlan} 
+                    onValueChange={setSelectedPlan}
+                    disabled={!selectedMemberType || availablePlans.length === 0}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um plano" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availablePlans.map((plan) => (
+                        <SelectItem key={plan.id} value={plan.id}>
+                          <div>
+                            <div className="font-medium">{plan.name}</div>
+                            <div className="text-sm text-gray-500">
+                              {formatPrice(plan.price, plan.recurrence)}
+                            </div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedMemberType && availablePlans.length === 0 && (
+                    <p className="text-sm text-orange-600 mt-1">
+                      Nenhum plano disponível para este cargo
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {selectedPlan && availablePlans.length > 0 && (
+                <Alert className="border-blue-200 bg-blue-50">
+                  <Info className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    {(() => {
+                      const plan = availablePlans.find(p => p.id === selectedPlan);
+                      return plan ? (
+                        <div>
+                          <strong>Plano Selecionado:</strong> {plan.name}
+                          <br />
+                          <strong>Valor:</strong> {formatPrice(plan.price, plan.recurrence)}
+                          {plan.description && (
+                            <>
+                              <br />
+                              <strong>Descrição:</strong> {plan.description}
+                            </>
+                          )}
+                        </div>
+                      ) : null;
+                    })()}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          )}
+
           {/* Dados do Cliente */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Dados do Cliente</h3>

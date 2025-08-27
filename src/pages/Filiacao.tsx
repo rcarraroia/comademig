@@ -8,11 +8,16 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, Users, Info } from 'lucide-react';
 import { useAsaasPayments } from '@/hooks/useAsaasPayments';
+import { useUserSubscriptions } from '@/hooks/useUserSubscriptions';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 export default function Filiacao() {
   const location = useLocation();
+  const { user } = useAuth();
   const [affiliateInfo, setAffiliateInfo] = useState<any>(null);
   const { getAffiliateByReferralCode } = useAsaasPayments();
+  const { createUserSubscription } = useUserSubscriptions();
 
   useEffect(() => {
     // Verificar se há código de referral na URL
@@ -31,10 +36,30 @@ export default function Filiacao() {
     }
   };
 
-  const handlePaymentSuccess = (cobranca: any) => {
+  const handlePaymentSuccess = async (cobranca: any, selectedMemberType?: string, selectedPlan?: string) => {
     console.log('Pagamento criado com sucesso:', cobranca);
+    console.log('Tipo de membro selecionado:', selectedMemberType);
+    console.log('Plano selecionado:', selectedPlan);
+    
+    // Criar assinatura do usuário automaticamente
+    if (user && selectedMemberType && selectedPlan) {
+      try {
+        await createUserSubscription.mutateAsync({
+          user_id: user.id,
+          subscription_plan_id: selectedPlan,
+          member_type_id: selectedMemberType,
+          status: 'pending', // Será ativada quando o pagamento for confirmado
+          payment_reference: cobranca.id
+        });
+        
+        toast.success('Filiação processada com sucesso! Sua assinatura será ativada após a confirmação do pagamento.');
+      } catch (error) {
+        console.error('Erro ao criar assinatura:', error);
+        toast.error('Pagamento criado, mas houve erro ao processar a assinatura. Entre em contato com o suporte.');
+      }
+    }
+    
     // A própria PaymentForm já mostra o resultado do pagamento
-    // Aqui podemos adicionar analytics ou outras ações se necessário
   };
 
   return (
@@ -117,21 +142,16 @@ export default function Filiacao() {
               </div>
 
               <div className="mt-8 pt-6 border-t">
-                <div className="flex justify-center items-center gap-8">
-                  <div className="text-center">
-                    <p className="text-3xl font-bold text-comademig-blue">R$ 250,00</p>
-                    <p className="text-sm text-muted-foreground">Taxa única de filiação</p>
-                  </div>
-                  <div className="text-center">
-                    <Alert className="border-green-200 bg-green-50 inline-block">
-                      <Info className="h-4 w-4 text-green-600" />
-                      <AlertDescription className="text-green-800">
-                        <strong>PIX: R$ 237,50</strong><br />
-                        <small>5% de desconto</small>
-                      </AlertDescription>
-                    </Alert>
-                  </div>
-                </div>
+                <Alert className="border-blue-200 bg-blue-50">
+                  <Info className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    <strong>Novo Sistema de Filiação!</strong><br />
+                    Agora você pode escolher seu cargo ministerial e o plano de assinatura mais adequado.
+                    Os valores variam conforme o plano selecionado.
+                    <br /><br />
+                    <strong>Desconto PIX:</strong> 5% de desconto em todos os planos pagos via PIX.
+                  </AlertDescription>
+                </Alert>
               </div>
             </CardContent>
           </Card>
@@ -148,13 +168,14 @@ export default function Filiacao() {
               <CardContent>
                 <PaymentForm 
                   defaultData={{
-                    value: 250,
-                    description: "Taxa de Filiação - COMADEMIG",
+                    value: 0, // Será definido pelo plano selecionado
+                    description: "Filiação COMADEMIG",
                     tipoCobranca: "filiacao",
                     affiliateId: affiliateInfo?.id
                   }}
                   onSuccess={handlePaymentSuccess}
                   showTitle={false}
+                  showMemberTypeSelection={true}
                 />
               </CardContent>
             </Card>
