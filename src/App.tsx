@@ -42,6 +42,7 @@ import AdminUsersPage from '@/pages/dashboard/AdminUsers';
 import AdminSupportPage from '@/pages/dashboard/AdminSupportPage';
 import MemberTypes from '@/pages/dashboard/admin/MemberTypes';
 import Subscriptions from '@/pages/dashboard/admin/Subscriptions';
+import AuditLogs from '@/pages/dashboard/admin/AuditLogs';
 import ContentManagement from '@/pages/dashboard/ContentManagement';
 import ContentEdit from '@/pages/dashboard/ContentEdit';
 import UserManagement from '@/pages/dashboard/UserManagement';
@@ -115,6 +116,7 @@ function App() {
               <Route path="/dashboard/admin/usuarios" element={<AdminUsersPage />} />
               <Route path="/dashboard/admin/member-types" element={<MemberTypes />} />
               <Route path="/dashboard/admin/subscriptions" element={<Subscriptions />} />
+              <Route path="/dashboard/admin/audit-logs" element={<AuditLogs />} />
               <Route path="/dashboard/admin/suporte" element={<AdminSupportPage />} />
               <Route path="/dashboard/admin/content" element={<ContentManagement />} />
               <Route path="/dashboard/notifications" element={<Notifications />} />
