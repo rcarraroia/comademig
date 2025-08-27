@@ -1,1 +1,20 @@
-import { useAuth } from \"@/contexts/AuthContext\";\nimport { Navigate } from \"react-router-dom\";\nimport AuditLogViewer from \"@/components/admin/audit/AuditLogViewer\";\nimport { LoadingSpinner } from \"@/components/common/LoadingSpinner\";\n\nconst AuditLogs = () => {\n  const { hasPermission, loading } = useAuth();\n\n  if (loading) {\n    return <LoadingSpinner />;\n  }\n\n  if (!hasPermission('manage_system')) {\n    return <Navigate to=\"/dashboard\" replace />;\n  }\n\n  return <AuditLogViewer />;\n};\n\nexport default AuditLogs;"
+import { useAuth } from "@/contexts/AuthContext";
+import { Navigate } from "react-router-dom";
+import AuditLogViewer from "@/components/admin/audit/AuditLogViewer";
+import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+
+const AuditLogs = () => {
+  const { hasPermission, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (!hasPermission('manage_system')) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <AuditLogViewer />;
+};
+
+export default AuditLogs;"
