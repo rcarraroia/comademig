@@ -107,7 +107,6 @@ function App() {
               <Route path="/dashboard/admin/usuarios" element={<AdminUsersPage />} />
               <Route path="/dashboard/admin/suporte" element={<AdminSupportPage />} />
               <Route path="/dashboard/admin/content" element={<ContentManagement />} />
-              <Route path="/dashboard/admin/user-management" element={<UserManagement />} />
               <Route path="/dashboard/notifications" element={<Notifications />} />
               <Route path="/dashboard/admin/content/:pageName/edit" element={<ContentEdit />} />
               <Route path="/dashboard/admin/content/home-editor" element={<HomeContentEdit />} />

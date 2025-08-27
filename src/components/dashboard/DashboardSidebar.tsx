@@ -26,7 +26,6 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
   ];
 
   const adminMenuItems = [
-    { path: "/dashboard/admin/user-management", label: "Gestão de Usuários", icon: Users },
     { path: "/dashboard/admin/usuarios", label: "Gerenciar Usuários", icon: Users },
     { path: "/dashboard/admin/suporte", label: "Atendimento ao Membro", icon: MessageSquare },
     { path: "/dashboard/admin/content", label: "Gerenciar Conteúdo", icon: FileText },
