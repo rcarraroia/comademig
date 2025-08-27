@@ -32,8 +32,9 @@ export default function Filiacao() {
   };
 
   const handlePaymentSuccess = (cobranca: any) => {
-    // Redirecionar para página de sucesso ou mostrar confirmação
     console.log('Pagamento criado com sucesso:', cobranca);
+    // A própria PaymentForm já mostra o resultado do pagamento
+    // Aqui podemos adicionar analytics ou outras ações se necessário
   };
 
   return (
@@ -61,86 +62,87 @@ export default function Filiacao() {
             </Alert>
           )}
 
-          <div className="grid lg:grid-cols-2 gap-8">
-            {/* Informações da Filiação */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  Benefícios da Filiação
-                </CardTitle>
-                <CardDescription>
-                  Vantagens exclusivas para membros da COMADEMIG
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium">Carteira Digital</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Identificação oficial reconhecida em todo território nacional
-                      </p>
-                    </div>
+          {/* Benefícios da Filiação */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-center">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+                Benefícios da Filiação COMADEMIG
+              </CardTitle>
+              <CardDescription className="text-center">
+                Vantagens exclusivas para membros da convenção
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle className="h-6 w-6 text-green-600" />
                   </div>
-
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium">Eventos e Congressos</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Acesso a eventos, congressos e capacitações exclusivas
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium">Rede de Contatos</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Conexão com ministros e líderes de todo o estado
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium">Suporte Jurídico</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Orientações jurídicas e documentação eclesiástica
-                      </p>
-                    </div>
-                  </div>
+                  <h4 className="font-medium">Carteira Digital</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Identificação oficial reconhecida nacionalmente
+                  </p>
                 </div>
 
-                <div className="pt-4 border-t">
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <h4 className="font-medium">Eventos Exclusivos</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Congressos e capacitações para membros
+                  </p>
+                </div>
+
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <h4 className="font-medium">Rede Ministerial</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Conexão com líderes de todo o estado
+                  </p>
+                </div>
+
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <h4 className="font-medium">Suporte Jurídico</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Orientações e documentação eclesiástica
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-6 border-t">
+                <div className="flex justify-center items-center gap-8">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-primary">R$ 250,00</p>
+                    <p className="text-3xl font-bold text-comademig-blue">R$ 250,00</p>
                     <p className="text-sm text-muted-foreground">Taxa única de filiação</p>
                   </div>
+                  <div className="text-center">
+                    <Alert className="border-green-200 bg-green-50 inline-block">
+                      <Info className="h-4 w-4 text-green-600" />
+                      <AlertDescription className="text-green-800">
+                        <strong>PIX: R$ 237,50</strong><br />
+                        <small>5% de desconto</small>
+                      </AlertDescription>
+                    </Alert>
+                  </div>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
 
-                {/* Informação sobre PIX com desconto */}
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>Desconto de 5% no PIX!</strong>
-                    <br />
-                    Pagando via PIX você paga apenas <strong>R$ 237,50</strong>
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
-
-            {/* Formulário de Pagamento */}
+          {/* Formulário de Pagamento */}
+          <div className="max-w-2xl mx-auto">
             <Card>
               <CardHeader>
                 <CardTitle>Dados para Filiação</CardTitle>
                 <CardDescription>
-                  Preencha seus dados e escolha a forma de pagamento
+                  Preencha seus dados e escolha a forma de pagamento para concluir sua filiação
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -152,6 +154,7 @@ export default function Filiacao() {
                     affiliateId: affiliateInfo?.id
                   }}
                   onSuccess={handlePaymentSuccess}
+                  showTitle={false}
                 />
               </CardContent>
             </Card>

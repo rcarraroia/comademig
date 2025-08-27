@@ -10,6 +10,7 @@ import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { UserActionsMenu } from "./UserActionsMenu";
 import { EditUserModal } from "./EditUserModal";
 import { ViewUserModal } from "./ViewUserModal";
+import { CreateUserModal } from "./CreateUserModal";
 
 const UserManagement = () => {
   const { profiles, isLoading, refetchProfiles } = useAdminData();
@@ -18,6 +19,7 @@ const UserManagement = () => {
   const [selectedUser, setSelectedUser] = useState<AdminProfile | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -81,7 +83,10 @@ const UserManagement = () => {
           <h1 className="text-3xl font-bold text-gray-900">Gerenciamento de Usuários</h1>
           <p className="text-gray-600">Gerencie todos os usuários do sistema</p>
         </div>
-        <Button className="bg-comademig-blue hover:bg-comademig-blue/90">
+        <Button 
+          className="bg-comademig-blue hover:bg-comademig-blue/90"
+          onClick={() => setIsCreateModalOpen(true)}
+        >
           <UserPlus className="h-4 w-4 mr-2" />
           Novo Usuário
         </Button>
@@ -218,6 +223,12 @@ const UserManagement = () => {
         user={selectedUser}
         isOpen={isViewModalOpen}
         onClose={() => setIsViewModalOpen(false)}
+      />
+
+      <CreateUserModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleSuccess}
       />
     </div>
   );

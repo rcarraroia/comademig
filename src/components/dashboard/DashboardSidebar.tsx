@@ -114,21 +114,6 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
         {/* Bottom Section - Fixed at bottom */}
         <div className="p-3 lg:p-4 space-y-2 lg:space-y-3 border-t border-blue-600 flex-shrink-0">
           <Link
-            to="/dashboard/perfil"
-            onClick={onClose}
-            className={`
-              flex items-center space-x-3 p-2 lg:p-3 rounded-lg transition-colors duration-200 text-sm font-medium
-              ${isActive("/dashboard/perfil") 
-                ? 'bg-comademig-gold text-comademig-blue' 
-                : 'text-white hover:bg-blue-600'
-              }
-            `}
-          >
-            <Settings size={18} />
-            <span>Perfil</span>
-          </Link>
-          
-          <Link
             to="/"
             onClick={onClose}
             className="flex items-center space-x-3 p-2 lg:p-3 text-white hover:bg-blue-600 rounded-lg transition-colors duration-200 text-sm font-medium"

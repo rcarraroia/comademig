@@ -24,7 +24,7 @@ import NotFound from '@/pages/NotFound';
 
 // Dashboard Pages
 import Dashboard from '@/pages/dashboard/Dashboard';
-import Perfil from '@/pages/dashboard/Perfil';
+
 import MeusDados from '@/pages/dashboard/MeusDados';
 import CarteiraDigital from '@/pages/dashboard/CarteiraDigital';
 import Comunicacao from '@/pages/dashboard/Comunicacao';
@@ -48,6 +48,8 @@ import PerfilPublico from '@/pages/dashboard/PerfilPublico';
 import PerfilCompleto from '@/pages/dashboard/PerfilCompleto';
 import HomeContentEdit from '@/pages/dashboard/HomeContentEdit';
 import SobreContentEdit from '@/pages/dashboard/SobreContentEdit';
+import Privacidade from '@/pages/Privacidade';
+import Termos from '@/pages/Termos';
 import LiderancaContentEdit from '@/pages/dashboard/LiderancaContentEdit';
 import EventosContentEdit from '@/pages/dashboard/EventosContentEdit';
 import MultimidiaContentEdit from '@/pages/dashboard/MultimidiaContentEdit';
@@ -82,6 +84,8 @@ function App() {
             <Route path="/multimidia" element={<Layout><Multimidia /></Layout>} />
             <Route path="/contato" element={<Layout><Contato /></Layout>} />
             <Route path="/filiacao" element={<Layout><Filiacao /></Layout>} />
+            <Route path="/privacidade" element={<Layout><Privacidade /></Layout>} />
+            <Route path="/termos" element={<Layout><Termos /></Layout>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/pagamento-sucesso" element={<PagamentoSucesso />} />
@@ -92,7 +96,7 @@ function App() {
             {/* Protected routes */}
             <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/dashboard/perfil" element={<Perfil />} />
+
               <Route path="/dashboard/meus-dados" element={<MeusDados />} />
               <Route path="/dashboard/carteira-digital" element={<CarteiraDigital />} />
               <Route path="/dashboard/comunicacao" element={<Comunicacao />} />

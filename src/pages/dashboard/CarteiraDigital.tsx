@@ -4,15 +4,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CreditCard, User, RefreshCw, AlertCircle, CheckCircle, QrCode } from "lucide-react";
+import { CreditCard, User, RefreshCw, AlertCircle, CheckCircle, QrCode, Camera, Link as LinkIcon } from "lucide-react";
 import { useCarteiraDigital } from "@/hooks/useCarteiraDigital";
 import { useStorage } from "@/hooks/useStorage";
 import { useAuth } from "@/contexts/AuthContext";
 import { CarteiraDigitalCard } from "@/components/carteira/CarteiraDigitalCard";
+import { QRCodeScanner } from "@/components/carteira/QRCodeScanner";
 import CarteiraStatus from "@/components/carteira/CarteiraStatus";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ErrorMessage } from "@/components/common/ErrorMessage";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface ProfileData {
   nome_completo: string;
@@ -28,16 +30,20 @@ interface ProfileData {
 const CarteiraDigital = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-  
-  const { 
-    carteira, 
-    profile: rawProfile, 
-    isLoading, 
-    error, 
-    gerarCarteira, 
-    renovarCarteira, 
-    atualizarFoto 
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [validationUrl, setValidationUrl] = useState('');
+
+  const {
+    carteira,
+    profile: rawProfile,
+    isLoading,
+    error,
+    gerarCarteira,
+    renovarCarteira,
+    atualizarFoto,
+    sincronizarFotoPerfil
   } = useCarteiraDigital();
   const { uploadFile } = useStorage();
 
@@ -46,14 +52,14 @@ const CarteiraDigital = () => {
   const handleUpdatePhoto = async (file: File) => {
     try {
       setIsUploadingPhoto(true);
-      
+
       // Upload da foto para o storage
       const photoUrl = await uploadFile(
-        file, 
-        'carteiras', 
+        file,
+        'carteiras',
         `foto-${user?.id}-${Date.now()}`
       );
-      
+
       if (photoUrl) {
         await atualizarFoto.mutateAsync(photoUrl);
         toast({
@@ -72,6 +78,45 @@ const CarteiraDigital = () => {
       });
     } finally {
       setIsUploadingPhoto(false);
+    }
+  };
+
+  const handleScanSuccess = (url: string) => {
+    // Extrair número da carteira da URL ou redirecionar diretamente
+    if (url.includes('/validar-carteira/')) {
+      window.open(url, '_blank');
+    } else {
+      // Se for apenas o número da carteira
+      const numeroCarteira = url.replace(/.*\//, '');
+      window.open(`/validar-carteira/${numeroCarteira}`, '_blank');
+    }
+  };
+
+  const handleValidateByUrl = () => {
+    if (!validationUrl.trim()) {
+      toast({
+        title: "URL inválida",
+        description: "Por favor, insira uma URL válida",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Verificar se é uma URL válida
+    try {
+      const url = new URL(validationUrl);
+      if (url.pathname.includes('/validar-carteira/')) {
+        window.open(validationUrl, '_blank');
+        setValidationUrl('');
+      } else {
+        throw new Error('URL não é de validação de carteira');
+      }
+    } catch (error) {
+      toast({
+        title: "URL inválida",
+        description: "A URL fornecida não é válida para validação de carteira",
+        variant: "destructive",
+      });
     }
   };
 
@@ -128,11 +173,12 @@ const CarteiraDigital = () => {
                 <CarteiraDigitalCard
                   carteira={carteira}
                   onRenovar={() => renovarCarteira.mutate(undefined)}
-                  onDownload={() => {}}
+                  onSincronizarFoto={() => sincronizarFotoPerfil.mutate(undefined)}
                   renovandoCarteira={renovarCarteira.isPending}
+                  sincronizandoFoto={sincronizarFotoPerfil.isPending}
                 />
               </div>
-              
+
               <div className="space-y-4">
                 <Card>
                   <CardHeader>
@@ -166,14 +212,14 @@ const CarteiraDigital = () => {
                       <div>
                         <p className="text-gray-600">Localização</p>
                         <p className="font-medium">
-                          {profile.cidade && profile.estado 
-                            ? `${profile.cidade}, ${profile.estado}` 
+                          {profile.cidade && profile.estado
+                            ? `${profile.cidade}, ${profile.estado}`
                             : 'Não informado'
                           }
                         </p>
                       </div>
                     </div>
-                    
+
                     <Alert>
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription>
@@ -193,7 +239,7 @@ const CarteiraDigital = () => {
               <p className="text-gray-600 mb-6">
                 Você ainda não possui uma carteira digital ativa.
               </p>
-              <Button 
+              <Button
                 onClick={() => gerarCarteira.mutate(undefined)}
                 disabled={gerarCarteira.isPending}
                 className="bg-comademig-blue hover:bg-comademig-blue/90"
@@ -221,24 +267,79 @@ const CarteiraDigital = () => {
         </TabsContent>
 
         <TabsContent value="validacao" className="space-y-6">
+          {/* Validar outras carteiras */}
           <Card>
             <CardHeader>
-              <CardTitle>Validação de Autenticidade</CardTitle>
+              <CardTitle>Validar Carteira Digital</CardTitle>
               <CardDescription>
-                Informações sobre como validar carteiras digitais
+                Valide a autenticidade de uma carteira digital COMADEMIG
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Validação por QR Code */}
+              <div>
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <Camera className="h-4 w-4" />
+                  Escanear QR Code
+                </h4>
+                <p className="text-sm text-gray-600 mb-4">
+                  Use a câmera do seu dispositivo para escanear o QR Code de uma carteira
+                </p>
+                <Button
+                  onClick={() => setShowQRScanner(true)}
+                  className="w-full sm:w-auto"
+                >
+                  <Camera className="mr-2 h-4 w-4" />
+                  Abrir Scanner
+                </Button>
+              </div>
+
+              <div className="border-t pt-6">
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <LinkIcon className="h-4 w-4" />
+                  Validar por URL
+                </h4>
+                <p className="text-sm text-gray-600 mb-4">
+                  Cole a URL de validação de uma carteira digital
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={validationUrl}
+                    onChange={(e) => setValidationUrl(e.target.value)}
+                    placeholder="https://exemplo.com/validar-carteira/COMADEMIG-..."
+                    className="flex-1 px-3 py-2 border rounded-md text-sm"
+                  />
+                  <Button
+                    onClick={handleValidateByUrl}
+                    disabled={!validationUrl.trim()}
+                  >
+                    Validar
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Informações sobre validação */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Como Funciona a Validação</CardTitle>
+              <CardDescription>
+                Entenda o processo de verificação de autenticidade
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Alert>
                 <QrCode className="h-4 w-4" />
                 <AlertDescription>
-                  Cada carteira digital possui um QR Code único que permite validar sua autenticidade. 
+                  Cada carteira digital possui um QR Code único que permite validar sua autenticidade.
                   O código pode ser escaneado ou a URL pode ser acessada diretamente.
                 </AlertDescription>
               </Alert>
 
               <div className="space-y-3">
-                <h4 className="font-medium">Como funciona a validação:</h4>
+                <h4 className="font-medium">Processo de validação:</h4>
                 <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
                   <li>Escaneie o QR Code da carteira ou acesse a URL de validação</li>
                   <li>O sistema verificará automaticamente a autenticidade</li>
@@ -255,10 +356,10 @@ const CarteiraDigital = () => {
                       type="text"
                       value={carteira.qr_code}
                       readOnly
-                      className="flex-1 text-xs bg-white border rounded px-2 py-1"
+                      className="flex-1 text-xs bg-white border rounded px-2 py-1 font-mono"
                     />
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       variant="outline"
                       onClick={() => {
                         navigator.clipboard.writeText(carteira.qr_code);
@@ -277,6 +378,13 @@ const CarteiraDigital = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Scanner de QR Code */}
+      <QRCodeScanner
+        isOpen={showQRScanner}
+        onClose={() => setShowQRScanner(false)}
+        onScanSuccess={handleScanSuccess}
+      />
     </div>
   );
 };
