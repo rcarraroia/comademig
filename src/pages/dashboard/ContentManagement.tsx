@@ -58,6 +58,7 @@ const ContentManagement = () => {
                   page.key === 'lideranca' ? '/dashboard/admin/content/lideranca-editor' :
                   page.key === 'eventos' ? '/dashboard/admin/content/eventos-editor' :
                   page.key === 'multimidia' ? '/dashboard/admin/content/multimidia-editor' :
+                  page.key === 'contato' ? '/dashboard/admin/content/contato-editor' :
                   page.key === 'noticias' ? '/dashboard/admin/content/noticias-editor' :
                   `/dashboard/admin/content/${page.key}/edit`
                 }>

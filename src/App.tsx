@@ -51,6 +51,7 @@ import SobreContentEdit from '@/pages/dashboard/SobreContentEdit';
 import LiderancaContentEdit from '@/pages/dashboard/LiderancaContentEdit';
 import EventosContentEdit from '@/pages/dashboard/EventosContentEdit';
 import MultimidiaContentEdit from '@/pages/dashboard/MultimidiaContentEdit';
+import ContatoContentEdit from '@/pages/dashboard/ContatoContentEdit';
 import NoticiasContentEdit from '@/pages/dashboard/NoticiasContentEdit';
 
 // Layouts
@@ -115,6 +116,7 @@ function App() {
               <Route path="/dashboard/admin/content/lideranca-editor" element={<LiderancaContentEdit />} />
               <Route path="/dashboard/admin/content/eventos-editor" element={<EventosContentEdit />} />
               <Route path="/dashboard/admin/content/multimidia-editor" element={<MultimidiaContentEdit />} />
+              <Route path="/dashboard/admin/content/contato-editor" element={<ContatoContentEdit />} />
               <Route path="/dashboard/admin/content/noticias-editor" element={<NoticiasContentEdit />} />
               <Route path="/dashboard/perfil-publico/:userId?" element={<PerfilPublico />} />
               <Route path="/dashboard/perfil-completo" element={<PerfilCompleto />} />
