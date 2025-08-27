@@ -17,4 +17,4 @@ const AuditLogs = () => {
   return <AuditLogViewer />;
 };
 
-export default AuditLogs;"
+export default AuditLogs;

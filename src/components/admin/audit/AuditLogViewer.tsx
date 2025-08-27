@@ -11,4 +11,325 @@ import { Search, Filter, Download, Eye, Activity, AlertTriangle, User, Calendar,
 import { useAuditLog, type AuditLog } from '@/hooks/useAuditLog';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';\n\nconst AuditLogViewer = () => {\n  const { useAuditLogs, userLogs, loadingUserLogs } = useAuditLog();\n  \n  const [filters, setFilters] = useState({\n    table_name: '',\n    operation: '',\n    user_id: '',\n    date_from: '',\n    date_to: '',\n    limit: 100\n  });\n  \n  const [searchTerm, setSearchTerm] = useState('');\n  const [activeTab, setActiveTab] = useState('all');\n  \n  // Buscar logs com filtros\n  const { data: allLogs = [], isLoading, refetch } = useAuditLogs(filters);\n  \n  // Filtrar logs por termo de busca\n  const filteredLogs = allLogs.filter(log => {\n    if (!searchTerm) return true;\n    \n    const searchLower = searchTerm.toLowerCase();\n    return (\n      log.operation_description?.toLowerCase().includes(searchLower) ||\n      log.user_email?.toLowerCase().includes(searchLower) ||\n      log.table_name.toLowerCase().includes(searchLower) ||\n      log.changes_summary?.toLowerCase().includes(searchLower)\n    );\n  });\n  \n  const handleFilterChange = (field: string, value: string) => {\n    setFilters(prev => ({ ...prev, [field]: value }));\n  };\n  \n  const clearFilters = () => {\n    setFilters({\n      table_name: '',\n      operation: '',\n      user_id: '',\n      date_from: '',\n      date_to: '',\n      limit: 100\n    });\n    setSearchTerm('');\n  };\n  \n  const exportLogs = () => {\n    const csvContent = [\n      ['Data/Hora', 'Usuário', 'Operação', 'Tabela', 'Descrição', 'IP', 'User Agent'].join(','),\n      ...filteredLogs.map(log => [\n        format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR }),\n        log.user_email || 'Sistema',\n        log.operation,\n        log.table_name,\n        log.operation_description || '',\n        log.ip_address || '',\n        log.user_agent || ''\n      ].map(field => `\"${field}\"`).join(','))\n    ].join('\\n');\n    \n    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });\n    const link = document.createElement('a');\n    link.href = URL.createObjectURL(blob);\n    link.download = `audit-logs-${format(new Date(), 'yyyy-MM-dd')}.csv`;\n    link.click();\n  };\n  \n  const getOperationColor = (operation: string) => {\n    switch (operation) {\n      case 'INSERT': return 'bg-green-100 text-green-800';\n      case 'UPDATE': return 'bg-blue-100 text-blue-800';\n      case 'DELETE': return 'bg-red-100 text-red-800';\n      case 'LOGIN': return 'bg-purple-100 text-purple-800';\n      case 'LOGOUT': return 'bg-gray-100 text-gray-800';\n      case 'VIEW': return 'bg-yellow-100 text-yellow-800';\n      case 'DOWNLOAD': return 'bg-orange-100 text-orange-800';\n      default: return 'bg-gray-100 text-gray-800';\n    }\n  };\n  \n  const getOperationIcon = (operation: string) => {\n    switch (operation) {\n      case 'INSERT': return <Database className=\"h-3 w-3\" />;\n      case 'UPDATE': return <Activity className=\"h-3 w-3\" />;\n      case 'DELETE': return <AlertTriangle className=\"h-3 w-3\" />;\n      case 'LOGIN': case 'LOGOUT': return <User className=\"h-3 w-3\" />;\n      case 'VIEW': return <Eye className=\"h-3 w-3\" />;\n      case 'DOWNLOAD': return <Download className=\"h-3 w-3\" />;\n      default: return <Activity className=\"h-3 w-3\" />;\n    }\n  };\n  \n  const LogCard = ({ log }: { log: AuditLog }) => (\n    <Card className=\"mb-4\">\n      <CardContent className=\"p-4\">\n        <div className=\"flex items-start justify-between mb-3\">\n          <div className=\"flex items-center gap-2\">\n            <Badge className={getOperationColor(log.operation)}>\n              {getOperationIcon(log.operation)}\n              {log.operation}\n            </Badge>\n            <span className=\"text-sm font-medium\">{log.operation_description}</span>\n          </div>\n          <span className=\"text-xs text-gray-500\">\n            {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR })}\n          </span>\n        </div>\n        \n        <div className=\"grid grid-cols-1 md:grid-cols-2 gap-4 text-sm\">\n          <div>\n            <span className=\"font-medium text-gray-700\">Usuário:</span>\n            <span className=\"ml-2\">{log.user_email || 'Sistema'}</span>\n          </div>\n          <div>\n            <span className=\"font-medium text-gray-700\">Tabela:</span>\n            <span className=\"ml-2\">{log.table_name}</span>\n          </div>\n          <div>\n            <span className=\"font-medium text-gray-700\">ID do Registro:</span>\n            <span className=\"ml-2 font-mono text-xs\">{log.record_id}</span>\n          </div>\n          <div>\n            <span className=\"font-medium text-gray-700\">IP:</span>\n            <span className=\"ml-2\">{log.ip_address || 'N/A'}</span>\n          </div>\n        </div>\n        \n        {log.changes_summary && (\n          <div className=\"mt-3 p-2 bg-gray-50 rounded text-sm\">\n            <span className=\"font-medium text-gray-700\">Alterações:</span>\n            <span className=\"ml-2\">{log.changes_summary}</span>\n          </div>\n        )}\n        \n        {(log.old_values || log.new_values) && (\n          <details className=\"mt-3\">\n            <summary className=\"cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-800\">\n              Ver detalhes técnicos\n            </summary>\n            <div className=\"mt-2 p-3 bg-gray-50 rounded text-xs\">\n              {log.old_values && (\n                <div className=\"mb-2\">\n                  <strong>Valores Anteriores:</strong>\n                  <pre className=\"mt-1 overflow-x-auto\">{JSON.stringify(log.old_values, null, 2)}</pre>\n                </div>\n              )}\n              {log.new_values && (\n                <div>\n                  <strong>Novos Valores:</strong>\n                  <pre className=\"mt-1 overflow-x-auto\">{JSON.stringify(log.new_values, null, 2)}</pre>\n                </div>\n              )}\n            </div>\n          </details>\n        )}\n      </CardContent>\n    </Card>\n  );\n  \n  return (\n    <div className=\"space-y-6\">\n      {/* Header */}\n      <div className=\"flex justify-between items-center\">\n        <div>\n          <h1 className=\"text-3xl font-bold text-gray-900\">Logs de Auditoria</h1>\n          <p className=\"text-gray-600\">Visualize e monitore todas as atividades do sistema</p>\n        </div>\n        <Button onClick={exportLogs} variant=\"outline\">\n          <Download className=\"h-4 w-4 mr-2\" />\n          Exportar CSV\n        </Button>\n      </div>\n      \n      {/* Filtros */}\n      <Card>\n        <CardHeader>\n          <CardTitle className=\"flex items-center gap-2\">\n            <Filter className=\"h-5 w-5\" />\n            Filtros\n          </CardTitle>\n        </CardHeader>\n        <CardContent>\n          <div className=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4\">\n            <div>\n              <Label htmlFor=\"table_name\">Tabela</Label>\n              <Select value={filters.table_name} onValueChange={(value) => handleFilterChange('table_name', value)}>\n                <SelectTrigger>\n                  <SelectValue placeholder=\"Todas as tabelas\" />\n                </SelectTrigger>\n                <SelectContent>\n                  <SelectItem value=\"\">Todas as tabelas</SelectItem>\n                  <SelectItem value=\"member_types\">Tipos de Membro</SelectItem>\n                  <SelectItem value=\"subscription_plans\">Planos de Assinatura</SelectItem>\n                  <SelectItem value=\"user_subscriptions\">Assinaturas de Usuário</SelectItem>\n                  <SelectItem value=\"profiles\">Perfis de Usuário</SelectItem>\n                  <SelectItem value=\"carteira_digital\">Carteira Digital</SelectItem>\n                  <SelectItem value=\"auth_sessions\">Sessões de Auth</SelectItem>\n                </SelectContent>\n              </Select>\n            </div>\n            \n            <div>\n              <Label htmlFor=\"operation\">Operação</Label>\n              <Select value={filters.operation} onValueChange={(value) => handleFilterChange('operation', value)}>\n                <SelectTrigger>\n                  <SelectValue placeholder=\"Todas as operações\" />\n                </SelectTrigger>\n                <SelectContent>\n                  <SelectItem value=\"\">Todas as operações</SelectItem>\n                  <SelectItem value=\"INSERT\">Criação</SelectItem>\n                  <SelectItem value=\"UPDATE\">Atualização</SelectItem>\n                  <SelectItem value=\"DELETE\">Exclusão</SelectItem>\n                  <SelectItem value=\"LOGIN\">Login</SelectItem>\n                  <SelectItem value=\"LOGOUT\">Logout</SelectItem>\n                  <SelectItem value=\"VIEW\">Visualização</SelectItem>\n                  <SelectItem value=\"DOWNLOAD\">Download</SelectItem>\n                </SelectContent>\n              </Select>\n            </div>\n            \n            <div>\n              <Label htmlFor=\"date_from\">Data Inicial</Label>\n              <Input\n                id=\"date_from\"\n                type=\"date\"\n                value={filters.date_from}\n                onChange={(e) => handleFilterChange('date_from', e.target.value)}\n              />\n            </div>\n            \n            <div>\n              <Label htmlFor=\"date_to\">Data Final</Label>\n              <Input\n                id=\"date_to\"\n                type=\"date\"\n                value={filters.date_to}\n                onChange={(e) => handleFilterChange('date_to', e.target.value)}\n              />\n            </div>\n          </div>\n          \n          <div className=\"flex gap-4 items-end\">\n            <div className=\"flex-1\">\n              <Label htmlFor=\"search\">Buscar</Label>\n              <div className=\"relative\">\n                <Search className=\"absolute left-3 top-3 h-4 w-4 text-gray-400\" />\n                <Input\n                  id=\"search\"\n                  placeholder=\"Buscar por usuário, operação, tabela...\"\n                  value={searchTerm}\n                  onChange={(e) => setSearchTerm(e.target.value)}\n                  className=\"pl-10\"\n                />\n              </div>\n            </div>\n            <Button variant=\"outline\" onClick={clearFilters}>\n              Limpar Filtros\n            </Button>\n            <Button onClick={() => refetch()}>\n              Atualizar\n            </Button>\n          </div>\n        </CardContent>\n      </Card>\n      \n      {/* Tabs */}\n      <Tabs value={activeTab} onValueChange={setActiveTab}>\n        <TabsList>\n          <TabsTrigger value=\"all\">Todos os Logs ({filteredLogs.length})</TabsTrigger>\n          <TabsTrigger value=\"user\">Meus Logs ({userLogs.length})</TabsTrigger>\n        </TabsList>\n        \n        <TabsContent value=\"all\" className=\"space-y-4\">\n          {isLoading ? (\n            <div className=\"flex justify-center py-8\">\n              <LoadingSpinner />\n            </div>\n          ) : filteredLogs.length === 0 ? (\n            <Alert>\n              <AlertTriangle className=\"h-4 w-4\" />\n              <AlertDescription>\n                Nenhum log encontrado com os filtros aplicados.\n              </AlertDescription>\n            </Alert>\n          ) : (\n            <div>\n              {filteredLogs.map((log) => (\n                <LogCard key={log.id} log={log} />\n              ))}\n            </div>\n          )}\n        </TabsContent>\n        \n        <TabsContent value=\"user\" className=\"space-y-4\">\n          {loadingUserLogs ? (\n            <div className=\"flex justify-center py-8\">\n              <LoadingSpinner />\n            </div>\n          ) : userLogs.length === 0 ? (\n            <Alert>\n              <AlertTriangle className=\"h-4 w-4\" />\n              <AlertDescription>\n                Você ainda não possui atividades registradas.\n              </AlertDescription>\n            </Alert>\n          ) : (\n            <div>\n              {userLogs.map((log) => (\n                <LogCard key={log.id} log={log} />\n              ))}\n            </div>\n          )}\n        </TabsContent>\n      </Tabs>\n    </div>\n  );\n};\n\nexport default AuditLogViewer;"
+import { ptBR } from 'date-fns/locale';
+
+const AuditLogViewer = () => {
+  const { useAuditLogs, userLogs, loadingUserLogs } = useAuditLog();
+  
+  const [filters, setFilters] = useState({
+    table_name: '',
+    operation: '',
+    user_id: '',
+    date_from: '',
+    date_to: '',
+    limit: 100
+  });
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
+  
+  // Buscar logs com filtros
+  const { data: allLogs = [], isLoading, refetch } = useAuditLogs(filters);
+  
+  // Filtrar logs por termo de busca
+  const filteredLogs = allLogs.filter(log => {
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      log.operation_description?.toLowerCase().includes(searchLower) ||
+      log.user_email?.toLowerCase().includes(searchLower) ||
+      log.table_name.toLowerCase().includes(searchLower) ||
+      log.changes_summary?.toLowerCase().includes(searchLower)
+    );
+  });
+  
+  const handleFilterChange = (field: string, value: string) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
+  };
+  
+  const clearFilters = () => {
+    setFilters({
+      table_name: '',
+      operation: '',
+      user_id: '',
+      date_from: '',
+      date_to: '',
+      limit: 100
+    });
+    setSearchTerm('');
+  };
+  
+  const exportLogs = () => {
+    const csvContent = [
+      ['Data/Hora', 'Usuário', 'Operação', 'Tabela', 'Descrição', 'IP', 'User Agent'].join(','),
+      ...filteredLogs.map(log => [
+        format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR }),
+        log.user_email || 'Sistema',
+        log.operation,
+        log.table_name,
+        log.operation_description || '',
+        log.ip_address || '',
+        log.user_agent || ''
+      ].map(field => `\"${field}\"`).join(','))
+    ].join('\\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `audit-logs-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.click();
+  };
+  
+  const getOperationColor = (operation: string) => {
+    switch (operation) {
+      case 'INSERT': return 'bg-green-100 text-green-800';
+      case 'UPDATE': return 'bg-blue-100 text-blue-800';
+      case 'DELETE': return 'bg-red-100 text-red-800';
+      case 'LOGIN': return 'bg-purple-100 text-purple-800';
+      case 'LOGOUT': return 'bg-gray-100 text-gray-800';
+      case 'VIEW': return 'bg-yellow-100 text-yellow-800';
+      case 'DOWNLOAD': return 'bg-orange-100 text-orange-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+  
+  const getOperationIcon = (operation: string) => {
+    switch (operation) {
+      case 'INSERT': return <Database className=\"h-3 w-3\" />;
+      case 'UPDATE': return <Activity className=\"h-3 w-3\" />;
+      case 'DELETE': return <AlertTriangle className=\"h-3 w-3\" />;
+      case 'LOGIN': case 'LOGOUT': return <User className=\"h-3 w-3\" />;
+      case 'VIEW': return <Eye className=\"h-3 w-3\" />;
+      case 'DOWNLOAD': return <Download className=\"h-3 w-3\" />;
+      default: return <Activity className=\"h-3 w-3\" />;
+    }
+  };
+  
+  const LogCard = ({ log }: { log: AuditLog }) => (
+    <Card className=\"mb-4\">
+      <CardContent className=\"p-4\">
+        <div className=\"flex items-start justify-between mb-3\">
+          <div className=\"flex items-center gap-2\">
+            <Badge className={getOperationColor(log.operation)}>
+              {getOperationIcon(log.operation)}
+              {log.operation}
+            </Badge>
+            <span className=\"text-sm font-medium\">{log.operation_description}</span>
+          </div>
+          <span className=\"text-xs text-gray-500\">
+            {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR })}
+          </span>
+        </div>
+        
+        <div className=\"grid grid-cols-1 md:grid-cols-2 gap-4 text-sm\">
+          <div>
+            <span className=\"font-medium text-gray-700\">Usuário:</span>
+            <span className=\"ml-2\">{log.user_email || 'Sistema'}</span>
+          </div>
+          <div>
+            <span className=\"font-medium text-gray-700\">Tabela:</span>
+            <span className=\"ml-2\">{log.table_name}</span>
+          </div>
+          <div>
+            <span className=\"font-medium text-gray-700\">ID do Registro:</span>
+            <span className=\"ml-2 font-mono text-xs\">{log.record_id}</span>
+          </div>
+          <div>
+            <span className=\"font-medium text-gray-700\">IP:</span>
+            <span className=\"ml-2\">{log.ip_address || 'N/A'}</span>
+          </div>
+        </div>
+        
+        {log.changes_summary && (
+          <div className=\"mt-3 p-2 bg-gray-50 rounded text-sm\">
+            <span className=\"font-medium text-gray-700\">Alterações:</span>
+            <span className=\"ml-2\">{log.changes_summary}</span>
+          </div>
+        )}
+        
+        {(log.old_values || log.new_values) && (
+          <details className=\"mt-3\">
+            <summary className=\"cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-800\">
+              Ver detalhes técnicos
+            </summary>
+            <div className=\"mt-2 p-3 bg-gray-50 rounded text-xs\">
+              {log.old_values && (
+                <div className=\"mb-2\">
+                  <strong>Valores Anteriores:</strong>
+                  <pre className=\"mt-1 overflow-x-auto\">{JSON.stringify(log.old_values, null, 2)}</pre>
+                </div>
+              )}
+              {log.new_values && (
+                <div>
+                  <strong>Novos Valores:</strong>
+                  <pre className=\"mt-1 overflow-x-auto\">{JSON.stringify(log.new_values, null, 2)}</pre>
+                </div>
+              )}
+            </div>
+          </details>
+        )}
+      </CardContent>
+    </Card>
+  );
+  
+  return (
+    <div className=\"space-y-6\">
+      {/* Header */}
+      <div className=\"flex justify-between items-center\">
+        <div>
+          <h1 className=\"text-3xl font-bold text-gray-900\">Logs de Auditoria</h1>
+          <p className=\"text-gray-600\">Visualize e monitore todas as atividades do sistema</p>
+        </div>
+        <Button onClick={exportLogs} variant=\"outline\">
+          <Download className=\"h-4 w-4 mr-2\" />
+          Exportar CSV
+        </Button>
+      </div>
+      
+      {/* Filtros */}
+      <Card>
+        <CardHeader>
+          <CardTitle className=\"flex items-center gap-2\">
+            <Filter className=\"h-5 w-5\" />
+            Filtros
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4\">
+            <div>
+              <Label htmlFor=\"table_name\">Tabela</Label>
+              <Select value={filters.table_name} onValueChange={(value) => handleFilterChange('table_name', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder=\"Todas as tabelas\" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value=\"\">Todas as tabelas</SelectItem>
+                  <SelectItem value=\"member_types\">Tipos de Membro</SelectItem>
+                  <SelectItem value=\"subscription_plans\">Planos de Assinatura</SelectItem>
+                  <SelectItem value=\"user_subscriptions\">Assinaturas de Usuário</SelectItem>
+                  <SelectItem value=\"profiles\">Perfis de Usuário</SelectItem>
+                  <SelectItem value=\"carteira_digital\">Carteira Digital</SelectItem>
+                  <SelectItem value=\"auth_sessions\">Sessões de Auth</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor=\"operation\">Operação</Label>
+              <Select value={filters.operation} onValueChange={(value) => handleFilterChange('operation', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder=\"Todas as operações\" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value=\"\">Todas as operações</SelectItem>
+                  <SelectItem value=\"INSERT\">Criação</SelectItem>
+                  <SelectItem value=\"UPDATE\">Atualização</SelectItem>
+                  <SelectItem value=\"DELETE\">Exclusão</SelectItem>
+                  <SelectItem value=\"LOGIN\">Login</SelectItem>
+                  <SelectItem value=\"LOGOUT\">Logout</SelectItem>
+                  <SelectItem value=\"VIEW\">Visualização</SelectItem>
+                  <SelectItem value=\"DOWNLOAD\">Download</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor=\"date_from\">Data Inicial</Label>
+              <Input
+                id=\"date_from\"
+                type=\"date\"
+                value={filters.date_from}
+                onChange={(e) => handleFilterChange('date_from', e.target.value)}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor=\"date_to\">Data Final</Label>
+              <Input
+                id=\"date_to\"
+                type=\"date\"
+                value={filters.date_to}
+                onChange={(e) => handleFilterChange('date_to', e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <div className=\"flex gap-4 items-end\">
+            <div className=\"flex-1\">
+              <Label htmlFor=\"search\">Buscar</Label>
+              <div className=\"relative\">
+                <Search className=\"absolute left-3 top-3 h-4 w-4 text-gray-400\" />
+                <Input
+                  id=\"search\"
+                  placeholder=\"Buscar por usuário, operação, tabela...\"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className=\"pl-10\"
+                />
+              </div>
+            </div>
+            <Button variant=\"outline\" onClick={clearFilters}>
+              Limpar Filtros
+            </Button>
+            <Button onClick={() => refetch()}>
+              Atualizar
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value=\"all\">Todos os Logs ({filteredLogs.length})</TabsTrigger>
+          <TabsTrigger value=\"user\">Meus Logs ({userLogs.length})</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value=\"all\" className=\"space-y-4\">
+          {isLoading ? (
+            <div className=\"flex justify-center py-8\">
+              <LoadingSpinner />
+            </div>
+          ) : filteredLogs.length === 0 ? (
+            <Alert>
+              <AlertTriangle className=\"h-4 w-4\" />
+              <AlertDescription>
+                Nenhum log encontrado com os filtros aplicados.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div>
+              {filteredLogs.map((log) => (
+                <LogCard key={log.id} log={log} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value=\"user\" className=\"space-y-4\">
+          {loadingUserLogs ? (
+            <div className=\"flex justify-center py-8\">
+              <LoadingSpinner />
+            </div>
+          ) : userLogs.length === 0 ? (
+            <Alert>
+              <AlertTriangle className=\"h-4 w-4\" />
+              <AlertDescription>
+                Você ainda não possui atividades registradas.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div>
+              {userLogs.map((log) => (
+                <LogCard key={log.id} log={log} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default AuditLogViewer;
