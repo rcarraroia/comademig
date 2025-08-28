@@ -12,9 +12,8 @@ import { Calendar, CreditCard, FileText, MessageSquare, Users, TrendingUp, Alert
 import { Link } from "react-router-dom";
 
 const Dashboard = () => {
-  const { profile, user } = useAuth();
+  const { profile, user, isAdmin } = useAuth();
   const { getProfileCompletionPercentage, profileStatus, canAccessFeature } = useProfileValidation();
-  const { isAdmin } = useUserRoles();
   const { stats, isLoading: adminLoading } = useAdminData();
 
   const completionPercentage = getProfileCompletionPercentage();

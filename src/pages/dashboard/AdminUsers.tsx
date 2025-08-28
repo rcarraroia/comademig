@@ -1,10 +1,10 @@
 
 import UserManagement from "@/components/admin/UserManagement";
-import { useUserRoles } from "@/hooks/useUserRoles";
+import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 
 const AdminUsersPage = () => {
-  const { isAdmin, loading } = useUserRoles();
+  const { isAdmin, loading } = useAuth();
 
   if (loading) {
     return (

@@ -7,7 +7,7 @@ import { useUserRoles } from "@/hooks/useUserRoles";
 import { Navigate } from "react-router-dom";
 
 const ContentManagement = () => {
-  const { isAdmin, loading } = useUserRoles();
+  const { isAdmin, loading } = useAuth();
 
   if (loading) {
     return (
