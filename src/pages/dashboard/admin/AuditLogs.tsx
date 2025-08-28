@@ -10,7 +10,7 @@ const AuditLogs = () => {
     return <LoadingSpinner />;
   }
 
-  if (!hasPermission('manage_system')) {
+  if (!hasPermission('manage_users')) {
     return <Navigate to="/dashboard" replace />;
   }
 

@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Edit, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useUserRoles } from "@/hooks/useUserRoles";
+import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 
 const ContentManagement = () => {

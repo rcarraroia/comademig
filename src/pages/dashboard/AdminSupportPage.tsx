@@ -1,6 +1,6 @@
 
 import AdminSupport from "@/components/admin/AdminSupport";
-import { useUserRoles } from "@/hooks/useUserRoles";
+import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 
 const AdminSupportPage = () => {
