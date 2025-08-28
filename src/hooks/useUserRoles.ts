@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { User } from '@supabase/supabase-js';
 
 type AppRole = 'admin' | 'moderador' | 'tesoureiro' | 'membro';
 
@@ -12,10 +12,9 @@ interface UserRole {
   created_at: string;
 }
 
-export const useUserRoles = () => {
+export const useUserRoles = (user: User | null = null) => {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
 
   useEffect(() => {
     const fetchRoles = async () => {

@@ -1,9 +1,10 @@
 
 import { Profile } from './useAuthState';
 import { useUserRoles } from './useUserRoles';
+import { User } from '@supabase/supabase-js';
 
-export const useAuthPermissions = (profile: Profile | null) => {
-  const { hasRole, isAdmin: isAdminRole } = useUserRoles();
+export const useAuthPermissions = (profile: Profile | null, user: User | null = null) => {
+  const { hasRole, isAdmin: isAdminRole } = useUserRoles(user);
 
   const isAdmin = () => {
     // Verificar tanto tipo_membro quanto user_roles para compatibilidade
