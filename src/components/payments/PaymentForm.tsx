@@ -31,6 +31,9 @@ export const PaymentForm = ({
 }: PaymentFormProps) => {
   const { createPayment, loading } = useAsaasPayments();
   const { memberTypes, isLoading: loadingMemberTypes } = useMemberTypes();
+  
+  // Debug: verificar os tipos de membro carregados
+  console.log('Member Types carregados:', memberTypes);
   const { getPlansForMemberType, formatPrice } = useSubscriptionPlans();
   const [paymentResult, setPaymentResult] = useState<any>(null);
   const [selectedMemberType, setSelectedMemberType] = useState<string>('');

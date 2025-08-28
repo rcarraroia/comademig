@@ -60,6 +60,9 @@ export const useMemberTypes = () => {
       
       if (error) throw error;
       
+      // Debug: verificar dados carregados
+      console.log('Dados carregados do Supabase:', data);
+      
       // Processar contadores
       return (data || []).map(type => ({
         ...type,
