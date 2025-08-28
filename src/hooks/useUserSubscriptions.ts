@@ -1,4 +1,4 @@
-import { useSupabaseQuery, useSupabaseMutation } from './useSupabase';
+import { useSupabaseQuery, useSupabaseMutation } from './useSupabaseQuery';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
