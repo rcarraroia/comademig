@@ -31,7 +31,6 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
     { path: "/dashboard/admin/usuarios", label: "Gerenciar Usuários", icon: Users },
     { path: "/dashboard/admin/member-types", label: "Tipos de Membro", icon: Settings },
     { path: "/dashboard/admin/subscriptions", label: "Assinaturas", icon: CreditCard },
-    { path: "/dashboard/admin/audit-logs", label: "Logs de Auditoria", icon: FileText },
     { path: "/dashboard/admin/diagnostics", label: "Diagnóstico do Sistema", icon: Activity },
     { path: "/dashboard/admin/suporte", label: "Atendimento ao Membro", icon: MessageSquare },
     { path: "/dashboard/admin/content", label: "Gerenciar Conteúdo", icon: FileText },

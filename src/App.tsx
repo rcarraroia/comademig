@@ -42,7 +42,6 @@ import AdminUsersPage from '@/pages/dashboard/AdminUsers';
 import AdminSupportPage from '@/pages/dashboard/AdminSupportPage';
 import MemberTypes from '@/pages/dashboard/admin/MemberTypes';
 import Subscriptions from '@/pages/dashboard/admin/Subscriptions';
-import AuditLogs from '@/pages/dashboard/admin/AuditLogs';
 import ContentManagement from '@/pages/dashboard/ContentManagement';
 import SystemDiagnosticsPage from '@/pages/dashboard/admin/SystemDiagnostics';
 import ContentEdit from '@/pages/dashboard/ContentEdit';
@@ -112,12 +111,11 @@ function App() {
               <Route path="/dashboard/checkout-regularizacao" element={<CheckoutRegularizacao />} />
               <Route path="/dashboard/suporte" element={<Suporte />} />
               <Route path="/dashboard/afiliados" element={<Afiliados />} />
-              
+
               {/* Admin routes */}
               <Route path="/dashboard/admin/usuarios" element={<AdminUsersPage />} />
               <Route path="/dashboard/admin/member-types" element={<MemberTypes />} />
               <Route path="/dashboard/admin/subscriptions" element={<Subscriptions />} />
-              <Route path="/dashboard/admin/audit-logs" element={<AuditLogs />} />
               <Route path="/dashboard/admin/diagnostics" element={<SystemDiagnosticsPage />} />
               <Route path="/dashboard/admin/suporte" element={<AdminSupportPage />} />
               <Route path="/dashboard/admin/content" element={<ContentManagement />} />
@@ -133,7 +131,7 @@ function App() {
               <Route path="/dashboard/perfil-publico/:userId?" element={<PerfilPublico />} />
               <Route path="/dashboard/perfil-completo" element={<PerfilCompleto />} />
             </Route>
-            
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>
