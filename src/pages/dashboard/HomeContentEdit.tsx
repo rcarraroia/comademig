@@ -11,6 +11,7 @@ import { useUserRoles } from "@/hooks/useUserRoles";
 import { Navigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuthState } from "@/hooks/useAuthState";
 
 interface BannerData {
     titulo_principal: string;
@@ -56,7 +57,8 @@ interface HomeContentData {
 }
 
 const HomeContentEdit = () => {
-    const { isAdmin, loading } = useUserRoles();
+    const { user } = useAuthState();
+    const { isAdmin, loading } = useUserRoles(user);
     const navigate = useNavigate();
     const { toast } = useToast();
 
@@ -88,10 +90,10 @@ const HomeContentEdit = () => {
     const [uploadingImages, setUploadingImages] = useState<Set<string>>(new Set());
 
     useEffect(() => {
-        if (isAdmin()) {
+        if (!loading && isAdmin()) {
             loadContent();
         }
-    }, [isAdmin]);
+    }, [isAdmin, loading]);
 
     const loadContent = async () => {
         try {
