@@ -9,7 +9,7 @@ import { Download, DollarSign, CreditCard, AlertCircle, CheckCircle, Plus, Refre
 import { useAsaasPayments } from "@/hooks/useAsaasPayments";
 import { PaymentForm } from "@/components/payments/PaymentForm";
 import { PaymentResult } from "@/components/payments/PaymentResult";
-import { useAuthState } from "@/hooks/useAuthState";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Financeiro = () => {
   const [payments, setPayments] = useState<any[]>([]);
@@ -17,7 +17,7 @@ const Financeiro = () => {
   const [showPaymentResult, setShowPaymentResult] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   const { getUserPayments, checkPaymentStatus, loading } = useAsaasPayments();
-  const { profile } = useAuthState();
+  const { profile } = useAuth();
 
   const loadPayments = async () => {
     const data = await getUserPayments();

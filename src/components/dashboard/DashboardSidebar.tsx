@@ -2,7 +2,8 @@
 import { Link, useLocation } from "react-router-dom";
 import { X, Home, User, CreditCard, FileText, Calendar, MessageSquare, HelpCircle, Settings, Globe, Building, Users, Bell, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
+import { useUserRoles } from "@/hooks/useUserRoles";
+import { useAuthState } from "@/hooks/useAuthState";
 
 interface DashboardSidebarProps {
   isOpen: boolean;
@@ -11,7 +12,8 @@ interface DashboardSidebarProps {
 
 const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
   const location = useLocation();
-  const { isAdmin, loading } = useAuth();
+  const { user } = useAuthState();
+  const { isAdmin, loading } = useUserRoles(user);
 
   const menuItems = [
     { path: "/dashboard", label: "Dashboard", icon: Home },

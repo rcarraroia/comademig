@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Save, Plus, Trash2, Users, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useUserRoles } from "@/hooks/useUserRoles";
+import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,7 +56,7 @@ interface LiderancaContentData {
 }
 
 const LiderancaContentEdit = () => {
-  const { isAdmin, loading } = useUserRoles();
+  const { isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   

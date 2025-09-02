@@ -64,7 +64,7 @@ import Layout from '@/components/Layout';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 // Contexts
-import { AuthProvider } from '@/contexts/AuthContext';
+// AuthProvider removido - usando hooks diretos
 
 // Components
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -74,7 +74,6 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
         <Router>
           <Routes>
             {/* Public routes */}
@@ -136,7 +135,6 @@ function App() {
           </Routes>
         </Router>
         <Toaster />
-      </AuthProvider>
     </QueryClientProvider>
   );
 }

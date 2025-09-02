@@ -1,7 +1,6 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfileValidation } from "@/hooks/useProfileValidation";
-import { useUserRoles } from "@/hooks/useUserRoles";
 import { useAdminData } from "@/hooks/useAdminData";
 import { ProfileCompletion } from "@/components/auth/ProfileCompletion";
 

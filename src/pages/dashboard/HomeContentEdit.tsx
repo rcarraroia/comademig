@@ -7,11 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Save, Plus, Trash2, Upload, Image } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useUserRoles } from "@/hooks/useUserRoles";
 import { Navigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuthState } from "@/hooks/useAuthState";
+import { useAuth } from "@/contexts/AuthContext";
 import { useHomeContent } from "@/hooks/useContent";
 import { useUpdateContent } from "@/hooks/useContentMutation";
 
@@ -59,8 +58,7 @@ interface HomeContentData {
 }
 
 const HomeContentEdit = () => {
-    const { user } = useAuthState();
-    const { isAdmin, loading } = useUserRoles(user);
+    const { user, isAdmin, loading } = useAuth();
     const navigate = useNavigate();
     const { toast } = useToast();
 
