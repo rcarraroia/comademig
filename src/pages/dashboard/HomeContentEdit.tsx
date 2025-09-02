@@ -126,13 +126,11 @@ const HomeContentEdit = () => {
         try {
             const { error } = await supabase
                 .from('content_management')
-                .upsert({
-                    page_name: 'home',
+                .update({
                     content_json: contentData,
-                    updated_at: new Date().toISOString()
-                }, {
-                    onConflict: 'page_name'
-                });
+                    last_updated_at: new Date().toISOString()
+                })
+                .eq('page_name', 'home');
 
             if (error) {
                 throw error;
