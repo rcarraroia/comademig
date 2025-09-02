@@ -12,6 +12,8 @@ import { Navigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthState } from "@/hooks/useAuthState";
+import { useHomeContent } from "@/hooks/useContent";
+import { useUpdateContent } from "@/hooks/useContentMutation";
 
 interface BannerData {
     titulo_principal: string;
@@ -62,6 +64,10 @@ const HomeContentEdit = () => {
     const navigate = useNavigate();
     const { toast } = useToast();
 
+    // Usar o hook de conteúdo para carregar dados
+    const { data: homeContent, isLoading: contentLoading, error: contentError } = useHomeContent();
+    const updateContentMutation = useUpdateContent();
+
     const [contentData, setContentData] = useState<HomeContentData>({
         banner_principal: {
             titulo_principal: '',
@@ -85,85 +91,32 @@ const HomeContentEdit = () => {
         }
     });
 
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
     const [uploadingImages, setUploadingImages] = useState<Set<string>>(new Set());
 
+    // Carregar dados quando disponíveis
     useEffect(() => {
-        if (!loading && isAdmin()) {
-            loadContent();
+        if (homeContent) {
+            setContentData(prev => ({
+                ...prev,
+                ...homeContent
+            }));
         }
-    }, [isAdmin, loading]);
-
-    const loadContent = async () => {
-        try {
-            const { data, error } = await supabase
-                .from('content_management')
-                .select('content_json')
-                .eq('page_name', 'home')
-                .single();
-
-            if (error && error.code !== 'PGRST116') {
-                console.error('Erro ao carregar conteúdo:', error);
-                return;
-            }
-
-            if (data?.content_json) {
-                setContentData(prev => ({
-                    ...prev,
-                    ...data.content_json
-                }));
-            }
-        } catch (error) {
-            console.error('Erro ao carregar conteúdo:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    }, [homeContent]);
 
     const handleSave = async () => {
-        setIsSaving(true);
         try {
-            // Debug: verificar autenticação
-            const { data: { user } } = await supabase.auth.getUser();
-            console.log('🔍 Usuário autenticado:', user?.id);
-            console.log('📋 Dados a salvar:', contentData);
+            console.log('🔍 Salvando conteúdo da página inicial:', contentData);
             
-            const { data, error } = await supabase
-                .from('content_management')
-                .update({
-                    content_json: contentData,
-                    last_updated_at: new Date().toISOString()
-                })
-                .eq('page_name', 'home')
-                .select();
-
-            console.log('📤 Resposta do Supabase:', { data, error });
-
-            if (error) {
-                throw error;
-            }
-
-            // Limpar cache do React Query para forçar recarregamento
-            if (window.queryClient) {
-                window.queryClient.invalidateQueries({ queryKey: ['content', 'home'] });
-            }
-
-            toast({
-                title: "Sucesso",
-                description: "Conteúdo da página inicial salvo com sucesso! As alterações aparecerão no site em alguns segundos.",
+            await updateContentMutation.mutateAsync({
+                pageName: 'home',
+                content: contentData
             });
 
+            // Navegar de volta após sucesso
             navigate('/dashboard/admin/content');
         } catch (error) {
-            console.error('Erro ao salvar:', error);
-            toast({
-                title: "Erro",
-                description: "Não foi possível salvar o conteúdo",
-                variant: "destructive"
-            });
-        } finally {
-            setIsSaving(false);
+            console.error('❌ Erro ao salvar conteúdo:', error);
+            // O erro já é tratado pelo hook de mutação
         }
     };
 
@@ -266,7 +219,7 @@ const HomeContentEdit = () => {
         }));
     };
 
-    if (loading || isLoading) {
+    if (loading || contentLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-comademig-blue"></div>
@@ -278,8 +231,21 @@ const HomeContentEdit = () => {
         return <Navigate to="/dashboard" replace />;
     }
 
+    if (contentError) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <p className="text-red-600 mb-4">Erro ao carregar conteúdo da página inicial</p>
+                    <Button onClick={() => window.location.reload()}>
+                        Tentar Novamente
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 pb-20">
             <div className="flex items-center space-x-4">
                 <Link to="/dashboard/admin/content">
                     <Button variant="outline" size="sm">
@@ -372,9 +338,8 @@ const HomeContentEdit = () => {
                             </div>
                         </CardContent>
                     </Card>
-                </TabsContent>
-
-                {/* Cards de Ação */}
+                </TabsContent>   
+             {/* Cards de Ação */}
                 <TabsContent value="cards">
                     <Card>
                         <CardHeader>
@@ -694,7 +659,7 @@ const HomeContentEdit = () => {
                                                     i === index ? { ...n, link_noticia: e.target.value } : n
                                                 )
                                             }))}
-                                            placeholder="URL da notícia completa"
+                                            placeholder="URL da notícia"
                                         />
                                     </div>
                                 </div>
@@ -711,13 +676,13 @@ const HomeContentEdit = () => {
                     </Card>
                 </TabsContent>
 
-                {/* Junte-se à Nossa Missão */}
+                {/* Seção Junte-se à Missão */}
                 <TabsContent value="missao">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Junte-se à Nossa Missão</CardTitle>
+                            <CardTitle>Seção "Junte-se à Missão"</CardTitle>
                             <CardDescription>
-                                Configure a seção de call-to-action final
+                                Configure a seção de call-to-action da página inicial
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -780,13 +745,29 @@ const HomeContentEdit = () => {
                 </TabsContent>
             </Tabs>
 
-            <div className="flex justify-end space-x-2">
+            {/* Botão de Salvar Fixo */}
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-end space-x-4 z-50">
                 <Link to="/dashboard/admin/content">
-                    <Button variant="outline">Cancelar</Button>
+                    <Button variant="outline">
+                        Cancelar
+                    </Button>
                 </Link>
-                <Button onClick={handleSave} disabled={isSaving}>
-                    <Save className="h-4 w-4 mr-2" />
-                    {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+                <Button 
+                    onClick={handleSave}
+                    disabled={updateContentMutation.isPending}
+                    className="bg-comademig-blue hover:bg-comademig-blue/90"
+                >
+                    {updateContentMutation.isPending ? (
+                        <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Salvando...
+                        </>
+                    ) : (
+                        <>
+                            <Save className="h-4 w-4 mr-2" />
+                            Salvar Alterações
+                        </>
+                    )}
                 </Button>
             </div>
         </div>

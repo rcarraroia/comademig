@@ -3,11 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Edit, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useUserRoles } from "@/hooks/useUserRoles";
+import { useAuthState } from "@/hooks/useAuthState";
 import { Navigate } from "react-router-dom";
 
 const ContentManagement = () => {
-  const { isAdmin, loading } = useAuth();
+  const { user } = useAuthState();
+  const { isAdmin, loading } = useUserRoles(user);
 
   if (loading) {
     return (

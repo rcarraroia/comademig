@@ -13,22 +13,24 @@ export const useUpdateContent = () => {
 
   return useMutation({
     mutationFn: async ({ pageName, content }: UpdateContentParams) => {
+      console.log('🔍 Atualizando conteúdo:', { pageName, content });
+      
       const { data, error } = await supabase
         .from('content_management')
-        .upsert({
-          page_name: pageName,
+        .update({
           content_json: content,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'page_name'
+          last_updated_at: new Date().toISOString()
         })
+        .eq('page_name', pageName)
         .select()
         .single();
 
       if (error) {
+        console.error('❌ Erro no update:', error);
         throw error;
       }
 
+      console.log('✅ Conteúdo atualizado:', data);
       return data;
     },
     onSuccess: (data, variables) => {
