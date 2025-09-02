@@ -126,16 +126,24 @@ const HomeContentEdit = () => {
                 .from('content_management')
                 .upsert({
                     page_name: 'home',
-                    content_json: contentData
+                    content_json: contentData,
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'page_name'
                 });
 
             if (error) {
                 throw error;
             }
 
+            // Limpar cache do React Query para forçar recarregamento
+            if (window.queryClient) {
+                window.queryClient.invalidateQueries({ queryKey: ['content', 'home'] });
+            }
+
             toast({
                 title: "Sucesso",
-                description: "Conteúdo da página inicial salvo com sucesso!",
+                description: "Conteúdo da página inicial salvo com sucesso! As alterações aparecerão no site em alguns segundos.",
             });
 
             navigate('/dashboard/admin/content');

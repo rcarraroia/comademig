@@ -3,14 +3,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { MapPin, Phone, Mail, Clock, Facebook, Instagram, Youtube } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, Facebook, Instagram, Youtube, Loader2 } from "lucide-react";
+import { useContactContent } from "@/hooks/useContent";
 
 const Contato = () => {
+  const { content, isLoading, error, hasCustomContent } = useContactContent();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Aqui seria implementada a lógica de envio do formulário
     console.log("Formulário enviado");
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-comademig-blue" />
+      </div>
+    );
+  }
+
+  if (error) {
+    console.error('Erro ao carregar conteúdo da página de contato:', error);
+    // Continua com conteúdo padrão em caso de erro
+  }
 
   return (
     <div className="min-h-screen">
@@ -19,10 +35,10 @@ const Contato = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <h1 className="font-montserrat font-bold text-4xl md:text-6xl leading-tight">
-              Contato
+              {content.titulo}
             </h1>
             <p className="font-inter text-xl md:text-2xl text-gray-200">
-              Entre em contato conosco. Estamos aqui para ajudar.
+              {content.descricao}
             </p>
           </div>
         </div>
@@ -52,10 +68,9 @@ const Contato = () => {
               </CardHeader>
               <CardContent>
                 <p className="font-inter text-gray-700">
-                  Rua das Assembleias, 123<br />
-                  Bairro Centro<br />
-                  Belo Horizonte - MG<br />
-                  CEP: 30000-000
+                  {content.endereco.rua}<br />
+                  {content.endereco.cidade} - {content.endereco.estado}<br />
+                  CEP: {content.endereco.cep}
                 </p>
               </CardContent>
             </Card>
@@ -66,15 +81,17 @@ const Contato = () => {
                   <Phone className="w-8 h-8 text-white" />
                 </div>
                 <CardTitle className="font-montserrat text-comademig-blue">
-                  Telefone
+                  Telefones
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="font-inter text-gray-700">
-                  (31) 3333-4444<br />
-                  (31) 99999-8888<br />
-                  WhatsApp disponível
-                </p>
+                <div className="font-inter text-gray-700">
+                  {content.telefones.map((telefone: any, index: number) => (
+                    <p key={index}>
+                      {telefone.tipo}: {telefone.numero}
+                    </p>
+                  ))}
+                </div>
               </CardContent>
             </Card>
 
@@ -84,15 +101,17 @@ const Contato = () => {
                   <Mail className="w-8 h-8 text-white" />
                 </div>
                 <CardTitle className="font-montserrat text-comademig-blue">
-                  E-mail
+                  E-mails
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="font-inter text-gray-700">
-                  contato@comademig.org.br<br />
-                  secretaria@comademig.org.br<br />
-                  presidencia@comademig.org.br
-                </p>
+                <div className="font-inter text-gray-700">
+                  {content.emails.map((email: any, index: number) => (
+                    <p key={index}>
+                      {email.tipo}: {email.email}
+                    </p>
+                  ))}
+                </div>
               </CardContent>
             </Card>
 
@@ -102,13 +121,13 @@ const Contato = () => {
                   <Clock className="w-8 h-8 text-white" />
                 </div>
                 <CardTitle className="font-montserrat text-comademig-blue">
-                  Funcionamento
+                  Horário
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="font-inter text-gray-700">
-                  Segunda a Sexta<br />
-                  8:00 às 17:00<br />
+                  {content.horario_funcionamento.dias}<br />
+                  {content.horario_funcionamento.horario}<br />
                   Sábados: 8:00 às 12:00
                 </p>
               </CardContent>
@@ -294,6 +313,15 @@ const Contato = () => {
           </div>
         </div>
       </section>
+
+      {/* Indicador de conteúdo personalizado (apenas para admins) */}
+      {hasCustomContent && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+            Conteúdo Personalizado
+          </div>
+        </div>
+      )}
     </div>
   );
 };

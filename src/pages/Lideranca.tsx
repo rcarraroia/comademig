@@ -1,8 +1,25 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, Phone } from "lucide-react";
+import { Mail, Phone, Loader2 } from "lucide-react";
+import { useLeadershipContent } from "@/hooks/useContent";
 
 const Lideranca = () => {
+  const { content, isLoading, error, hasCustomContent } = useLeadershipContent();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-comademig-blue" />
+      </div>
+    );
+  }
+
+  if (error) {
+    console.error('Erro ao carregar conteúdo da página de liderança:', error);
+    // Continua com conteúdo padrão em caso de erro
+  }
+
+  // Dados padrão caso não haja conteúdo personalizado
   const presidente = {
     nome: "Pastor João Silva Santos",
     cargo: "Presidente da COMADEMIG",
@@ -70,10 +87,10 @@ const Lideranca = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <h1 className="font-montserrat font-bold text-4xl md:text-6xl leading-tight">
-              Liderança
+              {content.titulo}
             </h1>
             <p className="font-inter text-xl md:text-2xl text-gray-200">
-              Conheça os líderes que conduzem a COMADEMIG
+              {content.descricao}
             </p>
           </div>
         </div>
@@ -235,6 +252,15 @@ const Lideranca = () => {
           </div>
         </div>
       </section>
+
+      {/* Indicador de conteúdo personalizado (apenas para admins) */}
+      {hasCustomContent && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+            Conteúdo Personalizado
+          </div>
+        </div>
+      )}
     </div>
   );
 };

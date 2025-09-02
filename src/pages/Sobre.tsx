@@ -1,8 +1,25 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Target, Eye, History, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Target, Eye, History, Users, Loader2 } from "lucide-react";
+import { useAboutContent } from "@/hooks/useContent";
 
 const Sobre = () => {
+  const { content, isLoading, error, hasCustomContent } = useAboutContent();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-comademig-blue" />
+      </div>
+    );
+  }
+
+  if (error) {
+    console.error('Erro ao carregar conteúdo da página sobre:', error);
+    // Continua com conteúdo padrão em caso de erro
+  }
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -10,10 +27,10 @@ const Sobre = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <h1 className="font-montserrat font-bold text-4xl md:text-6xl leading-tight">
-              Sobre a COMADEMIG
+              {content.titulo}
             </h1>
             <p className="font-inter text-xl md:text-2xl text-gray-200">
-              Conheça nossa história, missão e compromisso com o Reino de Deus
+              {content.descricao}
             </p>
           </div>
         </div>
@@ -29,14 +46,12 @@ const Sobre = () => {
                   <Target className="w-8 h-8 text-white" />
                 </div>
                 <CardTitle className="font-montserrat text-2xl text-comademig-blue">
-                  Nossa Missão
+                  {content.missao.titulo}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="font-inter text-gray-700 text-center leading-relaxed">
-                  Fortalecer e unir os ministros das Assembleias de Deus em Minas Gerais, 
-                  promovendo a comunhão fraternal, o crescimento espiritual e a expansão 
-                  do Reino de Deus através da pregação do Evangelho e da formação ministerial.
+                  {content.missao.texto}
                 </p>
               </CardContent>
             </Card>
@@ -47,14 +62,12 @@ const Sobre = () => {
                   <Eye className="w-8 h-8 text-white" />
                 </div>
                 <CardTitle className="font-montserrat text-2xl text-comademig-blue">
-                  Nossa Visão
+                  {content.visao.titulo}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="font-inter text-gray-700 text-center leading-relaxed">
-                  Ser reconhecida como uma convenção que promove a unidade ministerial, 
-                  a excelência na pregação da Palavra e o crescimento saudável das igrejas 
-                  locais, impactando positivamente toda a sociedade mineira.
+                  {content.visao.texto}
                 </p>
               </CardContent>
             </Card>
@@ -67,7 +80,7 @@ const Sobre = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="font-montserrat font-bold text-3xl md:text-4xl text-comademig-blue mb-4">
-              Nossa História
+              {content.historia.titulo}
             </h2>
             <p className="font-inter text-gray-600 text-lg max-w-2xl mx-auto">
               Décadas de compromisso com a obra de Deus em Minas Gerais
@@ -84,23 +97,19 @@ const Sobre = () => {
                   Fundação e Primeiros Anos
                 </h3>
               </div>
-              <p className="font-inter text-gray-700 leading-relaxed mb-6">
-                A COMADEMIG foi fundada em 1962, nascendo da necessidade de unir os ministros das 
-                Assembleias de Deus em Minas Gerais. Desde o início, a convenção teve como objetivo 
-                principal fortalecer a comunhão entre os pastores e promover o crescimento ordenado 
-                das igrejas locais.
-              </p>
-              <p className="font-inter text-gray-700 leading-relaxed mb-6">
-                Ao longo dos anos, a COMADEMIG tem sido um pilar fundamental na formação ministerial 
-                e na organização eclesiástica das Assembleias de Deus em nosso estado. Através de 
-                congressos, seminários e encontros, tem contribuído significativamente para o 
-                crescimento espiritual e numérico das igrejas.
-              </p>
-              <p className="font-inter text-gray-700 leading-relaxed">
-                Hoje, a COMADEMIG conta com centenas de ministros associados e continua seu trabalho 
-                de edificação do corpo de Cristo, sempre pautada nos princípios bíblicos e na 
-                tradição pentecostal das Assembleias de Deus.
-              </p>
+              <div className="font-inter text-gray-700 leading-relaxed">
+                {content.historia.paragrafos ? (
+                  content.historia.paragrafos.map((paragrafo: string, index: number) => (
+                    <p key={index} className="mb-6 last:mb-0">
+                      {paragrafo}
+                    </p>
+                  ))
+                ) : (
+                  <p className="mb-0">
+                    {content.historia.texto}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -251,6 +260,15 @@ const Sobre = () => {
           </div>
         </div>
       </section>
+
+      {/* Indicador de conteúdo personalizado (apenas para admins) */}
+      {hasCustomContent && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+            Conteúdo Personalizado
+          </div>
+        </div>
+      )}
     </div>
   );
 };
