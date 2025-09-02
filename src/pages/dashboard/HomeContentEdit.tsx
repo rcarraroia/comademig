@@ -124,13 +124,21 @@ const HomeContentEdit = () => {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            const { error } = await supabase
+            // Debug: verificar autenticação
+            const { data: { user } } = await supabase.auth.getUser();
+            console.log('🔍 Usuário autenticado:', user?.id);
+            console.log('📋 Dados a salvar:', contentData);
+            
+            const { data, error } = await supabase
                 .from('content_management')
                 .update({
                     content_json: contentData,
                     last_updated_at: new Date().toISOString()
                 })
-                .eq('page_name', 'home');
+                .eq('page_name', 'home')
+                .select();
+
+            console.log('📤 Resposta do Supabase:', { data, error });
 
             if (error) {
                 throw error;
