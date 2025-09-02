@@ -9,6 +9,7 @@ import { useEventos } from "@/hooks/useEventos";
 import { EventsList } from "@/components/events/EventsList";
 import { MyEventsList } from "@/components/events/MyEventsList";
 import { MeusCertificados } from "@/components/events/MeusCertificados";
+import { QRCodeScanner } from "@/components/events/QRCodeScanner";
 import { ErrorMessage } from "@/components/common/ErrorMessage";
 import { useToast } from "@/hooks/use-toast";
 
@@ -52,6 +53,7 @@ const EventosDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loadingInscricao, setLoadingInscricao] = useState<string | undefined>();
   const [loadingCancelamento, setLoadingCancelamento] = useState<string | undefined>();
+  const [showScanner, setShowScanner] = useState(false);
   const { toast } = useToast();
 
   const {
@@ -208,19 +210,23 @@ const EventosDashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12">
-                <QrCode className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Scanner de Presença
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Registre sua presença nos eventos escaneando o QR Code disponibilizado no local.
-                </p>
-                <Button>
-                  <QrCode className="h-4 w-4 mr-2" />
-                  Abrir Scanner
-                </Button>
-              </div>
+              {!showScanner ? (
+                <div className="text-center py-12">
+                  <QrCode className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Scanner de Presença
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Registre sua presença nos eventos escaneando o QR Code disponibilizado no local.
+                  </p>
+                  <Button onClick={() => setShowScanner(true)}>
+                    <QrCode className="h-4 w-4 mr-2" />
+                    Abrir Scanner
+                  </Button>
+                </div>
+              ) : (
+                <QRCodeScanner onClose={() => setShowScanner(false)} />
+              )}
             </CardContent>
           </Card>
         </TabsContent>
