@@ -158,23 +158,28 @@ const ContentManagement = () => {
     if (!page.content && page.implemented) return { text: "Usando conteúdo padrão", details: [] };
     if (!page.implemented) return { text: "Editor não implementado", details: [] };
     
+    // Verificação de segurança para garantir que page.content existe
+    if (!page.content || typeof page.content !== 'object') {
+      return { text: "Conteúdo não disponível", details: [] };
+    }
+    
     switch (page.key) {
       case 'home':
         return {
-          text: page.content.hero?.titulo || "Sem título definido",
+          text: page.content.banner_principal?.titulo_principal || page.content.hero?.titulo || "Sem título definido",
           details: [
-            `Hero: ${page.content.hero?.titulo ? '✓' : '✗'}`,
-            `Estatísticas: ${page.content.estatisticas?.length || 0} itens`,
-            `Destaques: ${page.content.destaques?.length || 0} itens`
+            `Banner: ${page.content.banner_principal?.titulo_principal ? '✓' : '✗'}`,
+            `Cards de Ação: ${page.content.cards_acao?.length || 0} itens`,
+            `Destaques: ${page.content.destaques_convencao?.length || 0} itens`
           ]
         };
       case 'sobre':
         return {
           text: page.content.titulo || "Sem título definido",
           details: [
-            `Seções: ${page.content.secoes?.length || 0} itens`,
-            `História: ${page.content.historia ? '✓' : '✗'}`,
-            `Missão/Visão: ${page.content.missao && page.content.visao ? '✓' : '✗'}`
+            `Missão: ${page.content.missao?.texto ? '✓' : '✗'}`,
+            `Visão: ${page.content.visao?.texto ? '✓' : '✗'}`,
+            `História: ${page.content.historia?.texto || page.content.historia?.paragrafos ? '✓' : '✗'}`
           ]
         };
       case 'lideranca':
@@ -192,7 +197,7 @@ const ContentManagement = () => {
           details: [
             `Endereço: ${page.content.endereco?.rua ? '✓' : '✗'}`,
             `WhatsApp: ${page.content.telefones?.some((t: any) => t.whatsapp) ? '✓' : '✗'}`,
-            `Horários: ${page.content.horarioFuncionamento ? '✓' : '✗'}`
+            `Horários: ${page.content.horario_funcionamento ? '✓' : '✗'}`
           ]
         };
       default:
