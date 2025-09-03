@@ -27,10 +27,10 @@ const Lideranca = () => {
 
   // Organizar líderes por categoria
   const liderancaPorCategoria = {
-    presidencia: content.lideres.filter((lider: LeaderData) => lider.categoria === 'presidencia'),
-    diretoria: content.lideres.filter((lider: LeaderData) => lider.categoria === 'diretoria'),
-    conselho: content.lideres.filter((lider: LeaderData) => lider.categoria === 'conselho'),
-    campos: content.lideres.filter((lider: LeaderData) => lider.categoria === 'campos')
+    presidencia: content.lideres?.filter((lider: LeaderData) => lider.categoria === 'presidencia') || [],
+    diretoria: content.lideres?.filter((lider: LeaderData) => lider.categoria === 'diretoria') || [],
+    conselho: content.lideres?.filter((lider: LeaderData) => lider.categoria === 'conselho') || [],
+    campos: content.lideres?.filter((lider: LeaderData) => lider.categoria === 'campos') || []
   };
 
   const renderLiderCard = (lider: LeaderData, isPresidente = false) => (

@@ -190,7 +190,7 @@ export const useAboutContent = () => {
   const content: AboutContentData = data?.content_json || defaultContent;
   
   // Se história tem apenas texto, converter para array de parágrafos
-  if (content.historia.texto && !content.historia.paragrafos) {
+  if (content.historia?.texto && !content.historia?.paragrafos) {
     content.historia.paragrafos = [content.historia.texto];
   }
 

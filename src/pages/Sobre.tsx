@@ -55,12 +55,12 @@ const Sobre = () => {
                   <Target className="w-8 h-8 text-white" />
                 </div>
                 <CardTitle className="font-montserrat text-2xl text-comademig-blue">
-                  {content.missao.titulo}
+                  {content.missao?.titulo}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="font-inter text-gray-700 text-center leading-relaxed">
-                  {content.missao.texto}
+                  {content.missao?.texto}
                 </p>
               </CardContent>
             </Card>
@@ -71,12 +71,12 @@ const Sobre = () => {
                   <Eye className="w-8 h-8 text-white" />
                 </div>
                 <CardTitle className="font-montserrat text-2xl text-comademig-blue">
-                  {content.visao.titulo}
+                  {content.visao?.titulo}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="font-inter text-gray-700 text-center leading-relaxed">
-                  {content.visao.texto}
+                  {content.visao?.texto}
                 </p>
               </CardContent>
             </Card>
@@ -89,7 +89,7 @@ const Sobre = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="font-montserrat font-bold text-3xl md:text-4xl text-comademig-blue mb-4">
-              {content.historia.titulo}
+              {content.historia?.titulo}
             </h2>
             <p className="font-inter text-gray-600 text-lg max-w-2xl mx-auto">
               Décadas de compromisso com a obra de Deus em Minas Gerais
@@ -108,7 +108,7 @@ const Sobre = () => {
               </div>
               <div className="font-inter text-gray-700 leading-relaxed">
                 {content.historia?.paragrafos ? (
-                  content.historia.paragrafos.map((paragrafo: string, index: number) => (
+                  content.historia?.paragrafos.map((paragrafo: string, index: number) => (
                     <p key={index} className="mb-6 last:mb-0">
                       {paragrafo}
                     </p>

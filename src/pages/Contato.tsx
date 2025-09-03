@@ -76,12 +76,12 @@ const Contato = () => {
               </CardHeader>
               <CardContent>
                 <p className="font-inter text-gray-700">
-                  {content.endereco.rua}<br />
-                  {content.endereco.complemento && (
-                    <>{content.endereco.complemento}<br /></>
+                  {content.endereco?.rua}<br />
+                  {content.endereco?.complemento && (
+                    <>{content.endereco?.complemento}<br /></>
                   )}
-                  {content.endereco.cidade} - {content.endereco.estado}<br />
-                  CEP: {content.endereco.cep}
+                  {content.endereco?.cidade} - {content.endereco?.estado}<br />
+                  CEP: {content.endereco?.cep}
                 </p>
               </CardContent>
             </Card>
@@ -97,7 +97,7 @@ const Contato = () => {
               </CardHeader>
               <CardContent>
                 <div className="font-inter text-gray-700 space-y-1">
-                  {content.telefones.map((telefone: ContactPhone) => (
+                  {content.telefones?.map((telefone: ContactPhone) => (
                     <p key={telefone.id}>
                       <span className="font-semibold">{telefone.tipo}:</span> {telefone.numero}
                     </p>
@@ -117,7 +117,7 @@ const Contato = () => {
               </CardHeader>
               <CardContent>
                 <div className="font-inter text-gray-700 space-y-1">
-                  {content.emails.map((email: ContactEmail) => (
+                  {content.emails?.map((email: ContactEmail) => (
                     <p key={email.id}>
                       <span className="font-semibold">{email.tipo}:</span> {email.email}
                     </p>
@@ -137,11 +137,11 @@ const Contato = () => {
               </CardHeader>
               <CardContent>
                 <div className="font-inter text-gray-700">
-                  <p>{content.horario_funcionamento.dias}</p>
-                  <p>{content.horario_funcionamento.horario}</p>
-                  {content.horario_funcionamento.observacoes && (
+                  <p>{content.horario_funcionamento?.dias}</p>
+                  <p>{content.horario_funcionamento?.horario}</p>
+                  {content.horario_funcionamento?.observacoes && (
                     <p className="text-sm text-gray-600 mt-2">
-                      {content.horario_funcionamento.observacoes}
+                      {content.horario_funcionamento?.observacoes}
                     </p>
                   )}
                 </div>
@@ -291,7 +291,7 @@ const Contato = () => {
           <div className="flex justify-center space-x-6 mb-8">
             {content.redes_sociais?.facebook && (
               <a 
-                href={content.redes_sociais.facebook}
+                href={content.redes_sociais?.facebook}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-16 h-16 bg-comademig-gold rounded-full flex items-center justify-center hover:bg-comademig-gold/90 transition-colors"
@@ -301,7 +301,7 @@ const Contato = () => {
             )}
             {content.redes_sociais?.instagram && (
               <a 
-                href={content.redes_sociais.instagram}
+                href={content.redes_sociais?.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-16 h-16 bg-comademig-gold rounded-full flex items-center justify-center hover:bg-comademig-gold/90 transition-colors"
@@ -311,7 +311,7 @@ const Contato = () => {
             )}
             {content.redes_sociais?.youtube && (
               <a 
-                href={content.redes_sociais.youtube}
+                href={content.redes_sociais?.youtube}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-16 h-16 bg-comademig-gold rounded-full flex items-center justify-center hover:bg-comademig-gold/90 transition-colors"
@@ -350,7 +350,7 @@ const Contato = () => {
         publicUrl="/contato"
         position="bottom-right"
         compact={false}
-        contentPreview={content.endereco?.rua ? `${content.endereco.rua}, ${content.endereco.cidade}` : 'Informações de contato'}
+        contentPreview={content.endereco?.rua ? `${content.endereco?.rua}, ${content.endereco?.cidade}` : 'Informações de contato'}
       />
     </div>
   );

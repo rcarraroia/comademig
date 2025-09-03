@@ -44,14 +44,14 @@ const Home = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <h1 className="font-montserrat font-bold text-4xl md:text-6xl leading-tight">
-              {content.banner_principal.titulo_principal}
+              {content.banner_principal?.titulo_principal}
             </h1>
             <p className="font-inter text-xl md:text-2xl text-gray-200">
-              {content.banner_principal.subtitulo}
+              {content.banner_principal?.subtitulo}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8">
               <Button asChild size="lg" className="bg-comademig-gold hover:bg-comademig-gold/90 text-white font-montserrat font-semibold">
-                <Link to={content.banner_principal.link_botao}>{content.banner_principal.texto_botao}</Link>
+                <Link to={content.banner_principal?.link_botao || '/sobre'}>{content.banner_principal?.texto_botao}</Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-comademig-blue font-montserrat font-semibold">
                 <Link to="/eventos">Ver Eventos</Link>
@@ -65,7 +65,7 @@ const Home = () => {
       <section className="py-16 bg-comademig-light">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {content.cards_acao.map((card: any, index: number) => {
+            {content.cards_acao?.map((card: any, index: number) => {
               const icons = [Users, Heart, Building, Play];
               const IconComponent = icons[index] || Users;
               
@@ -95,7 +95,7 @@ const Home = () => {
       </section>
 
       {/* Destaques da Convenção */}
-      {content.destaques_convencao && content.destaques_convencao.length > 0 && (
+      {content.destaques_convencao && content.destaques_convencao?.length > 0 && (
         <section className="py-16 bg-white">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
@@ -107,7 +107,7 @@ const Home = () => {
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {content.destaques_convencao.map((destaque: any, index: number) => (
+              {content.destaques_convencao?.map((destaque: any, index: number) => (
                 <Card key={index} className="hover:shadow-lg transition-shadow">
                   {destaque.imagem && (
                     <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
@@ -141,7 +141,7 @@ const Home = () => {
       )}
 
       {/* Notícias Recentes */}
-      {content.noticias_recentes && content.noticias_recentes.length > 0 && (
+      {content.noticias_recentes && content.noticias_recentes?.length > 0 && (
         <section className="py-16 bg-comademig-light">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
@@ -153,7 +153,7 @@ const Home = () => {
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {content.noticias_recentes.slice(0, 3).map((noticia: any, index: number) => (
+              {content.noticias_recentes?.slice(0, 3).map((noticia: any, index: number) => (
                 <Card key={index} className="hover:shadow-lg transition-shadow bg-white">
                   {noticia.imagem && (
                     <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
@@ -200,14 +200,14 @@ const Home = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <h2 className="font-montserrat font-bold text-3xl md:text-5xl">
-              {content.junte_se_missao.titulo_principal}
+              {content.junte_se_missao?.titulo_principal}
             </h2>
             <p className="font-inter text-xl md:text-2xl text-gray-200">
-              {content.junte_se_missao.subtitulo}
+              {content.junte_se_missao?.subtitulo}
             </p>
             <div className="pt-8">
               <Button asChild size="lg" className="bg-comademig-gold hover:bg-comademig-gold/90 text-white font-montserrat font-semibold">
-                <Link to={content.junte_se_missao.link_botao}>{content.junte_se_missao.texto_botao}</Link>
+                <Link to={content.junte_se_missao?.link_botao || '/filiacao'}>{content.junte_se_missao?.texto_botao}</Link>
               </Button>
             </div>
           </div>
