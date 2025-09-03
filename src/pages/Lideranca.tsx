@@ -231,7 +231,6 @@ const Lideranca = () => {
       )}
 
       {/* Badge de status para administradores */}
-      {/* Temporariamente comentado para debug
       <ContentStatusBadge
         pageName="lideranca"
         pageTitle="Liderança"
@@ -242,7 +241,6 @@ const Lideranca = () => {
         compact={false}
         contentPreview={content.titulo}
       />
-      */}
     </div>
   );
 };

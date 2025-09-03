@@ -288,7 +288,6 @@ const Sobre = () => {
             </Link>
           </Button>
           
-          {/* Temporariamente comentado para debug
           <ContentStatusBadge
             pageName="sobre"
             pageTitle="Sobre Nós"
@@ -299,7 +298,6 @@ const Sobre = () => {
             compact={true}
             contentPreview={content?.titulo}
           />
-          */}
         </div>
       )}
     </div>
