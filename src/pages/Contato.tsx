@@ -342,6 +342,7 @@ const Contato = () => {
       </section>
 
       {/* Badge de status para administradores */}
+      {/* Temporariamente comentado para debug
       <ContentStatusBadge
         pageName="contato"
         pageTitle="Contato"
@@ -352,6 +353,7 @@ const Contato = () => {
         compact={false}
         contentPreview={content.endereco?.rua ? `${content.endereco.rua}, ${content.endereco.cidade}` : 'Informações de contato'}
       />
+      */}
     </div>
   );
 };

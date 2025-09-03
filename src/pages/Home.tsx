@@ -215,6 +215,7 @@ const Home = () => {
       </section>
 
       {/* Badge de status para administradores */}
+      {/* Temporariamente comentado para debug
       <ContentStatusBadge
         pageName="home"
         pageTitle="Página Inicial"
@@ -224,6 +225,7 @@ const Home = () => {
         position="bottom-right"
         contentPreview={content?.banner_principal?.titulo_principal}
       />
+      */}
     </div>
   );
 };
