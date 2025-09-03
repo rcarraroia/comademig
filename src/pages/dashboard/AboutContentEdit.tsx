@@ -7,15 +7,33 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Save, Plus, Trash2, Target, Eye, History } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 import { useAboutContent, AboutContentData } from "@/hooks/useContent";
 import { useUpdateContent } from "@/hooks/useContentMutation";
 
 const AboutContentEdit = () => {
+  const { isAdmin, loading } = useAuth();
   const { content, isLoading, error } = useAboutContent();
   const updateContent = useUpdateContent();
   const [isSaving, setIsSaving] = useState(false);
+
+  // Verificar se o usuário é admin
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const { register, handleSubmit, control, reset, formState: { errors, isDirty } } = useForm<AboutContentData>({
     defaultValues: content
