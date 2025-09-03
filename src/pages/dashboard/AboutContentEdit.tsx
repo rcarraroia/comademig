@@ -37,8 +37,8 @@ const AboutContentEdit = () => {
     setIsSaving(true);
     try {
       await updateContent.mutateAsync({
-        page_name: 'sobre',
-        content_json: data
+        pageName: 'sobre',
+        content: data
       });
       
       toast.success('Conteúdo da página Sobre salvo com sucesso!');

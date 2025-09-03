@@ -120,8 +120,8 @@ const HomeContentEdit = () => {
             console.log('🔍 Salvando conteúdo da página inicial:', contentData);
             
             await updateContentMutation.mutateAsync({
-                page_name: 'home',
-                content_json: contentData
+                pageName: 'home',
+                content: contentData
             });
 
             toast.success('Conteúdo da página inicial salvo com sucesso!');

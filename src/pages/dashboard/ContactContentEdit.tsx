@@ -55,8 +55,8 @@ const ContactContentEdit = () => {
       }));
 
       await updateContent.mutateAsync({
-        page_name: 'contato',
-        content_json: {
+        pageName: 'contato',
+        content: {
           ...data,
           telefones: telefonesComOrdem,
           emails: emailsComOrdem

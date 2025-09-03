@@ -107,15 +107,19 @@ const Sobre = () => {
                 </h3>
               </div>
               <div className="font-inter text-gray-700 leading-relaxed">
-                {content.historia.paragrafos ? (
+                {content.historia?.paragrafos ? (
                   content.historia.paragrafos.map((paragrafo: string, index: number) => (
                     <p key={index} className="mb-6 last:mb-0">
                       {paragrafo}
                     </p>
                   ))
-                ) : (
+                ) : content.historia?.texto ? (
                   <p className="mb-0">
                     {content.historia.texto}
+                  </p>
+                ) : (
+                  <p className="mb-0">
+                    A COMADEMIG foi fundada em 1962 com o propósito de unir e fortalecer os ministros das Assembleias de Deus em todo o estado de Minas Gerais.
                   </p>
                 )}
               </div>

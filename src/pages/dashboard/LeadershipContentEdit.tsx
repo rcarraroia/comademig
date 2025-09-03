@@ -46,8 +46,8 @@ const LeadershipContentEdit = () => {
       }));
 
       await updateContent.mutateAsync({
-        page_name: 'lideranca',
-        content_json: {
+        pageName: 'lideranca',
+        content: {
           ...data,
           lideres: lideresComOrdem
         }
