@@ -1,11 +1,20 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Target, Eye, History, Users, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Target, Eye, History, Users, Loader2, Edit } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useAboutContent } from "@/hooks/useContent";
+import { useContentPrefetch } from "@/hooks/useContentPrefetch";
+import { useAuth } from "@/contexts/AuthContext";
+import ContentStatusBadge from "@/components/admin/ContentStatusBadge";
 
 const Sobre = () => {
   const { content, isLoading, error, hasCustomContent } = useAboutContent();
+  const { isAdmin } = useAuth();
+  
+  // Prefetch de conteúdo relacionado
+  useContentPrefetch('sobre');
 
   if (isLoading) {
     return (
@@ -261,12 +270,30 @@ const Sobre = () => {
         </div>
       </section>
 
-      {/* Indicador de conteúdo personalizado (apenas para admins) */}
-      {hasCustomContent && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-            Conteúdo Personalizado
-          </div>
+      {/* Indicador de conteúdo para administradores */}
+      {isAdmin() && (
+        <div className="fixed bottom-4 right-4 z-50 space-y-2">
+          <Button
+            asChild
+            size="sm"
+            className="bg-comademig-blue hover:bg-comademig-blue/90 shadow-lg"
+          >
+            <Link to="/dashboard/admin/content/sobre-editor">
+              <Edit className="w-4 h-4 mr-2" />
+              Editar Página
+            </Link>
+          </Button>
+          
+          <ContentStatusBadge
+            pageName="sobre"
+            pageTitle="Sobre Nós"
+            hasCustomContent={hasCustomContent}
+            editorUrl="/dashboard/admin/content/sobre-editor"
+            publicUrl="/sobre"
+            position="bottom-right"
+            compact={true}
+            contentPreview={content?.titulo}
+          />
         </div>
       )}
     </div>

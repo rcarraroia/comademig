@@ -3,9 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Users, Heart, Play, Building, Loader2 } from "lucide-react";
 import { useHomeContent } from "@/hooks/useContent";
+import { useContentPrefetch } from "@/hooks/useContentPrefetch";
+import { OptimizedImage } from "@/components/ui/OptimizedImage";
+import ContentStatusBadge from "@/components/admin/ContentStatusBadge";
 
 const Home = () => {
   const { content, isLoading, error, hasCustomContent } = useHomeContent();
+  
+  // Prefetch de conteúdo relacionado para melhor performance
+  useContentPrefetch('home');
 
   if (isLoading) {
     return (
@@ -18,6 +24,17 @@ const Home = () => {
   if (error) {
     console.error('Erro ao carregar conteúdo da home:', error);
     // Continua com conteúdo padrão em caso de erro
+  }
+
+  // Garantir que content sempre existe e tem as propriedades necessárias
+  if (!content || !content.banner_principal) {
+    console.error('Conteúdo da home não está disponível, usando fallback');
+    return <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-comademig-blue mb-4">COMADEMIG</h1>
+        <p className="text-gray-600">Carregando conteúdo...</p>
+      </div>
+    </div>;
   }
 
   return (
@@ -94,10 +111,10 @@ const Home = () => {
                 <Card key={index} className="hover:shadow-lg transition-shadow">
                   {destaque.imagem && (
                     <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
-                      <img 
-                        src={destaque.imagem} 
+                      <OptimizedImage
+                        src={destaque.imagem}
                         alt={destaque.titulo}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full"
                       />
                     </div>
                   )}
@@ -140,10 +157,10 @@ const Home = () => {
                 <Card key={index} className="hover:shadow-lg transition-shadow bg-white">
                   {noticia.imagem && (
                     <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
-                      <img 
-                        src={noticia.imagem} 
+                      <OptimizedImage
+                        src={noticia.imagem}
                         alt={noticia.titulo}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full"
                       />
                     </div>
                   )}
@@ -197,14 +214,16 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Indicador de conteúdo personalizado (apenas para admins) */}
-      {hasCustomContent && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-            Conteúdo Personalizado
-          </div>
-        </div>
-      )}
+      {/* Badge de status para administradores */}
+      <ContentStatusBadge
+        pageName="home"
+        pageTitle="Página Inicial"
+        hasCustomContent={hasCustomContent}
+        editorUrl="/dashboard/admin/content/home-editor"
+        publicUrl="/"
+        position="bottom-right"
+        contentPreview={content?.banner_principal?.titulo_principal}
+      />
     </div>
   );
 };

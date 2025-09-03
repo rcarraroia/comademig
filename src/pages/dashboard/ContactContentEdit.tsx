@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { useContactContent, ContactContentData, ContactPhone, ContactEmail } from "@/hooks/useContent";
 import { useUpdateContent } from "@/hooks/useContentMutation";
 
-const ContatoContentEdit = () => {
+const ContactContentEdit = () => {
   const { content, isLoading, error } = useContactContent();
   const updateContent = useUpdateContent();
   const [isSaving, setIsSaving] = useState(false);
@@ -642,4 +642,4 @@ const ContatoContentEdit = () => {
   );
 };
 
-export default ContatoContentEdit;
+export default ContactContentEdit;

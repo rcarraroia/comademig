@@ -50,10 +50,10 @@ import Notifications from '@/pages/dashboard/Notifications';
 import PerfilPublico from '@/pages/dashboard/PerfilPublico';
 import PerfilCompleto from '@/pages/dashboard/PerfilCompleto';
 import HomeContentEdit from '@/pages/dashboard/HomeContentEdit';
-import SobreContentEdit from '@/pages/dashboard/SobreContentEdit';
+import AboutContentEdit from '@/pages/dashboard/AboutContentEdit';
 import Privacidade from '@/pages/Privacidade';
 import Termos from '@/pages/Termos';
-import LiderancaContentEdit from '@/pages/dashboard/LiderancaContentEdit';
+import LeadershipContentEdit from '@/pages/dashboard/LeadershipContentEdit';
 import EventosContentEdit from '@/pages/dashboard/EventosContentEdit';
 import MultimidiaContentEdit from '@/pages/dashboard/MultimidiaContentEdit';
 import ContatoContentEdit from '@/pages/dashboard/ContatoContentEdit';
@@ -122,8 +122,8 @@ function App() {
               <Route path="/dashboard/notifications" element={<Notifications />} />
               <Route path="/dashboard/admin/content/:pageName/edit" element={<ContentEdit />} />
               <Route path="/dashboard/admin/content/home-editor" element={<HomeContentEdit />} />
-              <Route path="/dashboard/admin/content/sobre-editor" element={<SobreContentEdit />} />
-              <Route path="/dashboard/admin/content/lideranca-editor" element={<LiderancaContentEdit />} />
+              <Route path="/dashboard/admin/content/sobre-editor" element={<AboutContentEdit />} />
+              <Route path="/dashboard/admin/content/lideranca-editor" element={<LeadershipContentEdit />} />
               <Route path="/dashboard/admin/content/eventos-editor" element={<EventosContentEdit />} />
               <Route path="/dashboard/admin/content/multimidia-editor" element={<MultimidiaContentEdit />} />
               <Route path="/dashboard/admin/content/contato-editor" element={<ContatoContentEdit />} />

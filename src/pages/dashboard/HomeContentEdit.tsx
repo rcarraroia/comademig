@@ -1,18 +1,20 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Save, Plus, Trash2, Upload, Image } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Plus, Trash2, Image, Home, BarChart3, Star, Newspaper, Target } from "lucide-react";
 import { Navigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHomeContent } from "@/hooks/useContent";
 import { useUpdateContent } from "@/hooks/useContentMutation";
+import { ImageUpload } from "@/components/ui/ImageUpload";
+import ContentFormLayout from "@/components/admin/ContentFormLayout";
+import ContentFormSection from "@/components/admin/ContentFormSection";
+import SaveButton from "@/components/admin/SaveButton";
+import ContentPreview from "@/components/admin/ContentPreview";
 
 interface BannerData {
     titulo_principal: string;
@@ -58,13 +60,15 @@ interface HomeContentData {
 }
 
 const HomeContentEdit = () => {
-    const { user, isAdmin, loading } = useAuth();
-    const navigate = useNavigate();
-    const { toast } = useToast();
-
+    const { isAdmin, loading } = useAuth();
+    
     // Usar o hook de conteúdo para carregar dados
-    const { data: homeContent, isLoading: contentLoading, error: contentError } = useHomeContent();
+    const { content: homeContent, isLoading: contentLoading, error: contentError, hasCustomContent } = useHomeContent();
     const updateContentMutation = useUpdateContent();
+    
+    const [isSaving, setIsSaving] = useState(false);
+    const [isDirty, setIsDirty] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
 
     const [contentData, setContentData] = useState<HomeContentData>({
         banner_principal: {
@@ -89,7 +93,7 @@ const HomeContentEdit = () => {
         }
     });
 
-    const [uploadingImages, setUploadingImages] = useState<Set<string>>(new Set());
+
 
     // Carregar dados quando disponíveis
     useEffect(() => {
@@ -101,87 +105,36 @@ const HomeContentEdit = () => {
         }
     }, [homeContent]);
 
+    // Marcar como dirty quando dados mudarem
+    useEffect(() => {
+        if (homeContent && JSON.stringify(contentData) !== JSON.stringify(homeContent)) {
+            setIsDirty(true);
+        } else {
+            setIsDirty(false);
+        }
+    }, [contentData, homeContent]);
+
     const handleSave = async () => {
+        setIsSaving(true);
         try {
             console.log('🔍 Salvando conteúdo da página inicial:', contentData);
             
             await updateContentMutation.mutateAsync({
-                pageName: 'home',
-                content: contentData
+                page_name: 'home',
+                content_json: contentData
             });
 
-            // Navegar de volta após sucesso
-            navigate('/dashboard/admin/content');
+            toast.success('Conteúdo da página inicial salvo com sucesso!');
+            setIsDirty(false);
         } catch (error) {
             console.error('❌ Erro ao salvar conteúdo:', error);
-            // O erro já é tratado pelo hook de mutação
-        }
-    };
-
-    const handleImageUpload = async (file: File, section: string, index?: number): Promise<string | null> => {
-        const uploadId = `${section}-${index || 0}`;
-        setUploadingImages(prev => new Set(prev).add(uploadId));
-
-        try {
-            if (!file.type.startsWith('image/')) {
-                throw new Error('Por favor, selecione apenas arquivos de imagem');
-            }
-
-            if (file.size > 5 * 1024 * 1024) {
-                throw new Error('A imagem deve ter no máximo 5MB');
-            }
-
-            const fileExt = file.name.split('.').pop();
-            const fileName = `home/${section}/${Date.now()}.${fileExt}`;
-
-            // Verificar se bucket existe, se não, criar
-            const { data: buckets } = await supabase.storage.listBuckets();
-            const contentBucket = buckets?.find(bucket => bucket.name === 'content-images');
-
-            if (!contentBucket) {
-                const { error: bucketError } = await supabase.storage.createBucket('content-images', {
-                    public: true,
-                    allowedMimeTypes: ['image/*'],
-                    fileSizeLimit: 10485760 // 10MB
-                });
-
-                if (bucketError) {
-                    console.error('Erro ao criar bucket:', bucketError);
-                }
-            }
-
-            const { error: uploadError } = await supabase.storage
-                .from('content-images')
-                .upload(fileName, file, {
-                    upsert: true,
-                    contentType: file.type
-                });
-
-            if (uploadError) {
-                throw uploadError;
-            }
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('content-images')
-                .getPublicUrl(fileName);
-
-            return publicUrl;
-        } catch (error: any) {
-            console.error('Erro no upload:', error);
-            toast({
-                title: "Erro no upload",
-                description: error.message,
-                variant: "destructive"
-            });
-            return null;
+            toast.error('Erro ao salvar conteúdo. Tente novamente.');
         } finally {
-            setUploadingImages(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(uploadId);
-                return newSet;
-            });
+            setIsSaving(false);
         }
     };
+
+
 
     const addDestaque = () => {
         setContentData(prev => ({
@@ -243,23 +196,61 @@ const HomeContentEdit = () => {
     }
 
     return (
-        <div className="space-y-6 pb-20">
-            <div className="flex items-center space-x-4">
-                <Link to="/dashboard/admin/content">
-                    <Button variant="outline" size="sm">
-                        <ArrowLeft className="h-4 w-4 mr-2" />
-                        Voltar
-                    </Button>
-                </Link>
-                <div>
-                    <h1 className="text-3xl font-bold text-comademig-blue">
-                        Editar Página: Início
-                    </h1>
-                    <p className="text-gray-600 mt-2">
-                        Configure o conteúdo da página inicial do site
-                    </p>
-                </div>
+        <ContentFormLayout
+            title="Editar Página: Início"
+            description="Configure o conteúdo da página inicial do site"
+            backUrl="/dashboard/content"
+            publicUrl="/"
+            onSave={handleSave}
+            isSaving={isSaving}
+            isDirty={isDirty}
+            hasErrors={updateContentMutation.isError}
+            errorMessage={updateContentMutation.error?.message}
+        >
+            {/* Preview Toggle */}
+            <div className="flex justify-end mb-4">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPreview(!showPreview)}
+                >
+                    {showPreview ? 'Ocultar Preview' : 'Mostrar Preview'}
+                </Button>
             </div>
+
+            {/* Preview */}
+            {showPreview && (
+                <ContentPreview
+                    title="Preview da Página Inicial"
+                    description="Visualização das alterações em tempo real"
+                    isVisible={showPreview}
+                    onToggleVisibility={() => setShowPreview(!showPreview)}
+                    publicUrl="/"
+                    hasChanges={isDirty}
+                >
+                    <div className="space-y-4">
+                        <div className="bg-comademig-blue text-white p-6 rounded-lg">
+                            <h1 className="text-2xl font-bold mb-2">
+                                {contentData.banner_principal.titulo_principal || 'Título Principal'}
+                            </h1>
+                            <p className="mb-4">
+                                {contentData.banner_principal.subtitulo || 'Subtítulo'}
+                            </p>
+                            <button className="bg-comademig-gold px-4 py-2 rounded">
+                                {contentData.banner_principal.texto_botao || 'Botão'}
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {contentData.cards_acao.map((card, index) => (
+                                <div key={index} className="border p-4 rounded">
+                                    <h3 className="font-semibold">{card.titulo || `Card ${index + 1}`}</h3>
+                                    <p className="text-sm text-gray-600">{card.descricao || 'Descrição'}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </ContentPreview>
+            )}
 
             <Tabs defaultValue="banner" className="w-full">
                 <TabsList className="grid w-full grid-cols-5">
@@ -272,14 +263,15 @@ const HomeContentEdit = () => {
 
                 {/* Banner Principal */}
                 <TabsContent value="banner">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Banner Principal</CardTitle>
-                            <CardDescription>
-                                Configure o banner de destaque da página inicial
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
+                    <ContentFormSection
+                        title="Banner Principal"
+                        description="Configure o banner de destaque da página inicial"
+                        icon={<Home className="w-5 h-5 text-comademig-blue" />}
+                        step={1}
+                        totalSteps={5}
+                        isRequired={true}
+                        isCompleted={!!(contentData.banner_principal.titulo_principal && contentData.banner_principal.subtitulo)}
+                    >
                             <div>
                                 <Label htmlFor="banner-titulo">Título Principal</Label>
                                 <Input
@@ -334,19 +326,19 @@ const HomeContentEdit = () => {
                                     />
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
+                    </ContentFormSection>
                 </TabsContent>   
              {/* Cards de Ação */}
                 <TabsContent value="cards">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Cards de Ação</CardTitle>
-                            <CardDescription>
-                                Configure os 4 cards principais (Inscrição, Filiação, Regularização, Ao Vivo)
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
+                    <ContentFormSection
+                        title="Cards de Ação"
+                        description="Configure os 4 cards principais (Inscrição, Filiação, Regularização, Ao Vivo)"
+                        icon={<BarChart3 className="w-5 h-5 text-comademig-blue" />}
+                        step={2}
+                        totalSteps={5}
+                        isRequired={true}
+                        isCompleted={contentData.cards_acao.every(card => card.titulo && card.descricao)}
+                    >
                             {contentData.cards_acao.map((card, index) => (
                                 <div key={index} className="p-4 border rounded-lg space-y-4">
                                     <h4 className="font-semibold">Card {index + 1}</h4>
@@ -398,28 +390,26 @@ const HomeContentEdit = () => {
                                     </div>
                                 </div>
                             ))}
-                        </CardContent>
-                    </Card>
+                    </ContentFormSection>
                 </TabsContent>
 
                 {/* Destaques da Convenção */}
                 <TabsContent value="destaques">
-                    <Card>
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <CardTitle>Destaques da Convenção</CardTitle>
-                                    <CardDescription>
-                                        Gerencie os eventos em destaque
-                                    </CardDescription>
-                                </div>
-                                <Button onClick={addDestaque}>
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Adicionar Destaque
-                                </Button>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
+                    <ContentFormSection
+                        title="Destaques da Convenção"
+                        description="Gerencie os eventos em destaque"
+                        icon={<Star className="w-5 h-5 text-comademig-blue" />}
+                        step={3}
+                        totalSteps={5}
+                        isRequired={false}
+                        isCompleted={contentData.destaques_convencao.length > 0}
+                    >
+                        <div className="flex justify-end mb-4">
+                            <Button onClick={addDestaque}>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Adicionar Destaque
+                            </Button>
+                        </div>
                             {contentData.destaques_convencao.map((destaque, index) => (
                                 <div key={index} className="p-4 border rounded-lg space-y-4">
                                     <div className="flex items-center justify-between">
@@ -450,41 +440,21 @@ const HomeContentEdit = () => {
                                     </div>
 
                                     <div>
-                                        <Label htmlFor={`destaque-imagem-${index}`}>Imagem do Evento</Label>
-                                        <div className="flex items-center gap-4">
-                                            <Input
-                                                id={`destaque-imagem-${index}`}
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={async (e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (file) {
-                                                        const url = await handleImageUpload(file, 'destaques', index);
-                                                        if (url) {
-                                                            setContentData(prev => ({
-                                                                ...prev,
-                                                                destaques_convencao: prev.destaques_convencao.map((d, i) =>
-                                                                    i === index ? { ...d, imagem_evento: url } : d
-                                                                )
-                                                            }));
-                                                        }
-                                                    }
-                                                }}
-                                                disabled={uploadingImages.has(`destaques-${index}`)}
-                                            />
-                                            {uploadingImages.has(`destaques-${index}`) && (
-                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-comademig-blue"></div>
-                                            )}
-                                        </div>
-                                        {destaque.imagem_evento && (
-                                            <div className="mt-2">
-                                                <img
-                                                    src={destaque.imagem_evento}
-                                                    alt="Preview"
-                                                    className="w-32 h-20 object-cover rounded border"
-                                                />
-                                            </div>
-                                        )}
+                                        <ImageUpload
+                                            currentImage={destaque.imagem_evento}
+                                            onImageChange={(url) => {
+                                                setContentData(prev => ({
+                                                    ...prev,
+                                                    destaques_convencao: prev.destaques_convencao.map((d, i) =>
+                                                        i === index ? { ...d, imagem_evento: url || '' } : d
+                                                    )
+                                                }));
+                                            }}
+                                            section="home/destaques"
+                                            index={index}
+                                            label="Imagem do Evento"
+                                            placeholder="Selecione uma imagem para o evento"
+                                        />
                                     </div>
 
                                     <div>
@@ -526,28 +496,26 @@ const HomeContentEdit = () => {
                                     <p className="text-sm">Clique em "Adicionar Destaque" para começar.</p>
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
+                    </ContentFormSection>
                 </TabsContent>
 
                 {/* Notícias Recentes */}
                 <TabsContent value="noticias">
-                    <Card>
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <CardTitle>Notícias Recentes</CardTitle>
-                                    <CardDescription>
-                                        Gerencie as notícias em destaque na página inicial
-                                    </CardDescription>
-                                </div>
-                                <Button onClick={addNoticia}>
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Adicionar Notícia
-                                </Button>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
+                    <ContentFormSection
+                        title="Notícias Recentes"
+                        description="Gerencie as notícias em destaque na página inicial"
+                        icon={<Newspaper className="w-5 h-5 text-comademig-blue" />}
+                        step={4}
+                        totalSteps={5}
+                        isRequired={false}
+                        isCompleted={contentData.noticias_recentes.length > 0}
+                    >
+                        <div className="flex justify-end mb-4">
+                            <Button onClick={addNoticia}>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Adicionar Notícia
+                            </Button>
+                        </div>
                             {contentData.noticias_recentes.map((noticia, index) => (
                                 <div key={index} className="p-4 border rounded-lg space-y-4">
                                     <div className="flex items-center justify-between">
@@ -578,41 +546,21 @@ const HomeContentEdit = () => {
                                     </div>
 
                                     <div>
-                                        <Label htmlFor={`noticia-imagem-${index}`}>Imagem da Notícia</Label>
-                                        <div className="flex items-center gap-4">
-                                            <Input
-                                                id={`noticia-imagem-${index}`}
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={async (e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (file) {
-                                                        const url = await handleImageUpload(file, 'noticias', index);
-                                                        if (url) {
-                                                            setContentData(prev => ({
-                                                                ...prev,
-                                                                noticias_recentes: prev.noticias_recentes.map((n, i) =>
-                                                                    i === index ? { ...n, imagem_noticia: url } : n
-                                                                )
-                                                            }));
-                                                        }
-                                                    }
-                                                }}
-                                                disabled={uploadingImages.has(`noticias-${index}`)}
-                                            />
-                                            {uploadingImages.has(`noticias-${index}`) && (
-                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-comademig-blue"></div>
-                                            )}
-                                        </div>
-                                        {noticia.imagem_noticia && (
-                                            <div className="mt-2">
-                                                <img
-                                                    src={noticia.imagem_noticia}
-                                                    alt="Preview"
-                                                    className="w-32 h-20 object-cover rounded border"
-                                                />
-                                            </div>
-                                        )}
+                                        <ImageUpload
+                                            currentImage={noticia.imagem_noticia}
+                                            onImageChange={(url) => {
+                                                setContentData(prev => ({
+                                                    ...prev,
+                                                    noticias_recentes: prev.noticias_recentes.map((n, i) =>
+                                                        i === index ? { ...n, imagem_noticia: url || '' } : n
+                                                    )
+                                                }));
+                                            }}
+                                            section="home/noticias"
+                                            index={index}
+                                            label="Imagem da Notícia"
+                                            placeholder="Selecione uma imagem para a notícia"
+                                        />
                                     </div>
 
                                     <div>
@@ -670,20 +618,20 @@ const HomeContentEdit = () => {
                                     <p className="text-sm">Clique em "Adicionar Notícia" para começar.</p>
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
+                    </ContentFormSection>
                 </TabsContent>
 
                 {/* Seção Junte-se à Missão */}
                 <TabsContent value="missao">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Seção "Junte-se à Missão"</CardTitle>
-                            <CardDescription>
-                                Configure a seção de call-to-action da página inicial
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
+                    <ContentFormSection
+                        title="Seção 'Junte-se à Missão'"
+                        description="Configure a seção de call-to-action da página inicial"
+                        icon={<Target className="w-5 h-5 text-comademig-blue" />}
+                        step={5}
+                        totalSteps={5}
+                        isRequired={false}
+                        isCompleted={!!(contentData.junte_se_missao.titulo_principal && contentData.junte_se_missao.subtitulo)}
+                    >
                             <div>
                                 <Label htmlFor="missao-titulo">Título Principal</Label>
                                 <Input
@@ -738,37 +686,10 @@ const HomeContentEdit = () => {
                                     />
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
+                    </ContentFormSection>
                 </TabsContent>
             </Tabs>
-
-            {/* Botão de Salvar Fixo */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-end space-x-4 z-50">
-                <Link to="/dashboard/admin/content">
-                    <Button variant="outline">
-                        Cancelar
-                    </Button>
-                </Link>
-                <Button 
-                    onClick={handleSave}
-                    disabled={updateContentMutation.isPending}
-                    className="bg-comademig-blue hover:bg-comademig-blue/90"
-                >
-                    {updateContentMutation.isPending ? (
-                        <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Salvando...
-                        </>
-                    ) : (
-                        <>
-                            <Save className="h-4 w-4 mr-2" />
-                            Salvar Alterações
-                        </>
-                    )}
-                </Button>
-            </div>
-        </div>
+        </ContentFormLayout>
     );
 };
 

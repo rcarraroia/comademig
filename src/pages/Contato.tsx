@@ -3,11 +3,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { MapPin, Phone, Mail, Clock, Facebook, Instagram, Youtube, Loader2 } from "lucide-react";
-import { useContactContent } from "@/hooks/useContent";
+import { MapPin, Phone, Mail, Clock, Facebook, Instagram, Youtube, Loader2, Edit } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useContactContent, ContactPhone, ContactEmail } from "@/hooks/useContent";
+import { useContentPrefetch } from "@/hooks/useContentPrefetch";
+import { useAuth } from "@/contexts/AuthContext";
+import ContentStatusBadge from "@/components/admin/ContentStatusBadge";
 
 const Contato = () => {
   const { content, isLoading, error, hasCustomContent } = useContactContent();
+  const { isAdmin } = useAuth();
+  
+  // Prefetch de conteúdo relacionado
+  useContentPrefetch('contato');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +77,9 @@ const Contato = () => {
               <CardContent>
                 <p className="font-inter text-gray-700">
                   {content.endereco.rua}<br />
+                  {content.endereco.complemento && (
+                    <>{content.endereco.complemento}<br /></>
+                  )}
                   {content.endereco.cidade} - {content.endereco.estado}<br />
                   CEP: {content.endereco.cep}
                 </p>
@@ -85,10 +96,10 @@ const Contato = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="font-inter text-gray-700">
-                  {content.telefones.map((telefone: any, index: number) => (
-                    <p key={index}>
-                      {telefone.tipo}: {telefone.numero}
+                <div className="font-inter text-gray-700 space-y-1">
+                  {content.telefones.map((telefone: ContactPhone) => (
+                    <p key={telefone.id}>
+                      <span className="font-semibold">{telefone.tipo}:</span> {telefone.numero}
                     </p>
                   ))}
                 </div>
@@ -105,10 +116,10 @@ const Contato = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="font-inter text-gray-700">
-                  {content.emails.map((email: any, index: number) => (
-                    <p key={index}>
-                      {email.tipo}: {email.email}
+                <div className="font-inter text-gray-700 space-y-1">
+                  {content.emails.map((email: ContactEmail) => (
+                    <p key={email.id}>
+                      <span className="font-semibold">{email.tipo}:</span> {email.email}
                     </p>
                   ))}
                 </div>
@@ -125,11 +136,15 @@ const Contato = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="font-inter text-gray-700">
-                  {content.horario_funcionamento.dias}<br />
-                  {content.horario_funcionamento.horario}<br />
-                  Sábados: 8:00 às 12:00
-                </p>
+                <div className="font-inter text-gray-700">
+                  <p>{content.horario_funcionamento.dias}</p>
+                  <p>{content.horario_funcionamento.horario}</p>
+                  {content.horario_funcionamento.observacoes && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      {content.horario_funcionamento.observacoes}
+                    </p>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -274,24 +289,36 @@ const Contato = () => {
           </p>
           
           <div className="flex justify-center space-x-6 mb-8">
-            <a 
-              href="#" 
-              className="w-16 h-16 bg-comademig-gold rounded-full flex items-center justify-center hover:bg-comademig-gold/90 transition-colors"
-            >
-              <Facebook className="w-8 h-8 text-white" />
-            </a>
-            <a 
-              href="#" 
-              className="w-16 h-16 bg-comademig-gold rounded-full flex items-center justify-center hover:bg-comademig-gold/90 transition-colors"
-            >
-              <Instagram className="w-8 h-8 text-white" />
-            </a>
-            <a 
-              href="#" 
-              className="w-16 h-16 bg-comademig-gold rounded-full flex items-center justify-center hover:bg-comademig-gold/90 transition-colors"
-            >
-              <Youtube className="w-8 h-8 text-white" />
-            </a>
+            {content.redes_sociais?.facebook && (
+              <a 
+                href={content.redes_sociais.facebook}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-16 h-16 bg-comademig-gold rounded-full flex items-center justify-center hover:bg-comademig-gold/90 transition-colors"
+              >
+                <Facebook className="w-8 h-8 text-white" />
+              </a>
+            )}
+            {content.redes_sociais?.instagram && (
+              <a 
+                href={content.redes_sociais.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-16 h-16 bg-comademig-gold rounded-full flex items-center justify-center hover:bg-comademig-gold/90 transition-colors"
+              >
+                <Instagram className="w-8 h-8 text-white" />
+              </a>
+            )}
+            {content.redes_sociais?.youtube && (
+              <a 
+                href={content.redes_sociais.youtube}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-16 h-16 bg-comademig-gold rounded-full flex items-center justify-center hover:bg-comademig-gold/90 transition-colors"
+              >
+                <Youtube className="w-8 h-8 text-white" />
+              </a>
+            )}
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -314,14 +341,17 @@ const Contato = () => {
         </div>
       </section>
 
-      {/* Indicador de conteúdo personalizado (apenas para admins) */}
-      {hasCustomContent && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-            Conteúdo Personalizado
-          </div>
-        </div>
-      )}
+      {/* Badge de status para administradores */}
+      <ContentStatusBadge
+        pageName="contato"
+        pageTitle="Contato"
+        hasCustomContent={hasCustomContent}
+        editorUrl="/dashboard/admin/content/contato-editor"
+        publicUrl="/contato"
+        position="bottom-right"
+        compact={false}
+        contentPreview={content.endereco?.rua ? `${content.endereco.rua}, ${content.endereco.cidade}` : 'Informações de contato'}
+      />
     </div>
   );
 };
