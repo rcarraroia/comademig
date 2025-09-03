@@ -6,6 +6,7 @@ import { useHomeContent } from "@/hooks/useContent";
 import { useContentPrefetch } from "@/hooks/useContentPrefetch";
 import { OptimizedImage } from "@/components/ui/OptimizedImage";
 import ContentStatusBadge from "@/components/admin/ContentStatusBadge";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const Home = () => {
   const { content, isLoading, error, hasCustomContent } = useHomeContent();
@@ -228,4 +229,10 @@ const Home = () => {
   );
 };
 
-export default Home;
+const HomeWithErrorBoundary = () => (
+  <ErrorBoundary>
+    <Home />
+  </ErrorBoundary>
+);
+
+export default HomeWithErrorBoundary;

@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { 
   Edit, 
   FileText, 
@@ -478,4 +479,10 @@ const ContentManagement = () => {
   );
 };
 
-export default ContentManagement;
+const ContentManagementWithErrorBoundary = () => (
+  <ErrorBoundary>
+    <ContentManagement />
+  </ErrorBoundary>
+);
+
+export default ContentManagementWithErrorBoundary;

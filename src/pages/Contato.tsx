@@ -9,6 +9,7 @@ import { useContactContent, ContactPhone, ContactEmail } from "@/hooks/useConten
 import { useContentPrefetch } from "@/hooks/useContentPrefetch";
 import { useAuth } from "@/contexts/AuthContext";
 import ContentStatusBadge from "@/components/admin/ContentStatusBadge";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const Contato = () => {
   const { content, isLoading, error, hasCustomContent } = useContactContent();
@@ -356,4 +357,10 @@ const Contato = () => {
   );
 };
 
-export default Contato;
+const ContatoWithErrorBoundary = () => (
+  <ErrorBoundary>
+    <Contato />
+  </ErrorBoundary>
+);
+
+export default ContatoWithErrorBoundary;

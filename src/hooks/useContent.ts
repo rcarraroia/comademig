@@ -41,7 +41,15 @@ export const useContent = (pageName: string, options?: { isUserSpecific?: boolea
   
   return useQuery({
     queryKey: CACHE_KEYS.content(pageName),
-    queryFn: () => loadContentWithRetry(pageName),
+    queryFn: async () => {
+      try {
+        return await loadContentWithRetry(pageName);
+      } catch (error) {
+        console.error(`Erro ao carregar conteúdo da página ${pageName}:`, error);
+        // Retornar null em caso de erro para que os hooks específicos possam usar conteúdo padrão
+        return null;
+      }
+    },
     ...cacheConfig,
     // Configuração inteligente de refetch baseada em timestamp
     refetchInterval: (data) => {
@@ -54,6 +62,10 @@ export const useContent = (pageName: string, options?: { isUserSpecific?: boolea
     // Retry customizado - não fazer retry automático do React Query
     retry: false,
     retryDelay: undefined,
+    // Não mostrar erro no console do React Query
+    onError: (error) => {
+      console.warn(`Falha ao carregar conteúdo da página ${pageName}, usando conteúdo padrão:`, error);
+    }
   });
 };
 
@@ -186,19 +198,44 @@ export const useAboutContent = () => {
     }
   };
 
-  // Garantir compatibilidade com formato antigo (texto único) e novo (parágrafos)
-  const content: AboutContentData = data?.content_json || defaultContent;
-  
-  // Se história tem apenas texto, converter para array de parágrafos
-  if (content.historia?.texto && !content.historia?.paragrafos) {
-    content.historia.paragrafos = [content.historia.texto];
-  }
+  // Função para garantir estrutura segura
+  const ensureSafeAboutContent = (content: any): AboutContentData => {
+    if (!content || typeof content !== 'object') {
+      return defaultContent;
+    }
+
+    return {
+      titulo: content.titulo || defaultContent.titulo,
+      descricao: content.descricao || defaultContent.descricao,
+      missao: {
+        titulo: content.missao?.titulo || defaultContent.missao.titulo,
+        texto: content.missao?.texto || defaultContent.missao.texto
+      },
+      visao: {
+        titulo: content.visao?.titulo || defaultContent.visao.titulo,
+        texto: content.visao?.texto || defaultContent.visao.texto
+      },
+      historia: {
+        titulo: content.historia?.titulo || defaultContent.historia.titulo,
+        texto: content.historia?.texto,
+        paragrafos: content.historia?.paragrafos || (content.historia?.texto ? [content.historia.texto] : defaultContent.historia.paragrafos)
+      }
+    };
+  };
+
+  // Se content_json existe e não está vazio, usar ele, senão usar defaultContent
+  const rawContent = (data?.content_json && Object.keys(data.content_json).length > 0) 
+    ? data.content_json 
+    : defaultContent;
+
+  // Garantir que todas as propriedades necessárias existem
+  const safeContent = ensureSafeAboutContent(rawContent);
 
   return {
-    content,
+    content: safeContent,
     isLoading,
     error,
-    hasCustomContent: !!data?.content_json
+    hasCustomContent: !!(data?.content_json && Object.keys(data.content_json).length > 0)
   };
 };
 
@@ -281,19 +318,37 @@ export const useLeadershipContent = () => {
     ]
   };
 
-  // Garantir que o conteúdo tenha a estrutura correta
-  const content: LeadershipContentData = data?.content_json || defaultContent;
+  // Função para garantir estrutura segura
+  const ensureSafeLeadershipContent = (content: any): LeadershipContentData => {
+    if (!content || typeof content !== 'object') {
+      return defaultContent;
+    }
+
+    return {
+      titulo: content.titulo || defaultContent.titulo,
+      descricao: content.descricao || defaultContent.descricao,
+      lideres: Array.isArray(content.lideres) ? content.lideres : defaultContent.lideres
+    };
+  };
+
+  // Se content_json existe e não está vazio, usar ele, senão usar defaultContent
+  const rawContent = (data?.content_json && Object.keys(data.content_json).length > 0) 
+    ? data.content_json 
+    : defaultContent;
+
+  // Garantir que todas as propriedades necessárias existem
+  const safeContent = ensureSafeLeadershipContent(rawContent);
   
   // Ordenar líderes por ordem
-  if (content.lideres && Array.isArray(content.lideres)) {
-    content.lideres.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+  if (safeContent.lideres && Array.isArray(safeContent.lideres)) {
+    safeContent.lideres.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
   }
 
   return {
-    content,
+    content: safeContent,
     isLoading,
     error,
-    hasCustomContent: !!data?.content_json
+    hasCustomContent: !!(data?.content_json && Object.keys(data.content_json).length > 0)
   };
 };
 
@@ -369,22 +424,59 @@ export const useContactContent = () => {
     }
   };
 
-  // Garantir que o conteúdo tenha a estrutura correta
-  const content: ContactContentData = data?.content_json || defaultContent;
+  // Função para garantir estrutura segura
+  const ensureSafeContactContent = (content: any): ContactContentData => {
+    if (!content || typeof content !== 'object') {
+      return defaultContent;
+    }
+
+    return {
+      titulo: content.titulo || defaultContent.titulo,
+      descricao: content.descricao || defaultContent.descricao,
+      endereco: {
+        rua: content.endereco?.rua || defaultContent.endereco.rua,
+        cidade: content.endereco?.cidade || defaultContent.endereco.cidade,
+        estado: content.endereco?.estado || defaultContent.endereco.estado,
+        cep: content.endereco?.cep || defaultContent.endereco.cep,
+        complemento: content.endereco?.complemento
+      },
+      telefones: Array.isArray(content.telefones) ? content.telefones : defaultContent.telefones,
+      emails: Array.isArray(content.emails) ? content.emails : defaultContent.emails,
+      horario_funcionamento: {
+        dias: content.horario_funcionamento?.dias || defaultContent.horario_funcionamento.dias,
+        horario: content.horario_funcionamento?.horario || defaultContent.horario_funcionamento.horario,
+        observacoes: content.horario_funcionamento?.observacoes || defaultContent.horario_funcionamento.observacoes
+      },
+      redes_sociais: {
+        facebook: content.redes_sociais?.facebook || defaultContent.redes_sociais?.facebook,
+        instagram: content.redes_sociais?.instagram || defaultContent.redes_sociais?.instagram,
+        youtube: content.redes_sociais?.youtube || defaultContent.redes_sociais?.youtube,
+        whatsapp: content.redes_sociais?.whatsapp
+      }
+    };
+  };
+
+  // Se content_json existe e não está vazio, usar ele, senão usar defaultContent
+  const rawContent = (data?.content_json && Object.keys(data.content_json).length > 0) 
+    ? data.content_json 
+    : defaultContent;
+
+  // Garantir que todas as propriedades necessárias existem
+  const safeContent = ensureSafeContactContent(rawContent);
   
   // Ordenar telefones e emails por ordem
-  if (content.telefones && Array.isArray(content.telefones)) {
-    content.telefones.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+  if (safeContent.telefones && Array.isArray(safeContent.telefones)) {
+    safeContent.telefones.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
   }
   
-  if (content.emails && Array.isArray(content.emails)) {
-    content.emails.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+  if (safeContent.emails && Array.isArray(safeContent.emails)) {
+    safeContent.emails.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
   }
 
   return {
-    content,
+    content: safeContent,
     isLoading,
     error,
-    hasCustomContent: !!data?.content_json
+    hasCustomContent: !!(data?.content_json && Object.keys(data.content_json).length > 0)
   };
 };

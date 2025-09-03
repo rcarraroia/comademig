@@ -8,6 +8,7 @@ import { useAboutContent } from "@/hooks/useContent";
 import { useContentPrefetch } from "@/hooks/useContentPrefetch";
 import { useAuth } from "@/contexts/AuthContext";
 import ContentStatusBadge from "@/components/admin/ContentStatusBadge";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const Sobre = () => {
   const { content, isLoading, error, hasCustomContent } = useAboutContent();
@@ -304,4 +305,10 @@ const Sobre = () => {
   );
 };
 
-export default Sobre;
+const SobreWithErrorBoundary = () => (
+  <ErrorBoundary>
+    <Sobre />
+  </ErrorBoundary>
+);
+
+export default SobreWithErrorBoundary;

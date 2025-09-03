@@ -5,6 +5,7 @@ import { useLeadershipContent, LeaderData } from "@/hooks/useContent";
 import { useContentPrefetch } from "@/hooks/useContentPrefetch";
 import { OptimizedImage } from "@/components/ui/OptimizedImage";
 import ContentStatusBadge from "@/components/admin/ContentStatusBadge";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const Lideranca = () => {
   const { content, isLoading, error, hasCustomContent } = useLeadershipContent();
@@ -245,4 +246,10 @@ const Lideranca = () => {
   );
 };
 
-export default Lideranca;
+const LiderancaWithErrorBoundary = () => (
+  <ErrorBoundary>
+    <Lideranca />
+  </ErrorBoundary>
+);
+
+export default LiderancaWithErrorBoundary;
