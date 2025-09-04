@@ -58,6 +58,7 @@ export const useAuthState = () => {
 
   useEffect(() => {
     let mounted = true;
+    let profileFetched = false;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -68,13 +69,16 @@ export const useAuthState = () => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user) {
+        if (session?.user && !profileFetched) {
+          profileFetched = true;
+          // Debounce para evitar múltiplas chamadas
           setTimeout(() => {
             if (mounted) {
               fetchProfile(session.user.id);
             }
-          }, 0);
-        } else {
+          }, 100);
+        } else if (!session?.user) {
+          profileFetched = false;
           setProfile(null);
         }
         
@@ -88,9 +92,10 @@ export const useAuthState = () => {
       setSession(session);
       setUser(session?.user ?? null);
       
-      if (session?.user) {
+      if (session?.user && !profileFetched) {
+        profileFetched = true;
         fetchProfile(session.user.id);
-      } else {
+      } else if (!session?.user) {
         setLoading(false);
       }
     });
