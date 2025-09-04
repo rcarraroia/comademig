@@ -62,13 +62,10 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         format: 'webp'
       });
 
-      // Gerar nome único para o arquivo
-      const fileName = `${section}/${generateUniqueFileName(compressedFile.name, section)}`;
+      // Gerar nome único para o arquivo (sem pasta de usuário)
+      const fileName = generateUniqueFileName(compressedFile.name, section);
 
-      // Bucket content-images deve existir (criado via SQL no painel Supabase)
-      // Não tentamos criar automaticamente para evitar problemas de RLS
-
-      // Fazer upload da imagem comprimida
+      // Fazer upload da imagem comprimida diretamente na raiz do bucket
       const { error: uploadError } = await supabase.storage
         .from('content-images')
         .upload(fileName, compressedFile, {
