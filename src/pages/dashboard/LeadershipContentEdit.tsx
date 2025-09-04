@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLeadershipContent, LeadershipContentData, LeaderData } from "@/hooks/useContent";
 import { useUpdateContent } from "@/hooks/useContentMutation";
 import { ImageUpload } from "@/components/ui/ImageUpload";
+import { SimpleImageUpload } from "@/components/ui/SimpleImageUpload";
 
 const LeadershipContentEdit = () => {
   const { isAdmin, loading } = useAuth();
@@ -405,6 +406,17 @@ const LeadershipContentEdit = () => {
                           acceptedFormats={['image/jpeg', 'image/png', 'image/webp']}
                           label="Clique para fazer upload da foto"
                         />
+                        
+                        {/* COMPONENTE DE TESTE - REMOVER DEPOIS */}
+                        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
+                          <h4 className="text-sm font-medium text-yellow-800 mb-2">🧪 TESTE DE UPLOAD SIMPLES</h4>
+                          <SimpleImageUpload
+                            onImageChange={(url) => {
+                              console.log('✅ Upload teste funcionou:', url);
+                              if (url) setValue(`lideres.${index}.imagem` as const, url);
+                            }}
+                          />
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
