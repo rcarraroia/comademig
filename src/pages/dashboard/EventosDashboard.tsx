@@ -75,12 +75,12 @@ const EventosDashboard = () => {
     try {
       setLoadingInscricao(eventoId);
       const evento = (eventos as Evento[] || []).find(e => e.id === eventoId);
-      
+
       await inscreverEvento.mutateAsync({
         eventoId,
         valor: evento?.preco || 0
       });
-      
+
       refetch();
     } catch (error: any) {
       console.error('Erro ao se inscrever:', error);

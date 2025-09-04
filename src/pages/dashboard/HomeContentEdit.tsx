@@ -95,23 +95,24 @@ const HomeContentEdit = () => {
 
 
 
-    // Carregar dados quando disponíveis
+    // Carregar dados quando disponíveis (apenas uma vez)
     useEffect(() => {
-        if (homeContent) {
-            setContentData(prev => ({
-                ...prev,
-                ...homeContent
-            }));
+        if (homeContent && !isDirty) {
+            setContentData(homeContent);
         }
-    }, [homeContent]);
+    }, [homeContent]); // Removido isDirty da dependência para evitar loop
 
-    // Marcar como dirty quando dados mudarem
+    // Marcar como dirty quando dados mudarem (com debounce)
     useEffect(() => {
-        if (homeContent && JSON.stringify(contentData) !== JSON.stringify(homeContent)) {
-            setIsDirty(true);
-        } else {
-            setIsDirty(false);
-        }
+        const timeoutId = setTimeout(() => {
+            if (homeContent && JSON.stringify(contentData) !== JSON.stringify(homeContent)) {
+                setIsDirty(true);
+            } else if (!homeContent || JSON.stringify(contentData) === JSON.stringify(homeContent)) {
+                setIsDirty(false);
+            }
+        }, 100); // Debounce de 100ms
+
+        return () => clearTimeout(timeoutId);
     }, [contentData, homeContent]);
 
     const handleSave = async () => {
