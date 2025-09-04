@@ -179,7 +179,7 @@ const HomeContentEdit = () => {
         );
     }
 
-    if (!isAdmin()) {
+    if (!isAdmin) {
         return <Navigate to="/dashboard" replace />;
     }
 

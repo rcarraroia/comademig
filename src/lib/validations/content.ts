@@ -103,10 +103,11 @@ const liderSchema = z.object({
   id: z.string(),
   nome: z.string().min(1, "Nome é obrigatório").max(100, "Nome muito longo"),
   cargo: z.string().min(1, "Cargo é obrigatório").max(100, "Cargo muito longo"),
-  bio: z.string().max(1000, "Biografia muito longa").optional(),
-  foto: z.string().optional(),
-  email: emailSchema.optional().or(z.string().length(0)),
-  linkedin: urlSchema.optional(),
+  bio: z.string().min(1, "Biografia é obrigatória").max(1000, "Biografia muito longa"),
+  imagem: z.string().optional(),
+  email: z.string().optional(),
+  telefone: z.string().optional(),
+  categoria: z.enum(["presidencia", "diretoria", "conselho", "campos"]),
   ordem: z.number().int().positive("Ordem deve ser um número positivo")
 });
 
@@ -122,40 +123,38 @@ const enderecoSchema = z.object({
   rua: z.string().min(1, "Rua é obrigatória").max(200, "Nome da rua muito longo"),
   numero: z.string().max(10, "Número muito longo").optional(),
   complemento: z.string().max(100, "Complemento muito longo").optional(),
-  bairro: z.string().min(1, "Bairro é obrigatório").max(100, "Nome do bairro muito longo"),
+  bairro: z.string().max(100, "Nome do bairro muito longo").optional(),
   cidade: z.string().min(1, "Cidade é obrigatória").max(100, "Nome da cidade muito longo"),
-  cep: cepSchema,
-  estado: z.string().min(2, "Estado é obrigatório").max(2, "Use a sigla do estado (2 letras)")
+  cep: z.string().min(1, "CEP é obrigatório"),
+  estado: z.string().min(1, "Estado é obrigatório").max(50, "Nome do estado muito longo")
 });
 
 const telefoneSchema = z.object({
   id: z.string(),
   tipo: z.string().min(1, "Tipo do telefone é obrigatório").max(50, "Tipo muito longo"),
-  numero: phoneSchema,
+  numero: z.string().min(1, "Número é obrigatório"),
+  ordem: z.number().optional(),
   whatsapp: z.boolean().optional()
 });
 
 const emailContatoSchema = z.object({
   id: z.string(),
   tipo: z.string().min(1, "Tipo do e-mail é obrigatório").max(50, "Tipo muito longo"),
-  email: emailSchema
+  email: z.string().min(1, "E-mail é obrigatório"),
+  ordem: z.number().optional()
 });
 
 const horarioFuncionamentoSchema = z.object({
-  segunda: z.string().min(1, "Horário de segunda é obrigatório"),
-  terca: z.string().min(1, "Horário de terça é obrigatório"),
-  quarta: z.string().min(1, "Horário de quarta é obrigatório"),
-  quinta: z.string().min(1, "Horário de quinta é obrigatório"),
-  sexta: z.string().min(1, "Horário de sexta é obrigatório"),
-  sabado: z.string().min(1, "Horário de sábado é obrigatório"),
-  domingo: z.string().min(1, "Horário de domingo é obrigatório")
+  dias: z.string().min(1, "Dias são obrigatórios"),
+  horario: z.string().min(1, "Horário é obrigatório"),
+  observacoes: z.string().optional()
 });
 
 const redesSociaisSchema = z.object({
-  facebook: urlSchema.optional(),
-  instagram: urlSchema.optional(),
-  youtube: urlSchema.optional(),
-  twitter: urlSchema.optional()
+  facebook: z.string().optional(),
+  instagram: z.string().optional(),
+  youtube: z.string().optional(),
+  whatsapp: z.string().optional()
 }).optional();
 
 export const contactContentSchema = z.object({
