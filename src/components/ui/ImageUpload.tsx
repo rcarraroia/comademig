@@ -53,24 +53,15 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         throw new Error(validation.error);
       }
 
-      // Comprimir imagem automaticamente
-      const optimalSize = getOptimalImageSize('full');
-      const compressedFile = await compressImage(file, {
-        maxWidth: optimalSize.width,
-        maxHeight: optimalSize.height,
-        quality: optimalSize.quality,
-        format: 'webp'
-      });
+      // Gerar nome único para o arquivo (sem compressão por enquanto)
+      const fileName = generateUniqueFileName(file.name, section);
 
-      // Gerar nome único para o arquivo (sem pasta de usuário)
-      const fileName = generateUniqueFileName(compressedFile.name, section);
-
-      // Fazer upload da imagem comprimida diretamente na raiz do bucket
+      // Fazer upload da imagem diretamente na raiz do bucket
       const { error: uploadError } = await supabase.storage
         .from('content-images')
-        .upload(fileName, compressedFile, {
+        .upload(fileName, file, {
           upsert: true,
-          contentType: compressedFile.type
+          contentType: file.type
         });
 
       if (uploadError) {

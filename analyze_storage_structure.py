@@ -160,6 +160,123 @@ try:
 except Exception as e:
     print(f"❌ Erro ao verificar bucket content-images: {e}")
 
+# 7. VERIFICAÇÃO DETALHADA DE RLS PARA content-images
+print("\n7️⃣ ANÁLISE ESPECÍFICA DE RLS PARA content-images:")
+try:
+    result = supabase.rpc('execute_sql', {
+        'query': '''
+        SELECT 
+            schemaname, 
+            tablename, 
+            policyname, 
+            permissive, 
+            roles, 
+            cmd, 
+            qual,
+            with_check
+        FROM pg_policies 
+        WHERE schemaname = 'storage' 
+        AND tablename = 'objects'
+        AND (qual LIKE '%content-images%' OR with_check LIKE '%content-images%')
+        ORDER BY policyname;
+        '''
+    }).execute()
+    
+    if result.data:
+        print("✅ Políticas RLS específicas para content-images:")
+        for policy in result.data:
+            print(f"   - Nome: {policy['policyname']}")
+            print(f"     Comando: {policy['cmd']}")
+            print(f"     Roles: {policy['roles']}")
+            print(f"     Condição: {policy['qual']}")
+            print(f"     With Check: {policy['with_check']}")
+            print()
+    else:
+        print("❌ Nenhuma política RLS específica para content-images encontrada")
+except Exception as e:
+    print(f"❌ Erro ao verificar políticas específicas: {e}")
+
+# 8. VERIFICAR STATUS DO RLS NA TABELA storage.objects
+print("\n8️⃣ STATUS DO RLS NA TABELA storage.objects:")
+try:
+    result = supabase.rpc('execute_sql', {
+        'query': '''
+        SELECT 
+            schemaname,
+            tablename,
+            rowsecurity,
+            forcerowsecurity
+        FROM pg_tables 
+        WHERE schemaname = 'storage' AND tablename = 'objects';
+        '''
+    }).execute()
+    
+    if result.data:
+        table_info = result.data[0]
+        print(f"✅ Status RLS da tabela storage.objects:")
+        print(f"   - RLS Ativado: {table_info['rowsecurity']}")
+        print(f"   - RLS Forçado: {table_info['forcerowsecurity']}")
+    else:
+        print("❌ Não foi possível verificar status RLS")
+except Exception as e:
+    print(f"❌ Erro ao verificar status RLS: {e}")
+
+# 9. VERIFICAR TODAS AS POLÍTICAS DE STORAGE.OBJECTS
+print("\n9️⃣ TODAS AS POLÍTICAS DA TABELA storage.objects:")
+try:
+    result = supabase.rpc('execute_sql', {
+        'query': '''
+        SELECT 
+            policyname, 
+            cmd, 
+            roles,
+            qual,
+            with_check
+        FROM pg_policies 
+        WHERE schemaname = 'storage' AND tablename = 'objects'
+        ORDER BY policyname;
+        '''
+    }).execute()
+    
+    if result.data:
+        print(f"✅ Total de políticas em storage.objects: {len(result.data)}")
+        for policy in result.data:
+            print(f"   - {policy['policyname']} ({policy['cmd']})")
+            print(f"     Roles: {policy['roles']}")
+            if policy['qual']:
+                print(f"     Condição: {policy['qual']}")
+            print()
+    else:
+        print("❌ Nenhuma política encontrada em storage.objects")
+except Exception as e:
+    print(f"❌ Erro ao verificar todas as políticas: {e}")
+
+# 10. TESTE DE CONECTIVIDADE E AUTENTICAÇÃO
+print("\n🔟 TESTE DE CONECTIVIDADE E AUTENTICAÇÃO:")
+try:
+    # Verificar se consegue acessar informações do usuário atual
+    user = supabase.auth.get_user()
+    if user and user.user:
+        print(f"✅ Usuário autenticado: {user.user.email}")
+        print(f"   - ID: {user.user.id}")
+        print(f"   - Role: {user.user.role if hasattr(user.user, 'role') else 'N/A'}")
+    else:
+        print("❌ Usuário não autenticado ou erro na autenticação")
+        
+    # Testar acesso básico ao storage
+    try:
+        buckets_test = supabase.storage.list_buckets()
+        print(f"✅ Acesso ao storage funcionando: {len(buckets_test)} buckets acessíveis")
+    except Exception as e:
+        print(f"❌ Erro no acesso ao storage: {e}")
+        
+except Exception as e:
+    print(f"❌ Erro no teste de conectividade: {e}")
+
 print("\n" + "=" * 70)
-print("✅ ANÁLISE COMPLETA CONCLUÍDA")
-print("\nCom base nesta análise, será possível criar a solução correta.")
+print("✅ ANÁLISE COMPLETA E DETALHADA CONCLUÍDA")
+print("\n🎯 PRÓXIMOS PASSOS:")
+print("1. Analisar os resultados acima")
+print("2. Identificar conflitos de políticas RLS")
+print("3. Criar solução específica sem quebrar funcionalidades existentes")
+print("4. Aplicar correções de forma segura e controlada")
