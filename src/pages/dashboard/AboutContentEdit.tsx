@@ -44,12 +44,15 @@ const AboutContentEdit = () => {
     name: "historia.paragrafos"
   });
 
-  // Atualizar formulário quando o conteúdo carregar
+  // Atualizar formulário quando o conteúdo carregar (apenas uma vez)
+  const [hasInitialized, setHasInitialized] = useState(false);
+  
   useEffect(() => {
-    if (content) {
+    if (content && !hasInitialized) {
       reset(content);
+      setHasInitialized(true);
     }
-  }, [content, reset]);
+  }, [content, reset, hasInitialized]);
 
   const onSubmit = async (data: AboutContentData) => {
     setIsSaving(true);
