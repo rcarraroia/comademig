@@ -400,7 +400,10 @@ const LeadershipContentEdit = () => {
                         <Label>Foto do Líder</Label>
                         <ImageUpload
                           value={watch(`lideres.${index}.imagem`)}
-                          onChange={(url) => setValue(`lideres.${index}.imagem` as const, url)}
+                          onChange={(url) => {
+                            setValue(`lideres.${index}.imagem` as const, url, { shouldDirty: true });
+                            console.log('🖼️ Imagem alterada, isDirty deve ser true agora');
+                          }}
                           folder="lideranca"
                           maxSizeMB={2}
                           acceptedFormats={['image/jpeg', 'image/png', 'image/webp']}
@@ -413,7 +416,10 @@ const LeadershipContentEdit = () => {
                           <SimpleImageUpload
                             onImageChange={(url) => {
                               console.log('✅ Upload teste funcionou:', url);
-                              if (url) setValue(`lideres.${index}.imagem` as const, url);
+                              if (url) {
+                                setValue(`lideres.${index}.imagem` as const, url, { shouldDirty: true });
+                                console.log('🖼️ Upload simples - isDirty deve ser true agora');
+                              }
                             }}
                           />
                         </div>
@@ -476,6 +482,18 @@ const LeadershipContentEdit = () => {
             >
               <Save className="w-4 h-4 mr-2" />
               {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+            
+            {/* BOTÃO DE TESTE - FORÇAR SALVAMENTO */}
+            <Button 
+              type="button"
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => {
+                console.log('🚨 FORÇANDO SALVAMENTO - TESTE');
+                handleSubmit(onSubmit)();
+              }}
+            >
+              🚨 FORÇAR SALVAR (TESTE)
             </Button>
           </div>
         </div>
