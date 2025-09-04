@@ -65,21 +65,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       // Gerar nome único para o arquivo
       const fileName = `${section}/${generateUniqueFileName(compressedFile.name, section)}`;
 
-      // Verificar se bucket existe, se não, criar
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const contentBucket = buckets?.find(bucket => bucket.name === 'content-images');
-
-      if (!contentBucket) {
-        const { error: bucketError } = await supabase.storage.createBucket('content-images', {
-          public: true,
-          allowedMimeTypes: ['image/*'],
-          fileSizeLimit: 10485760 // 10MB
-        });
-
-        if (bucketError) {
-          console.error('Erro ao criar bucket:', bucketError);
-        }
-      }
+      // Bucket content-images deve existir (criado via SQL no painel Supabase)
+      // Não tentamos criar automaticamente para evitar problemas de RLS
 
       // Fazer upload da imagem comprimida
       const { error: uploadError } = await supabase.storage
