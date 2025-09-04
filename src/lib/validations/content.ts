@@ -82,11 +82,19 @@ const secaoSobreSchema = z.object({
 export const aboutContentSchema = z.object({
   titulo: z.string().min(1, "Título principal é obrigatório").max(100, "Título muito longo"),
   descricao: z.string().min(1, "Descrição é obrigatória").max(300, "Descrição muito longa"),
-  historia: z.string().min(1, "História é obrigatória").max(3000, "História muito longa"),
-  missao: z.string().min(1, "Missão é obrigatória").max(500, "Missão muito longa"),
-  visao: z.string().min(1, "Visão é obrigatória").max(500, "Visão muito longa"),
-  valores: z.array(z.string().min(1, "Valor não pode estar vazio")).min(1, "Pelo menos um valor é obrigatório"),
-  secoes: z.array(secaoSobreSchema).max(10, "Máximo de 10 seções permitidas")
+  missao: z.object({
+    titulo: z.string().min(1, "Título da missão é obrigatório"),
+    texto: z.string().min(1, "Texto da missão é obrigatório").max(500, "Texto da missão muito longo")
+  }),
+  visao: z.object({
+    titulo: z.string().min(1, "Título da visão é obrigatório"),
+    texto: z.string().min(1, "Texto da visão é obrigatório").max(500, "Texto da visão muito longo")
+  }),
+  historia: z.object({
+    titulo: z.string().min(1, "Título da história é obrigatório"),
+    texto: z.string().optional(),
+    paragrafos: z.array(z.string().min(1, "Parágrafo não pode estar vazio")).optional()
+  })
 });
 
 // ===== SCHEMAS PARA PÁGINA LIDERANÇA =====
