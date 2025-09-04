@@ -6,7 +6,8 @@ import { Upload, Image as ImageIcon, X, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { OptimizedImage } from './OptimizedImage';
-import { compressImage, validateImageFile, generateUniqueFileName, getOptimalImageSize } from '@/lib/imageUtils';
+// Removendo imports problemáticos temporariamente
+// import { compressImage, validateImageFile, generateUniqueFileName, getOptimalImageSize } from '@/lib/imageUtils';
 
 interface ImageUploadProps {
   currentImage?: string;
@@ -41,20 +42,20 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     setIsUploading(true);
 
     try {
-      // Validação avançada do arquivo
-      const validation = await validateImageFile(file, {
-        maxSize,
-        allowedFormats: acceptedFormats,
-        minWidth: 100,
-        minHeight: 100
-      });
-
-      if (!validation.valid) {
-        throw new Error(validation.error);
+      // Validação simples do arquivo
+      if (file.size > maxSize * 1024 * 1024) {
+        throw new Error(`Arquivo muito grande. Máximo: ${maxSize}MB`);
       }
 
-      // Gerar nome único para o arquivo (sem compressão por enquanto)
-      const fileName = generateUniqueFileName(file.name, section);
+      if (!acceptedFormats.includes(file.type)) {
+        throw new Error('Formato de arquivo não suportado');
+      }
+
+      // Gerar nome único simples
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(2, 8);
+      const extension = file.name.split('.').pop() || 'jpg';
+      const fileName = `${section ? section + '_' : ''}${timestamp}_${random}.${extension}`;
 
       // Fazer upload da imagem diretamente na raiz do bucket
       const { error: uploadError } = await supabase.storage
