@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload, Image as ImageIcon, X, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+// import { useToast } from '@/hooks/use-toast'; // TEMPORARIAMENTE REMOVIDO
 import { OptimizedImage } from './OptimizedImage';
 // Removendo imports problemáticos temporariamente
 // import { compressImage, validateImageFile, generateUniqueFileName, getOptimalImageSize } from '@/lib/imageUtils';
@@ -33,7 +33,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   className = ""
 }) => {
   const [isUploading, setIsUploading] = useState(false);
-  const { toast } = useToast();
+  // const { toast } = useToast(); // TEMPORARIAMENTE REMOVIDO
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -76,18 +76,11 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
       onImageChange(publicUrl);
 
-      toast({
-        title: "Upload realizado",
-        description: "Imagem enviada com sucesso!",
-      });
+      console.log("✅ Upload realizado com sucesso!");
 
     } catch (error: any) {
       console.error('Erro no upload:', error);
-      toast({
-        title: "Erro no upload",
-        description: error.message,
-        variant: "destructive"
-      });
+      console.error("❌ Erro no upload:", error.message);
     } finally {
       setIsUploading(false);
       // Limpar o input para permitir re-upload do mesmo arquivo
@@ -97,10 +90,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
   const handleRemoveImage = () => {
     onImageChange(null);
-    toast({
-      title: "Imagem removida",
-      description: "A imagem foi removida com sucesso.",
-    });
+    console.log("✅ Imagem removida com sucesso.");
   };
 
   return (

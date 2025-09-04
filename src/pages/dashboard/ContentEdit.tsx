@@ -9,6 +9,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { Navigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ContentData {
@@ -21,7 +22,8 @@ interface ContentData {
 
 const ContentEdit = () => {
   const { pageName } = useParams();
-  const { isAdmin, loading } = useUserRoles();
+  const { user } = useAuth();
+  const { isAdmin, loading } = useUserRoles(user);
   const navigate = useNavigate();
   const { toast } = useToast();
   

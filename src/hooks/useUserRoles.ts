@@ -18,7 +18,7 @@ export const useUserRoles = (user: User | null = null) => {
 
   useEffect(() => {
     const fetchRoles = async () => {
-      if (!user) {
+      if (!user || !user.id) {
         setRoles([]);
         setLoading(false);
         return;
