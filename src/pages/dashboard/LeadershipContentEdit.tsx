@@ -13,7 +13,6 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLeadershipContent, LeadershipContentData, LeaderData } from "@/hooks/useContent";
 import { useUpdateContent } from "@/hooks/useContentMutation";
-import { ImageUpload } from "@/components/ui/ImageUpload";
 import { SimpleImageUpload } from "@/components/ui/SimpleImageUpload";
 
 const LeadershipContentEdit = () => {
@@ -398,30 +397,26 @@ const LeadershipContentEdit = () => {
 
                       <div>
                         <Label>Foto do Líder</Label>
-                        <ImageUpload
-                          value={watch(`lideres.${index}.imagem`)}
-                          onChange={(url) => {
-                            setValue(`lideres.${index}.imagem` as const, url, { shouldDirty: true });
-                            console.log('🖼️ Imagem alterada, isDirty deve ser true agora');
-                          }}
-                          folder="lideranca"
-                          maxSizeMB={2}
-                          acceptedFormats={['image/jpeg', 'image/png', 'image/webp']}
-                          label="Clique para fazer upload da foto"
-                        />
-                        
-                        {/* COMPONENTE DE TESTE - REMOVER DEPOIS */}
-                        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-                          <h4 className="text-sm font-medium text-yellow-800 mb-2">🧪 TESTE DE UPLOAD SIMPLES</h4>
+                        <div className="space-y-2">
                           <SimpleImageUpload
                             onImageChange={(url) => {
-                              console.log('✅ Upload teste funcionou:', url);
+                              console.log('✅ Upload funcionou:', url);
                               if (url) {
                                 setValue(`lideres.${index}.imagem` as const, url, { shouldDirty: true });
-                                console.log('🖼️ Upload simples - isDirty deve ser true agora');
+                                console.log('🖼️ Imagem salva, isDirty deve ser true agora');
                               }
                             }}
                           />
+                          {watch(`lideres.${index}.imagem`) && (
+                            <div className="mt-2">
+                              <p className="text-sm text-green-600">✅ Imagem carregada com sucesso!</p>
+                              <img 
+                                src={watch(`lideres.${index}.imagem`)} 
+                                alt="Preview" 
+                                className="w-20 h-20 object-cover rounded border mt-1"
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -473,27 +468,9 @@ const LeadershipContentEdit = () => {
               type="submit"
               disabled={isSaving || !isDirty}
               className="bg-comademig-blue hover:bg-comademig-blue/90"
-              onClick={() => {
-                console.log('🔍 DEBUG - Clique no botão salvar');
-                console.log('🔍 DEBUG - isDirty:', isDirty);
-                console.log('🔍 DEBUG - isSaving:', isSaving);
-                console.log('🔍 DEBUG - Erros:', errors);
-              }}
             >
               <Save className="w-4 h-4 mr-2" />
               {isSaving ? 'Salvando...' : 'Salvar Alterações'}
-            </Button>
-            
-            {/* BOTÃO DE TESTE - FORÇAR SALVAMENTO */}
-            <Button 
-              type="button"
-              className="bg-red-600 hover:bg-red-700 text-white"
-              onClick={() => {
-                console.log('🚨 FORÇANDO SALVAMENTO - TESTE');
-                handleSubmit(onSubmit)();
-              }}
-            >
-              🚨 FORÇAR SALVAR (TESTE)
             </Button>
           </div>
         </div>
