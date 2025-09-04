@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Save, Plus, Trash2, Users, MoveUp, MoveDown, User } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -400,10 +399,8 @@ const LeadershipContentEdit = () => {
                         <div className="space-y-2">
                           <SimpleImageUpload
                             onImageChange={(url) => {
-                              console.log('✅ Upload funcionou:', url);
                               if (url) {
                                 setValue(`lideres.${index}.imagem` as const, url, { shouldDirty: true });
-                                console.log('🖼️ Imagem salva, isDirty deve ser true agora');
                               }
                             }}
                           />
@@ -427,25 +424,6 @@ const LeadershipContentEdit = () => {
           </CardContent>
         </Card>
 
-        {/* DEBUG: Informações do formulário */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded p-4 mb-6">
-          <h3 className="font-semibold text-yellow-800 mb-2">🔍 DEBUG - Estado do Formulário</h3>
-          <div className="text-sm space-y-1">
-            <p><strong>isDirty:</strong> {isDirty ? '✅ Sim' : '❌ Não'}</p>
-            <p><strong>isSaving:</strong> {isSaving ? '⏳ Salvando' : '✅ Pronto'}</p>
-            <p><strong>Erros:</strong> {Object.keys(errors).length > 0 ? `❌ ${Object.keys(errors).length} erros` : '✅ Sem erros'}</p>
-            <p><strong>Total Líderes:</strong> {lideresFields.length}</p>
-            {Object.keys(errors).length > 0 && (
-              <div className="mt-2">
-                <strong>Detalhes dos erros:</strong>
-                <pre className="text-xs bg-red-50 p-2 rounded mt-1">
-                  {JSON.stringify(errors, null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Botões de Ação */}
         <div className="flex justify-between items-center pt-6 border-t">
           <Button variant="outline" asChild>
@@ -456,11 +434,7 @@ const LeadershipContentEdit = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => {
-                console.log('🔍 DEBUG - Dados atuais do formulário:', watch());
-                console.log('🔍 DEBUG - Líderes:', lideresFields);
-                window.open('/lideranca', '_blank');
-              }}
+              onClick={() => window.open('/lideranca', '_blank')}
             >
               Visualizar Página
             </Button>
