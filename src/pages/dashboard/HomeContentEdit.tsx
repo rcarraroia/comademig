@@ -1,20 +1,17 @@
 import { useState, useEffect } from "react";
+import { useForm, useFieldArray } from 'react-hook-form';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Image, Home, BarChart3, Star, Newspaper, Target } from "lucide-react";
-import { Navigate } from "react-router-dom";
+import { ArrowLeft, Save, Plus, Trash2, Image, Home, BarChart3, Star, Newspaper, Target } from "lucide-react";
+import { Link, Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { useHomeContent } from "@/hooks/useContent";
+import { useHomeContent, HomeContentData } from "@/hooks/useContent";
 import { useUpdateContent } from "@/hooks/useContentMutation";
-import { ImageUpload } from "@/components/ui/ImageUpload";
-import ContentFormLayout from "@/components/admin/ContentFormLayout";
-import ContentFormSection from "@/components/admin/ContentFormSection";
-import SaveButton from "@/components/admin/SaveButton";
-import ContentPreview from "@/components/admin/ContentPreview";
+import { SimpleImageUpload } from "@/components/ui/SimpleImageUpload";
 
 interface BannerData {
     titulo_principal: string;
@@ -51,130 +48,20 @@ interface MissaoData {
     link_botao: string;
 }
 
-interface HomeContentData {
-    banner_principal: BannerData;
-    cards_acao: CardData[];
-    destaques_convencao: EventoDestaque[];
-    noticias_recentes: NoticiaRecente[];
-    junte_se_missao: MissaoData;
-}
-
 const HomeContentEdit = () => {
     const { isAdmin, loading } = useAuth();
-    
-    // Usar o hook de conteúdo para carregar dados
-    const { content: homeContent, isLoading: contentLoading, error: contentError, hasCustomContent } = useHomeContent();
-    const updateContentMutation = useUpdateContent();
-    
+    const { content, isLoading, error } = useHomeContent();
+    const updateContent = useUpdateContent();
     const [isSaving, setIsSaving] = useState(false);
-    const [isDirty, setIsDirty] = useState(false);
-    const [showPreview, setShowPreview] = useState(false);
 
-    const [contentData, setContentData] = useState<HomeContentData>({
-        banner_principal: {
-            titulo_principal: '',
-            subtitulo: '',
-            texto_botao: '',
-            link_botao: ''
-        },
-        cards_acao: [
-            { titulo: '', descricao: '', link_botao: '' },
-            { titulo: '', descricao: '', link_botao: '' },
-            { titulo: '', descricao: '', link_botao: '' },
-            { titulo: '', descricao: '', link_botao: '' }
-        ],
-        destaques_convencao: [],
-        noticias_recentes: [],
-        junte_se_missao: {
-            titulo_principal: '',
-            subtitulo: '',
-            texto_botao: '',
-            link_botao: ''
-        }
-    });
-
-
-
-    // Carregar dados quando disponíveis (apenas uma vez)
-    useEffect(() => {
-        if (homeContent && !isDirty) {
-            setContentData(homeContent);
-        }
-    }, [homeContent]); // Removido isDirty da dependência para evitar loop
-
-    // Marcar como dirty quando dados mudarem (com debounce)
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            if (homeContent && JSON.stringify(contentData) !== JSON.stringify(homeContent)) {
-                setIsDirty(true);
-            } else if (!homeContent || JSON.stringify(contentData) === JSON.stringify(homeContent)) {
-                setIsDirty(false);
-            }
-        }, 100); // Debounce de 100ms
-
-        return () => clearTimeout(timeoutId);
-    }, [contentData, homeContent]);
-
-    const handleSave = async () => {
-        setIsSaving(true);
-        try {
-            console.log('🔍 Salvando conteúdo da página inicial:', contentData);
-            
-            await updateContentMutation.mutateAsync({
-                pageName: 'home',
-                content: contentData
-            });
-
-            toast.success('Conteúdo da página inicial salvo com sucesso!');
-            setIsDirty(false);
-        } catch (error) {
-            console.error('❌ Erro ao salvar conteúdo:', error);
-            toast.error('Erro ao salvar conteúdo. Tente novamente.');
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-
-
-    const addDestaque = () => {
-        setContentData(prev => ({
-            ...prev,
-            destaques_convencao: [
-                ...prev.destaques_convencao,
-                { titulo_evento: '', imagem_evento: '', subtitulo: '', link_evento: '' }
-            ]
-        }));
-    };
-
-    const removeDestaque = (index: number) => {
-        setContentData(prev => ({
-            ...prev,
-            destaques_convencao: prev.destaques_convencao.filter((_, i) => i !== index)
-        }));
-    };
-
-    const addNoticia = () => {
-        setContentData(prev => ({
-            ...prev,
-            noticias_recentes: [
-                ...prev.noticias_recentes,
-                { titulo_noticia: '', imagem_noticia: '', data_noticia: '', resumo_noticia: '', link_noticia: '' }
-            ]
-        }));
-    };
-
-    const removeNoticia = (index: number) => {
-        setContentData(prev => ({
-            ...prev,
-            noticias_recentes: prev.noticias_recentes.filter((_, i) => i !== index)
-        }));
-    };
-
-    if (loading || contentLoading) {
+    // Verificar se o usuário é admin
+    if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-comademig-blue"></div>
+            <div className="container mx-auto px-4 py-8">
+                <div className="animate-pulse space-y-4">
+                    <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                </div>
             </div>
         );
     }
@@ -183,13 +70,79 @@ const HomeContentEdit = () => {
         return <Navigate to="/dashboard" replace />;
     }
 
-    if (contentError) {
+    const { register, handleSubmit, control, reset, watch, setValue, formState: { errors, isDirty } } = useForm<HomeContentData>({
+        defaultValues: content
+    });
+
+    const { fields: destaquesFields, append: appendDestaque, remove: removeDestaque } = useFieldArray({
+        control,
+        name: "destaques_convencao"
+    });
+
+    const { fields: noticiasFields, append: appendNoticia, remove: removeNoticia } = useFieldArray({
+        control,
+        name: "noticias_recentes"
+    });
+
+    // Atualizar formulário quando o conteúdo carregar (apenas uma vez)
+    const [hasInitialized, setHasInitialized] = useState(false);
+    
+    useEffect(() => {
+        if (content && !hasInitialized) {
+            reset(content);
+            setHasInitialized(true);
+        }
+    }, [content, reset, hasInitialized]);
+
+    const onSubmit = async (data: HomeContentData) => {
+        setIsSaving(true);
+        try {
+            await updateContent.mutateAsync({
+                pageName: 'home',
+                content: data
+            });
+            
+            toast.success('Conteúdo da página inicial salvo com sucesso!');
+        } catch (error) {
+            console.error('Erro ao salvar conteúdo:', error);
+            toast.error('Erro ao salvar conteúdo. Tente novamente.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const adicionarDestaque = () => {
+        appendDestaque({ titulo_evento: '', imagem_evento: '', subtitulo: '', link_evento: '' });
+    };
+
+    const adicionarNoticia = () => {
+        appendNoticia({ titulo_noticia: '', imagem_noticia: '', data_noticia: '', resumo_noticia: '', link_noticia: '' });
+    };
+
+    if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="container mx-auto px-4 py-8">
+                <div className="animate-pulse space-y-4">
+                    <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                    <div className="space-y-3">
+                        <div className="h-4 bg-gray-200 rounded"></div>
+                        <div className="h-4 bg-gray-200 rounded"></div>
+                        <div className="h-4 bg-gray-200 rounded"></div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="container mx-auto px-4 py-8">
                 <div className="text-center">
-                    <p className="text-red-600 mb-4">Erro ao carregar conteúdo da página inicial</p>
-                    <Button onClick={() => window.location.reload()}>
-                        Tentar Novamente
+                    <h1 className="text-2xl font-bold text-red-600 mb-4">Erro ao carregar conteúdo</h1>
+                    <p className="text-gray-600 mb-4">Não foi possível carregar o conteúdo da página inicial.</p>
+                    <Button asChild>
+                        <Link to="/dashboard/content">Voltar</Link>
                     </Button>
                 </div>
             </div>
@@ -197,500 +150,462 @@ const HomeContentEdit = () => {
     }
 
     return (
-        <ContentFormLayout
-            title="Editar Página: Início"
-            description="Configure o conteúdo da página inicial do site"
-            backUrl="/dashboard/content"
-            publicUrl="/"
-            onSave={handleSave}
-            isSaving={isSaving}
-            isDirty={isDirty}
-            hasErrors={updateContentMutation.isError}
-            errorMessage={updateContentMutation.error?.message}
-        >
-            {/* Preview Toggle */}
-            <div className="flex justify-end mb-4">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowPreview(!showPreview)}
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center space-x-4">
+                    <Button variant="ghost" size="sm" asChild>
+                        <Link to="/dashboard/content">
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            Voltar
+                        </Link>
+                    </Button>
+                    <div>
+                        <h1 className="text-3xl font-bold text-comademig-blue">Editar Página Início</h1>
+                        <p className="text-gray-600">Configure o conteúdo da página inicial do site</p>
+                    </div>
+                </div>
+                
+                <Button 
+                    onClick={handleSubmit(onSubmit)}
+                    disabled={isSaving || !isDirty}
+                    className="bg-comademig-blue hover:bg-comademig-blue/90"
                 >
-                    {showPreview ? 'Ocultar Preview' : 'Mostrar Preview'}
+                    <Save className="w-4 h-4 mr-2" />
+                    {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                 </Button>
             </div>
 
-            {/* Preview */}
-            {showPreview && (
-                <ContentPreview
-                    title="Preview da Página Inicial"
-                    description="Visualização das alterações em tempo real"
-                    isVisible={showPreview}
-                    onToggleVisibility={() => setShowPreview(!showPreview)}
-                    publicUrl="/"
-                    hasChanges={isDirty}
-                >
-                    <div className="space-y-4">
-                        <div className="bg-comademig-blue text-white p-6 rounded-lg">
-                            <h1 className="text-2xl font-bold mb-2">
-                                {contentData.banner_principal.titulo_principal || 'Título Principal'}
-                            </h1>
-                            <p className="mb-4">
-                                {contentData.banner_principal.subtitulo || 'Subtítulo'}
-                            </p>
-                            <button className="bg-comademig-gold px-4 py-2 rounded">
-                                {contentData.banner_principal.texto_botao || 'Botão'}
-                            </button>
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {contentData.cards_acao.map((card, index) => (
-                                <div key={index} className="border p-4 rounded">
-                                    <h3 className="font-semibold">{card.titulo || `Card ${index + 1}`}</h3>
-                                    <p className="text-sm text-gray-600">{card.descricao || 'Descrição'}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </ContentPreview>
-            )}
-
-            <Tabs defaultValue="banner" className="w-full">
-                <TabsList className="grid w-full grid-cols-5">
-                    <TabsTrigger value="banner">Banner Principal</TabsTrigger>
-                    <TabsTrigger value="cards">Cards de Ação</TabsTrigger>
-                    <TabsTrigger value="destaques">Destaques</TabsTrigger>
-                    <TabsTrigger value="noticias">Notícias</TabsTrigger>
-                    <TabsTrigger value="missao">Missão</TabsTrigger>
-                </TabsList>
-
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
                 {/* Banner Principal */}
-                <TabsContent value="banner">
-                    <ContentFormSection
-                        title="Banner Principal"
-                        description="Configure o banner de destaque da página inicial"
-                        icon={<Home className="w-5 h-5 text-comademig-blue" />}
-                        step={1}
-                        totalSteps={5}
-                        isRequired={true}
-                        isCompleted={!!(contentData.banner_principal.titulo_principal && contentData.banner_principal.subtitulo)}
-                    >
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center">
+                            <div className="w-8 h-8 bg-comademig-gold rounded-full flex items-center justify-center mr-3">
+                                <Home className="w-4 h-4 text-white" />
+                            </div>
+                            Banner Principal
+                        </CardTitle>
+                        <CardDescription>
+                            Configure o banner de destaque da página inicial
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div>
+                            <Label htmlFor="banner.titulo_principal">Título Principal</Label>
+                            <Input
+                                id="banner.titulo_principal"
+                                {...register("banner_principal.titulo_principal", { required: "Título é obrigatório" })}
+                                placeholder="Ex: Fortalecendo o Reino de Deus"
+                            />
+                            {errors.banner_principal?.titulo_principal && (
+                                <p className="text-sm text-red-600 mt-1">{errors.banner_principal.titulo_principal.message}</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <Label htmlFor="banner.subtitulo">Subtítulo</Label>
+                            <Textarea
+                                id="banner.subtitulo"
+                                {...register("banner_principal.subtitulo", { required: "Subtítulo é obrigatório" })}
+                                placeholder="Descrição do banner"
+                                rows={3}
+                            />
+                            {errors.banner_principal?.subtitulo && (
+                                <p className="text-sm text-red-600 mt-1">{errors.banner_principal.subtitulo.message}</p>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <Label htmlFor="banner-titulo">Título Principal</Label>
+                                <Label htmlFor="banner.texto_botao">Texto do Botão</Label>
                                 <Input
-                                    id="banner-titulo"
-                                    value={contentData.banner_principal.titulo_principal}
-                                    onChange={(e) => setContentData(prev => ({
-                                        ...prev,
-                                        banner_principal: { ...prev.banner_principal, titulo_principal: e.target.value }
-                                    }))}
-                                    placeholder="Ex: Fortalecendo o Reino de Deus"
+                                    id="banner.texto_botao"
+                                    {...register("banner_principal.texto_botao", { required: "Texto do botão é obrigatório" })}
+                                    placeholder="Ex: Saiba Mais"
                                 />
+                                {errors.banner_principal?.texto_botao && (
+                                    <p className="text-sm text-red-600 mt-1">{errors.banner_principal.texto_botao.message}</p>
+                                )}
                             </div>
 
                             <div>
-                                <Label htmlFor="banner-subtitulo">Subtítulo</Label>
-                                <Textarea
-                                    id="banner-subtitulo"
-                                    value={contentData.banner_principal.subtitulo}
-                                    onChange={(e) => setContentData(prev => ({
-                                        ...prev,
-                                        banner_principal: { ...prev.banner_principal, subtitulo: e.target.value }
-                                    }))}
-                                    placeholder="Descrição do banner"
-                                    rows={3}
+                                <Label htmlFor="banner.link_botao">Link do Botão</Label>
+                                <Input
+                                    id="banner.link_botao"
+                                    {...register("banner_principal.link_botao", { required: "Link do botão é obrigatório" })}
+                                    placeholder="Ex: /sobre"
                                 />
+                                {errors.banner_principal?.link_botao && (
+                                    <p className="text-sm text-red-600 mt-1">{errors.banner_principal.link_botao.message}</p>
+                                )}
                             </div>
+                        </div>
+                    </CardContent>
+                </Card>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Cards de Ação */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center">
+                            <div className="w-8 h-8 bg-comademig-gold rounded-full flex items-center justify-center mr-3">
+                                <BarChart3 className="w-4 h-4 text-white" />
+                            </div>
+                            Cards de Ação (4 cards)
+                        </CardTitle>
+                        <CardDescription>
+                            Configure os 4 cards principais da página inicial
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {[0, 1, 2, 3].map((index) => (
+                            <div key={index} className="p-4 border rounded-lg space-y-4">
+                                <h4 className="font-semibold text-comademig-blue">Card {index + 1}</h4>
+
                                 <div>
-                                    <Label htmlFor="banner-texto-botao">Texto do Botão</Label>
+                                    <Label htmlFor={`cards_acao.${index}.titulo`}>Título</Label>
                                     <Input
-                                        id="banner-texto-botao"
-                                        value={contentData.banner_principal.texto_botao}
-                                        onChange={(e) => setContentData(prev => ({
-                                            ...prev,
-                                            banner_principal: { ...prev.banner_principal, texto_botao: e.target.value }
-                                        }))}
-                                        placeholder="Ex: Saiba Mais"
+                                        id={`cards_acao.${index}.titulo`}
+                                        {...register(`cards_acao.${index}.titulo` as const, { required: "Título é obrigatório" })}
+                                        placeholder="Título do card"
                                     />
+                                    {errors.cards_acao?.[index]?.titulo && (
+                                        <p className="text-sm text-red-600 mt-1">{errors.cards_acao[index]?.titulo?.message}</p>
+                                    )}
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="banner-link-botao">Link do Botão</Label>
-                                    <Input
-                                        id="banner-link-botao"
-                                        value={contentData.banner_principal.link_botao}
-                                        onChange={(e) => setContentData(prev => ({
-                                            ...prev,
-                                            banner_principal: { ...prev.banner_principal, link_botao: e.target.value }
-                                        }))}
-                                        placeholder="Ex: /sobre"
+                                    <Label htmlFor={`cards_acao.${index}.descricao`}>Descrição</Label>
+                                    <Textarea
+                                        id={`cards_acao.${index}.descricao`}
+                                        {...register(`cards_acao.${index}.descricao` as const, { required: "Descrição é obrigatória" })}
+                                        placeholder="Descrição do card"
+                                        rows={3}
                                     />
+                                    {errors.cards_acao?.[index]?.descricao && (
+                                        <p className="text-sm text-red-600 mt-1">{errors.cards_acao[index]?.descricao?.message}</p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <Label htmlFor={`cards_acao.${index}.link_botao`}>Link do Botão</Label>
+                                    <Input
+                                        id={`cards_acao.${index}.link_botao`}
+                                        {...register(`cards_acao.${index}.link_botao` as const, { required: "Link é obrigatório" })}
+                                        placeholder="URL do link"
+                                    />
+                                    {errors.cards_acao?.[index]?.link_botao && (
+                                        <p className="text-sm text-red-600 mt-1">{errors.cards_acao[index]?.link_botao?.message}</p>
+                                    )}
                                 </div>
                             </div>
-                    </ContentFormSection>
-                </TabsContent>   
-             {/* Cards de Ação */}
-                <TabsContent value="cards">
-                    <ContentFormSection
-                        title="Cards de Ação"
-                        description="Configure os 4 cards principais (Inscrição, Filiação, Regularização, Ao Vivo)"
-                        icon={<BarChart3 className="w-5 h-5 text-comademig-blue" />}
-                        step={2}
-                        totalSteps={5}
-                        isRequired={true}
-                        isCompleted={contentData.cards_acao.every(card => card.titulo && card.descricao)}
-                    >
-                            {contentData.cards_acao.map((card, index) => (
-                                <div key={index} className="p-4 border rounded-lg space-y-4">
-                                    <h4 className="font-semibold">Card {index + 1}</h4>
-
-                                    <div>
-                                        <Label htmlFor={`card-titulo-${index}`}>Título</Label>
-                                        <Input
-                                            id={`card-titulo-${index}`}
-                                            value={card.titulo}
-                                            onChange={(e) => setContentData(prev => ({
-                                                ...prev,
-                                                cards_acao: prev.cards_acao.map((c, i) =>
-                                                    i === index ? { ...c, titulo: e.target.value } : c
-                                                )
-                                            }))}
-                                            placeholder="Título do card"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor={`card-descricao-${index}`}>Descrição</Label>
-                                        <Textarea
-                                            id={`card-descricao-${index}`}
-                                            value={card.descricao}
-                                            onChange={(e) => setContentData(prev => ({
-                                                ...prev,
-                                                cards_acao: prev.cards_acao.map((c, i) =>
-                                                    i === index ? { ...c, descricao: e.target.value } : c
-                                                )
-                                            }))}
-                                            placeholder="Descrição do card"
-                                            rows={3}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor={`card-link-${index}`}>Link do Botão</Label>
-                                        <Input
-                                            id={`card-link-${index}`}
-                                            value={card.link_botao}
-                                            onChange={(e) => setContentData(prev => ({
-                                                ...prev,
-                                                cards_acao: prev.cards_acao.map((c, i) =>
-                                                    i === index ? { ...c, link_botao: e.target.value } : c
-                                                )
-                                            }))}
-                                            placeholder="URL do link"
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                    </ContentFormSection>
-                </TabsContent>
+                        ))}
+                    </CardContent>
+                </Card>
 
                 {/* Destaques da Convenção */}
-                <TabsContent value="destaques">
-                    <ContentFormSection
-                        title="Destaques da Convenção"
-                        description="Gerencie os eventos em destaque"
-                        icon={<Star className="w-5 h-5 text-comademig-blue" />}
-                        step={3}
-                        totalSteps={5}
-                        isRequired={false}
-                        isCompleted={contentData.destaques_convencao.length > 0}
-                    >
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center">
+                            <div className="w-8 h-8 bg-comademig-gold rounded-full flex items-center justify-center mr-3">
+                                <Star className="w-4 h-4 text-white" />
+                            </div>
+                            Destaques da Convenção
+                        </CardTitle>
+                        <CardDescription>
+                            Gerencie os eventos em destaque
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
                         <div className="flex justify-end mb-4">
-                            <Button onClick={addDestaque}>
+                            <Button type="button" onClick={adicionarDestaque}>
                                 <Plus className="h-4 w-4 mr-2" />
                                 Adicionar Destaque
                             </Button>
                         </div>
-                            {contentData.destaques_convencao.map((destaque, index) => (
-                                <div key={index} className="p-4 border rounded-lg space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <h4 className="font-semibold">Destaque {index + 1}</h4>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => removeDestaque(index)}
-                                            className="text-red-600 hover:text-red-700"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor={`destaque-titulo-${index}`}>Título do Evento</Label>
-                                        <Input
-                                            id={`destaque-titulo-${index}`}
-                                            value={destaque.titulo_evento}
-                                            onChange={(e) => setContentData(prev => ({
-                                                ...prev,
-                                                destaques_convencao: prev.destaques_convencao.map((d, i) =>
-                                                    i === index ? { ...d, titulo_evento: e.target.value } : d
-                                                )
-                                            }))}
-                                            placeholder="Nome do evento"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <ImageUpload
-                                            currentImage={destaque.imagem_evento}
-                                            onImageChange={(url) => {
-                                                setContentData(prev => ({
-                                                    ...prev,
-                                                    destaques_convencao: prev.destaques_convencao.map((d, i) =>
-                                                        i === index ? { ...d, imagem_evento: url || '' } : d
-                                                    )
-                                                }));
-                                            }}
-                                            section="home/destaques"
-                                            index={index}
-                                            label="Imagem do Evento"
-                                            placeholder="Selecione uma imagem para o evento"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor={`destaque-subtitulo-${index}`}>Subtítulo</Label>
-                                        <Input
-                                            id={`destaque-subtitulo-${index}`}
-                                            value={destaque.subtitulo}
-                                            onChange={(e) => setContentData(prev => ({
-                                                ...prev,
-                                                destaques_convencao: prev.destaques_convencao.map((d, i) =>
-                                                    i === index ? { ...d, subtitulo: e.target.value } : d
-                                                )
-                                            }))}
-                                            placeholder="Subtítulo do evento"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor={`destaque-link-${index}`}>Link do Evento</Label>
-                                        <Input
-                                            id={`destaque-link-${index}`}
-                                            value={destaque.link_evento}
-                                            onChange={(e) => setContentData(prev => ({
-                                                ...prev,
-                                                destaques_convencao: prev.destaques_convencao.map((d, i) =>
-                                                    i === index ? { ...d, link_evento: e.target.value } : d
-                                                )
-                                            }))}
-                                            placeholder="URL do evento"
-                                        />
-                                    </div>
+                        {destaquesFields.map((destaque, index) => (
+                            <div key={destaque.id} className="p-4 border rounded-lg space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="font-semibold">Destaque {index + 1}</h4>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => removeDestaque(index)}
+                                        className="text-red-600 hover:text-red-700"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
                                 </div>
-                            ))}
 
-                            {contentData.destaques_convencao.length === 0 && (
-                                <div className="text-center py-8 text-gray-500">
-                                    <Image className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                    <p>Nenhum destaque adicionado ainda.</p>
-                                    <p className="text-sm">Clique em "Adicionar Destaque" para começar.</p>
+                                <div>
+                                    <Label htmlFor={`destaque-titulo-${index}`}>Título do Evento</Label>
+                                    <Input
+                                        id={`destaque-titulo-${index}`}
+                                        {...register(`destaques_convencao.${index}.titulo_evento` as const, { required: "Título é obrigatório" })}
+                                        placeholder="Nome do evento"
+                                    />
+                                    {errors.destaques_convencao?.[index]?.titulo_evento && (
+                                        <p className="text-sm text-red-600 mt-1">
+                                            {errors.destaques_convencao[index]?.titulo_evento?.message}
+                                        </p>
+                                    )}
                                 </div>
-                            )}
-                    </ContentFormSection>
-                </TabsContent>
+
+                                <div>
+                                    <Label>Imagem do Evento</Label>
+                                    <SimpleImageUpload
+                                        onImageChange={(url) => {
+                                            if (url) {
+                                                setValue(`destaques_convencao.${index}.imagem_evento` as const, url, { shouldDirty: true });
+                                            }
+                                        }}
+                                    />
+                                    {watch(`destaques_convencao.${index}.imagem_evento`) && (
+                                        <div className="mt-2">
+                                            <p className="text-sm text-green-600">✅ Imagem carregada com sucesso!</p>
+                                            <img 
+                                                src={watch(`destaques_convencao.${index}.imagem_evento`)} 
+                                                alt="Preview" 
+                                                className="w-20 h-20 object-cover rounded border mt-1"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <Label htmlFor={`destaque-subtitulo-${index}`}>Subtítulo</Label>
+                                    <Input
+                                        id={`destaque-subtitulo-${index}`}
+                                        {...register(`destaques_convencao.${index}.subtitulo` as const, { required: "Subtítulo é obrigatório" })}
+                                        placeholder="Subtítulo do evento"
+                                    />
+                                    {errors.destaques_convencao?.[index]?.subtitulo && (
+                                        <p className="text-sm text-red-600 mt-1">
+                                            {errors.destaques_convencao[index]?.subtitulo?.message}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <Label htmlFor={`destaque-link-${index}`}>Link do Evento</Label>
+                                    <Input
+                                        id={`destaque-link-${index}`}
+                                        {...register(`destaques_convencao.${index}.link_evento` as const, { required: "Link é obrigatório" })}
+                                        placeholder="URL do evento"
+                                    />
+                                    {errors.destaques_convencao?.[index]?.link_evento && (
+                                        <p className="text-sm text-red-600 mt-1">
+                                            {errors.destaques_convencao[index]?.link_evento?.message}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+
+                        {destaquesFields.length === 0 && (
+                            <div className="text-center py-8 text-gray-500">
+                                <Image className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                <p>Nenhum destaque adicionado ainda.</p>
+                                <p className="text-sm">Clique em "Adicionar Destaque" para começar.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
 
                 {/* Notícias Recentes */}
-                <TabsContent value="noticias">
-                    <ContentFormSection
-                        title="Notícias Recentes"
-                        description="Gerencie as notícias em destaque na página inicial"
-                        icon={<Newspaper className="w-5 h-5 text-comademig-blue" />}
-                        step={4}
-                        totalSteps={5}
-                        isRequired={false}
-                        isCompleted={contentData.noticias_recentes.length > 0}
-                    >
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center">
+                            <div className="w-8 h-8 bg-comademig-gold rounded-full flex items-center justify-center mr-3">
+                                <Newspaper className="w-4 h-4 text-white" />
+                            </div>
+                            Notícias Recentes
+                        </CardTitle>
+                        <CardDescription>
+                            Gerencie as notícias em destaque na página inicial
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
                         <div className="flex justify-end mb-4">
-                            <Button onClick={addNoticia}>
+                            <Button type="button" onClick={adicionarNoticia}>
                                 <Plus className="h-4 w-4 mr-2" />
                                 Adicionar Notícia
                             </Button>
                         </div>
-                            {contentData.noticias_recentes.map((noticia, index) => (
-                                <div key={index} className="p-4 border rounded-lg space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <h4 className="font-semibold">Notícia {index + 1}</h4>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => removeNoticia(index)}
-                                            className="text-red-600 hover:text-red-700"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor={`noticia-titulo-${index}`}>Título da Notícia</Label>
-                                        <Input
-                                            id={`noticia-titulo-${index}`}
-                                            value={noticia.titulo_noticia}
-                                            onChange={(e) => setContentData(prev => ({
-                                                ...prev,
-                                                noticias_recentes: prev.noticias_recentes.map((n, i) =>
-                                                    i === index ? { ...n, titulo_noticia: e.target.value } : n
-                                                )
-                                            }))}
-                                            placeholder="Título da notícia"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <ImageUpload
-                                            currentImage={noticia.imagem_noticia}
-                                            onImageChange={(url) => {
-                                                setContentData(prev => ({
-                                                    ...prev,
-                                                    noticias_recentes: prev.noticias_recentes.map((n, i) =>
-                                                        i === index ? { ...n, imagem_noticia: url || '' } : n
-                                                    )
-                                                }));
-                                            }}
-                                            section="home/noticias"
-                                            index={index}
-                                            label="Imagem da Notícia"
-                                            placeholder="Selecione uma imagem para a notícia"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor={`noticia-data-${index}`}>Data da Notícia</Label>
-                                        <Input
-                                            id={`noticia-data-${index}`}
-                                            type="date"
-                                            value={noticia.data_noticia}
-                                            onChange={(e) => setContentData(prev => ({
-                                                ...prev,
-                                                noticias_recentes: prev.noticias_recentes.map((n, i) =>
-                                                    i === index ? { ...n, data_noticia: e.target.value } : n
-                                                )
-                                            }))}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor={`noticia-resumo-${index}`}>Resumo da Notícia</Label>
-                                        <Textarea
-                                            id={`noticia-resumo-${index}`}
-                                            value={noticia.resumo_noticia}
-                                            onChange={(e) => setContentData(prev => ({
-                                                ...prev,
-                                                noticias_recentes: prev.noticias_recentes.map((n, i) =>
-                                                    i === index ? { ...n, resumo_noticia: e.target.value } : n
-                                                )
-                                            }))}
-                                            placeholder="Resumo da notícia"
-                                            rows={3}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor={`noticia-link-${index}`}>Link da Notícia</Label>
-                                        <Input
-                                            id={`noticia-link-${index}`}
-                                            value={noticia.link_noticia}
-                                            onChange={(e) => setContentData(prev => ({
-                                                ...prev,
-                                                noticias_recentes: prev.noticias_recentes.map((n, i) =>
-                                                    i === index ? { ...n, link_noticia: e.target.value } : n
-                                                )
-                                            }))}
-                                            placeholder="URL da notícia"
-                                        />
-                                    </div>
+                        {noticiasFields.map((noticia, index) => (
+                            <div key={noticia.id} className="p-4 border rounded-lg space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="font-semibold">Notícia {index + 1}</h4>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => removeNoticia(index)}
+                                        className="text-red-600 hover:text-red-700"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
                                 </div>
-                            ))}
 
-                            {contentData.noticias_recentes.length === 0 && (
-                                <div className="text-center py-8 text-gray-500">
-                                    <Image className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                    <p>Nenhuma notícia adicionada ainda.</p>
-                                    <p className="text-sm">Clique em "Adicionar Notícia" para começar.</p>
+                                <div>
+                                    <Label htmlFor={`noticia-titulo-${index}`}>Título da Notícia</Label>
+                                    <Input
+                                        id={`noticia-titulo-${index}`}
+                                        {...register(`noticias_recentes.${index}.titulo_noticia` as const, { required: "Título é obrigatório" })}
+                                        placeholder="Título da notícia"
+                                    />
+                                    {errors.noticias_recentes?.[index]?.titulo_noticia && (
+                                        <p className="text-sm text-red-600 mt-1">
+                                            {errors.noticias_recentes[index]?.titulo_noticia?.message}
+                                        </p>
+                                    )}
                                 </div>
-                            )}
-                    </ContentFormSection>
-                </TabsContent>
+
+                                <div>
+                                    <Label>Imagem da Notícia</Label>
+                                    <SimpleImageUpload
+                                        onImageChange={(url) => {
+                                            if (url) {
+                                                setValue(`noticias_recentes.${index}.imagem_noticia` as const, url, { shouldDirty: true });
+                                            }
+                                        }}
+                                    />
+                                    {watch(`noticias_recentes.${index}.imagem_noticia`) && (
+                                        <div className="mt-2">
+                                            <p className="text-sm text-green-600">✅ Imagem carregada com sucesso!</p>
+                                            <img 
+                                                src={watch(`noticias_recentes.${index}.imagem_noticia`)} 
+                                                alt="Preview" 
+                                                className="w-20 h-20 object-cover rounded border mt-1"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <Label htmlFor={`noticia-data-${index}`}>Data da Notícia</Label>
+                                    <Input
+                                        id={`noticia-data-${index}`}
+                                        type="date"
+                                        {...register(`noticias_recentes.${index}.data_noticia` as const, { required: "Data é obrigatória" })}
+                                    />
+                                    {errors.noticias_recentes?.[index]?.data_noticia && (
+                                        <p className="text-sm text-red-600 mt-1">
+                                            {errors.noticias_recentes[index]?.data_noticia?.message}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <Label htmlFor={`noticia-resumo-${index}`}>Resumo da Notícia</Label>
+                                    <Textarea
+                                        id={`noticia-resumo-${index}`}
+                                        {...register(`noticias_recentes.${index}.resumo_noticia` as const, { required: "Resumo é obrigatório" })}
+                                        placeholder="Resumo da notícia"
+                                        rows={3}
+                                    />
+                                    {errors.noticias_recentes?.[index]?.resumo_noticia && (
+                                        <p className="text-sm text-red-600 mt-1">
+                                            {errors.noticias_recentes[index]?.resumo_noticia?.message}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <Label htmlFor={`noticia-link-${index}`}>Link da Notícia</Label>
+                                    <Input
+                                        id={`noticia-link-${index}`}
+                                        {...register(`noticias_recentes.${index}.link_noticia` as const, { required: "Link é obrigatório" })}
+                                        placeholder="URL da notícia"
+                                    />
+                                    {errors.noticias_recentes?.[index]?.link_noticia && (
+                                        <p className="text-sm text-red-600 mt-1">
+                                            {errors.noticias_recentes[index]?.link_noticia?.message}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+
+                        {noticiasFields.length === 0 && (
+                            <div className="text-center py-8 text-gray-500">
+                                <Image className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                <p>Nenhuma notícia adicionada ainda.</p>
+                                <p className="text-sm">Clique em "Adicionar Notícia" para começar.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
 
                 {/* Seção Junte-se à Missão */}
-                <TabsContent value="missao">
-                    <ContentFormSection
-                        title="Seção 'Junte-se à Missão'"
-                        description="Configure a seção de call-to-action da página inicial"
-                        icon={<Target className="w-5 h-5 text-comademig-blue" />}
-                        step={5}
-                        totalSteps={5}
-                        isRequired={false}
-                        isCompleted={!!(contentData.junte_se_missao.titulo_principal && contentData.junte_se_missao.subtitulo)}
-                    >
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center">
+                            <div className="w-8 h-8 bg-comademig-gold rounded-full flex items-center justify-center mr-3">
+                                <Target className="w-4 h-4 text-white" />
+                            </div>
+                            Seção "Junte-se à Missão"
+                        </CardTitle>
+                        <CardDescription>
+                            Configure a seção de call-to-action da página inicial
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div>
+                            <Label htmlFor="missao-titulo">Título Principal</Label>
+                            <Input
+                                id="missao-titulo"
+                                {...register("junte_se_missao.titulo_principal", { required: "Título é obrigatório" })}
+                                placeholder="Ex: Junte-se à nossa missão"
+                            />
+                            {errors.junte_se_missao?.titulo_principal && (
+                                <p className="text-sm text-red-600 mt-1">{errors.junte_se_missao.titulo_principal.message}</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <Label htmlFor="missao-subtitulo">Subtítulo</Label>
+                            <Textarea
+                                id="missao-subtitulo"
+                                {...register("junte_se_missao.subtitulo", { required: "Subtítulo é obrigatório" })}
+                                placeholder="Descrição da missão"
+                                rows={3}
+                            />
+                            {errors.junte_se_missao?.subtitulo && (
+                                <p className="text-sm text-red-600 mt-1">{errors.junte_se_missao.subtitulo.message}</p>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <Label htmlFor="missao-titulo">Título Principal</Label>
+                                <Label htmlFor="missao-texto-botao">Texto do Botão</Label>
                                 <Input
-                                    id="missao-titulo"
-                                    value={contentData.junte_se_missao.titulo_principal}
-                                    onChange={(e) => setContentData(prev => ({
-                                        ...prev,
-                                        junte_se_missao: { ...prev.junte_se_missao, titulo_principal: e.target.value }
-                                    }))}
-                                    placeholder="Ex: Junte-se à Nossa Missão"
+                                    id="missao-texto-botao"
+                                    {...register("junte_se_missao.texto_botao", { required: "Texto do botão é obrigatório" })}
+                                    placeholder="Ex: Participar"
                                 />
+                                {errors.junte_se_missao?.texto_botao && (
+                                    <p className="text-sm text-red-600 mt-1">{errors.junte_se_missao.texto_botao.message}</p>
+                                )}
                             </div>
 
                             <div>
-                                <Label htmlFor="missao-subtitulo">Subtítulo</Label>
-                                <Textarea
-                                    id="missao-subtitulo"
-                                    value={contentData.junte_se_missao.subtitulo}
-                                    onChange={(e) => setContentData(prev => ({
-                                        ...prev,
-                                        junte_se_missao: { ...prev.junte_se_missao, subtitulo: e.target.value }
-                                    }))}
-                                    placeholder="Descrição da missão"
-                                    rows={3}
+                                <Label htmlFor="missao-link-botao">Link do Botão</Label>
+                                <Input
+                                    id="missao-link-botao"
+                                    {...register("junte_se_missao.link_botao", { required: "Link do botão é obrigatório" })}
+                                    placeholder="Ex: /filiacao"
                                 />
+                                {errors.junte_se_missao?.link_botao && (
+                                    <p className="text-sm text-red-600 mt-1">{errors.junte_se_missao.link_botao.message}</p>
+                                )}
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <Label htmlFor="missao-texto-botao">Texto do Botão</Label>
-                                    <Input
-                                        id="missao-texto-botao"
-                                        value={contentData.junte_se_missao.texto_botao}
-                                        onChange={(e) => setContentData(prev => ({
-                                            ...prev,
-                                            junte_se_missao: { ...prev.junte_se_missao, texto_botao: e.target.value }
-                                        }))}
-                                        placeholder="Ex: Faça Parte"
-                                    />
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="missao-link-botao">Link do Botão</Label>
-                                    <Input
-                                        id="missao-link-botao"
-                                        value={contentData.junte_se_missao.link_botao}
-                                        onChange={(e) => setContentData(prev => ({
-                                            ...prev,
-                                            junte_se_missao: { ...prev.junte_se_missao, link_botao: e.target.value }
-                                        }))}
-                                        placeholder="Ex: /filiacao"
-                                    />
-                                </div>
-                            </div>
-                    </ContentFormSection>
-                </TabsContent>
-            </Tabs>
-        </ContentFormLayout>
+                        </div>
+                    </CardContent>
+                </Card>
+            </form>
+        </div>
     );
 };
 
