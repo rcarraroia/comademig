@@ -74,8 +74,6 @@ export const SimpleImageUpload: React.FC<SimpleImageUploadProps> = ({
 
   return (
     <div className="space-y-4 p-4 border rounded">
-      <h3 className="font-medium">Teste de Upload Simples</h3>
-      
       <Input
         type="file"
         accept="image/*"
