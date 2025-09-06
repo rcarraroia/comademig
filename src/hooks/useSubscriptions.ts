@@ -8,11 +8,9 @@ export interface SubscriptionPlan {
   name: string;
   description: string;
   price: number;
-  billing_cycle: 'monthly' | 'yearly';
-  features: string[];
+  recurrence: 'monthly' | 'semestral' | 'annual';
+  permissions: any;
   is_active: boolean;
-  max_users?: number;
-  trial_days?: number;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -369,12 +367,14 @@ export const useSubscriptionStats = () => {
         totalRevenue.data.forEach((sub: any) => {
           if (sub.subscription_plan) {
             const price = sub.subscription_plan.price;
-            const cycle = sub.subscription_plan.billing_cycle;
+            const cycle = sub.subscription_plan.recurrence;
             
             if (cycle === 'monthly') {
               monthlyRevenue += price;
-            } else if (cycle === 'yearly') {
+            } else if (cycle === 'annual') {
               monthlyRevenue += price / 12; // Converter anual para mensal
+            } else if (cycle === 'semestral') {
+              monthlyRevenue += price / 6; // Converter semestral para mensal
             }
           }
         });

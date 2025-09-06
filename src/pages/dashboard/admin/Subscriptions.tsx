@@ -59,7 +59,7 @@ const Subscriptions = () => {
     refetch();
   };
 
-  const formatPrice = (price: number, billing_cycle: string) => {
+  const formatPrice = (price: number, recurrence: string) => {
     const formatted = new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
@@ -67,26 +67,29 @@ const Subscriptions = () => {
 
     const cycleMap = {
       monthly: 'mensal',
-      yearly: 'anual'
+      semestral: 'semestral',
+      annual: 'anual'
     };
 
-    return `${formatted}/${cycleMap[billing_cycle as keyof typeof cycleMap]}`;
+    return `${formatted}/${cycleMap[recurrence as keyof typeof cycleMap]}`;
   };
 
-  const getBillingCycleBadge = (billing_cycle: string) => {
+  const getRecurrenceBadge = (recurrence: string) => {
     const variants = {
       monthly: 'default',
-      yearly: 'outline'
+      semestral: 'secondary',
+      annual: 'outline'
     } as const;
 
     const labels = {
       monthly: 'Mensal',
-      yearly: 'Anual'
+      semestral: 'Semestral',
+      annual: 'Anual'
     };
 
     return (
-      <Badge variant={variants[billing_cycle as keyof typeof variants]}>
-        {labels[billing_cycle as keyof typeof labels]}
+      <Badge variant={variants[recurrence as keyof typeof variants]}>
+        {labels[recurrence as keyof typeof labels]}
       </Badge>
     );
   };
@@ -183,24 +186,26 @@ const Subscriptions = () => {
               {/* Preço */}
               <div className="text-center py-4 bg-gray-50 rounded-lg">
                 <div className="text-3xl font-bold text-gray-900">
-                  {formatPrice(plan.price, plan.billing_cycle)}
+                  {formatPrice(plan.price, plan.recurrence)}
                 </div>
-                {getBillingCycleBadge(plan.billing_cycle)}
+                {getRecurrenceBadge(plan.recurrence)}
               </div>
 
-              {/* Recursos */}
+              {/* Permissões */}
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Recursos:</p>
+                <p className="text-sm font-medium text-gray-700 mb-2">Permissões:</p>
                 <div className="space-y-1">
-                  {plan.features && plan.features.length > 0 ? (
-                    plan.features.map((feature, index) => (
-                      <div key={index} className="flex items-center text-sm">
-                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                        {feature}
+                  {plan.permissions && Object.keys(plan.permissions).length > 0 ? (
+                    Object.entries(plan.permissions).map(([key, value]) => (
+                      <div key={key} className="flex justify-between text-sm">
+                        <span>{key}</span>
+                        <Badge variant={value ? "default" : "secondary"}>
+                          {value ? "Sim" : "Não"}
+                        </Badge>
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-gray-500">Nenhum recurso definido</p>
+                    <p className="text-sm text-gray-500">Nenhuma permissão definida</p>
                   )}
                 </div>
               </div>

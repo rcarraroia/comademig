@@ -28,13 +28,19 @@ const DeletePlanModal = ({ isOpen, onClose, plan }: DeletePlanModalProps) => {
     }
   };
 
-  const formatPrice = (price: number, cycle: string) => {
+  const formatPrice = (price: number, recurrence: string) => {
     const formatted = new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
     }).format(price);
 
-    return `${formatted}/${cycle === 'monthly' ? 'mês' : 'ano'}`;
+    const cycleMap = {
+      monthly: 'mês',
+      semestral: 'semestre',
+      annual: 'ano'
+    };
+
+    return `${formatted}/${cycleMap[recurrence as keyof typeof cycleMap] || 'período'}`;
   };
 
   return (
@@ -55,7 +61,7 @@ const DeletePlanModal = ({ isOpen, onClose, plan }: DeletePlanModalProps) => {
             <div className="flex items-center gap-4 mt-2 text-sm">
               <span className="flex items-center gap-1">
                 <DollarSign className="h-4 w-4" />
-                {formatPrice(plan.price, plan.billing_cycle)}
+                {formatPrice(plan.price, plan.recurrence)}
               </span>
               <span className="flex items-center gap-1">
                 <Users className="h-4 w-4" />

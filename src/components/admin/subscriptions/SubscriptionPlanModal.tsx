@@ -25,15 +25,13 @@ const SubscriptionPlanModal = ({ isOpen, onClose, plan, mode }: SubscriptionPlan
     name: '',
     description: '',
     price: 0,
-    billing_cycle: 'monthly' as 'monthly' | 'yearly',
-    features: [] as string[],
+    recurrence: 'monthly' as 'monthly' | 'semestral' | 'annual',
+    permissions: {},
     is_active: true,
-    max_users: undefined as number | undefined,
-    trial_days: undefined as number | undefined,
     sort_order: 0,
   });
 
-  const [newFeature, setNewFeature] = useState('');
+
 
   useEffect(() => {
     if (plan && mode === 'edit') {
@@ -41,11 +39,9 @@ const SubscriptionPlanModal = ({ isOpen, onClose, plan, mode }: SubscriptionPlan
         name: plan.name,
         description: plan.description,
         price: plan.price,
-        billing_cycle: plan.billing_cycle,
-        features: plan.features || [],
+        recurrence: plan.recurrence,
+        permissions: plan.permissions || {},
         is_active: plan.is_active,
-        max_users: plan.max_users,
-        trial_days: plan.trial_days,
         sort_order: plan.sort_order,
       });
     } else {
@@ -54,11 +50,9 @@ const SubscriptionPlanModal = ({ isOpen, onClose, plan, mode }: SubscriptionPlan
         name: '',
         description: '',
         price: 0,
-        billing_cycle: 'monthly',
-        features: [],
+        recurrence: 'monthly',
+        permissions: {},
         is_active: true,
-        max_users: undefined,
-        trial_days: undefined,
         sort_order: 0,
       });
     }
@@ -79,22 +73,7 @@ const SubscriptionPlanModal = ({ isOpen, onClose, plan, mode }: SubscriptionPlan
     }
   };
 
-  const addFeature = () => {
-    if (newFeature.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        features: [...prev.features, newFeature.trim()]
-      }));
-      setNewFeature('');
-    }
-  };
 
-  const removeFeature = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      features: prev.features.filter((_, i) => i !== index)
-    }));
-  };
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -154,80 +133,25 @@ const SubscriptionPlanModal = ({ isOpen, onClose, plan, mode }: SubscriptionPlan
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="billing_cycle">Ciclo de Cobrança *</Label>
-                <Select 
-                  value={formData.billing_cycle} 
-                  onValueChange={(value) => handleInputChange('billing_cycle', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="monthly">Mensal</SelectItem>
-                    <SelectItem value="yearly">Anual</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="max_users">Máx. Usuários</Label>
-                <Input
-                  id="max_users"
-                  type="number"
-                  min="1"
-                  value={formData.max_users || ''}
-                  onChange={(e) => handleInputChange('max_users', e.target.value ? parseInt(e.target.value) : undefined)}
-                  placeholder="Ilimitado"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="trial_days">Dias de Teste</Label>
-                <Input
-                  id="trial_days"
-                  type="number"
-                  min="0"
-                  value={formData.trial_days || ''}
-                  onChange={(e) => handleInputChange('trial_days', e.target.value ? parseInt(e.target.value) : undefined)}
-                  placeholder="0"
-                />
-              </div>
+            <div>
+              <Label htmlFor="recurrence">Recorrência *</Label>
+              <Select 
+                value={formData.recurrence} 
+                onValueChange={(value) => handleInputChange('recurrence', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Mensal</SelectItem>
+                  <SelectItem value="semestral">Semestral</SelectItem>
+                  <SelectItem value="annual">Anual</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          {/* Recursos/Features */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Recursos Inclusos</h3>
-            
-            <div className="flex gap-2">
-              <Input
-                value={newFeature}
-                onChange={(e) => setNewFeature(e.target.value)}
-                placeholder="Digite um recurso..."
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addFeature())}
-              />
-              <Button type="button" onClick={addFeature} variant="outline">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
 
-            <div className="flex flex-wrap gap-2">
-              {formData.features.map((feature, index) => (
-                <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                  {feature}
-                  <button
-                    type="button"
-                    onClick={() => removeFeature(index)}
-                    className="ml-1 hover:text-red-600"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          </div>
 
           {/* Configurações */}
           <div className="space-y-4">
