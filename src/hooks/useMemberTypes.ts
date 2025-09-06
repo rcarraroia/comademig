@@ -47,30 +47,42 @@ export const useMemberTypes = () => {
   const { data: memberTypes = [], isLoading, error, refetch } = useSupabaseQuery(
     ['member-types'],
     async (): Promise<MemberType[]> => {
-      const { data, error } = await supabase
+      // Buscar tipos de membro
+      const { data: types, error: typesError } = await supabase
         .from('member_types')
-        .select(`
-          *,
-          profiles!member_type_id(count),
-          member_type_subscriptions(count)
-        `)
-        .eq('is_active', true)
+        .select('*')
         .order('sort_order', { ascending: true })
         .order('name', { ascending: true });
       
-      if (error) throw error;
+      if (typesError) throw typesError;
       
-      // Debug: verificar dados carregados
-      console.log('Dados carregados do Supabase:', data);
+      // Para cada tipo, buscar contadores reais
+      const typesWithCounts = await Promise.all(
+        (types || []).map(async (type) => {
+          // Contar usuários reais associados a este tipo
+          const { count: usersCount } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('tipo_membro', type.name.toLowerCase());
+          
+          // Contar assinaturas reais associadas a este tipo
+          const { count: subscriptionsCount } = await supabase
+            .from('user_subscriptions')
+            .select('*', { count: 'exact', head: true })
+            .eq('member_type_id', type.id);
+          
+          return {
+            ...type,
+            _count: {
+              users: usersCount || 0,
+              subscriptions: subscriptionsCount || 0
+            }
+          };
+        })
+      );
       
-      // Processar contadores
-      return (data || []).map(type => ({
-        ...type,
-        _count: {
-          users: type.profiles?.length || 0,
-          subscriptions: type.member_type_subscriptions?.length || 0
-        }
-      }));
+      console.log('Tipos de membro com contadores reais:', typesWithCounts);
+      return typesWithCounts;
     }
   ); 
  // Mutation para criar tipo de membro
@@ -155,14 +167,35 @@ export const useMemberTypes = () => {
   // Mutation para deletar tipo de membro
   const deleteMemberType = useSupabaseMutation(
     async (id: string) => {
-      // Verificar se há usuários associados
-      const { data: usersCount } = await supabase
+      // Buscar o tipo para verificar o nome
+      const { data: memberType } = await supabase
+        .from('member_types')
+        .select('name')
+        .eq('id', id)
+        .single();
+
+      if (!memberType) {
+        throw new Error('Tipo de membro não encontrado');
+      }
+
+      // Verificar se há usuários associados usando o campo tipo_membro
+      const { count: usersCount } = await supabase
         .from('profiles')
-        .select('id', { count: 'exact', head: true })
-        .eq('member_type_id', id);
+        .select('*', { count: 'exact', head: true })
+        .eq('tipo_membro', memberType.name.toLowerCase());
 
       if (usersCount && usersCount > 0) {
-        throw new Error('Não é possível excluir este tipo pois há usuários associados');
+        throw new Error(`Não é possível excluir este tipo pois há ${usersCount} usuário(s) associado(s)`);
+      }
+
+      // Verificar se há assinaturas associadas
+      const { count: subscriptionsCount } = await supabase
+        .from('user_subscriptions')
+        .select('*', { count: 'exact', head: true })
+        .eq('member_type_id', id);
+
+      if (subscriptionsCount && subscriptionsCount > 0) {
+        throw new Error(`Não é possível excluir este tipo pois há ${subscriptionsCount} assinatura(s) associada(s)`);
       }
 
       const { error } = await supabase
