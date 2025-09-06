@@ -11,7 +11,7 @@ interface DeletePlanModalProps {
   plan: SubscriptionPlan | null;
 }
 
-export const DeletePlanModal = ({ isOpen, onClose, plan }: DeletePlanModalProps) => {
+const DeletePlanModal = ({ isOpen, onClose, plan }: DeletePlanModalProps) => {
   const { deletePlan } = useSubscriptionPlans();
 
   if (!plan) return null;
