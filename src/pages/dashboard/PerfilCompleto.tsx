@@ -124,6 +124,22 @@ const PerfilCompleto = () => {
         data_ordenacao: profile.data_ordenacao || "",
         bio: profile.bio || "",
       });
+
+      // Carregar configurações do perfil público
+      setPreferences(prev => ({
+        ...prev,
+        privacy: {
+          ...prev.privacy,
+          showContact: profile.show_contact || false,
+          showMinistry: profile.show_ministry || true,
+        }
+      }));
+
+      setPublicProfile(prev => ({
+        ...prev,
+        bio: profile.bio || "",
+        enabled: profile.show_contact !== null || profile.show_ministry !== null,
+      }));
     }
   }, [profile]);
 
@@ -166,6 +182,43 @@ const PerfilCompleto = () => {
       });
     } finally {
       setLoading('save', false);
+    }
+  };
+
+  const handleSavePublicProfile = async () => {
+    setLoading('savePublic', true);
+    
+    try {
+      // Salvar dados do perfil público
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          show_contact: preferences.privacy.showContact,
+          show_ministry: preferences.privacy.showMinistry,
+          bio: publicProfile.bio,
+          // Adicionar outros campos do perfil público conforme necessário
+        })
+        .eq('id', user?.id);
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      announceToScreenReader("Perfil público salvo com sucesso");
+      
+      toast({
+        title: "Perfil público atualizado",
+        description: "Suas configurações de perfil público foram salvas com sucesso",
+      });
+      
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar perfil público",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading('savePublic', false);
     }
   };
 
@@ -732,6 +785,48 @@ const PerfilCompleto = () => {
                     </p>
                   </div>
 
+                  {/* Configurações de Privacidade */}
+                  <div>
+                    <Label>Configurações de Privacidade</Label>
+                    <div className="mt-2 space-y-4">
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <h4 className="font-medium">Mostrar Informações de Contato</h4>
+                          <p className="text-sm text-gray-600">
+                            Exibir telefone e email no perfil público
+                          </p>
+                        </div>
+                        <Switch 
+                          checked={preferences.privacy.showContact} 
+                          onCheckedChange={(value) => 
+                            setPreferences(prev => ({
+                              ...prev,
+                              privacy: { ...prev.privacy, showContact: value }
+                            }))
+                          }
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <h4 className="font-medium">Mostrar Informações Ministeriais</h4>
+                          <p className="text-sm text-gray-600">
+                            Exibir igreja, cargo e data de ordenação no perfil público
+                          </p>
+                        </div>
+                        <Switch 
+                          checked={preferences.privacy.showMinistry} 
+                          onCheckedChange={(value) => 
+                            setPreferences(prev => ({
+                              ...prev,
+                              privacy: { ...prev.privacy, showMinistry: value }
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Links sociais */}
                   <div>
                     <Label>Links e Redes Sociais</Label>
@@ -831,11 +926,20 @@ const PerfilCompleto = () => {
                     </Button>
                     <Button 
                       variant="outline"
-                      onClick={handleSave}
-                      disabled={isLoading('save')}
+                      onClick={handleSavePublicProfile}
+                      disabled={isLoading('savePublic')}
                     >
-                      <Save className="mr-2 h-4 w-4" />
-                      Salvar Alterações
+                      {isLoading('savePublic') ? (
+                        <>
+                          <LoadingSpinner size="sm" className="mr-2" />
+                          Salvando...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Salvar Alterações
+                        </>
+                      )}
                     </Button>
                   </div>
                 </>
