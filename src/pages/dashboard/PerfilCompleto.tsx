@@ -137,7 +137,14 @@ const PerfilCompleto = () => {
     setLoading('save', true);
     
     try {
-      const { error } = await updateProfile(formData);
+      // Formatar datas corretamente antes de salvar
+      const dataToSave = {
+        ...formData,
+        data_nascimento: formData.data_nascimento || null,
+        data_ordenacao: formData.data_ordenacao || null,
+      };
+      
+      const { error } = await updateProfile(dataToSave);
       
       if (error) {
         throw new Error(error.message);
@@ -182,6 +189,33 @@ const PerfilCompleto = () => {
     }
     setIsEditing(false);
     announceToScreenReader("Edição cancelada");
+  };
+
+  const handleChangePassword = async () => {
+    try {
+      // Implementar mudança de senha via Supabase Auth
+      const { error } = await supabase.auth.resetPasswordForEmail(user?.email || '', {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Email enviado",
+        description: "Verifique seu email para redefinir a senha",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleViewPublicProfile = () => {
+    // Abrir perfil público em nova aba
+    window.open(`/perfil-publico/${user?.id}`, '_blank');
   };
 
   const handleDownloadData = async () => {
@@ -659,10 +693,20 @@ const PerfilCompleto = () => {
                     <div className="mt-2 flex items-center gap-4">
                       <UserAvatar size="lg" />
                       <div className="flex-1">
-                        <Button variant="outline" size="sm">
-                          <Camera className="mr-2 h-4 w-4" />
-                          Alterar Foto
-                        </Button>
+                        <PhotoUpload 
+                          onUploadSuccess={(url) => {
+                            setFormData(prev => ({ ...prev, foto_url: url }));
+                            toast({
+                              title: "Foto atualizada",
+                              description: "Sua foto de perfil foi atualizada com sucesso",
+                            });
+                          }}
+                        >
+                          <Button variant="outline" size="sm">
+                            <Camera className="mr-2 h-4 w-4" />
+                            Alterar Foto
+                          </Button>
+                        </PhotoUpload>
                         <p className="text-xs text-gray-500 mt-1">
                           Use uma foto diferente da sua carteira digital, se desejar
                         </p>
@@ -779,13 +823,17 @@ const PerfilCompleto = () => {
                   {/* Ações do perfil público */}
                   <div className="flex gap-3">
                     <Button 
-                      onClick={() => window.open(`/dashboard/perfil-publico/${user?.id}`, '_blank')}
+                      onClick={handleViewPublicProfile}
                       className="bg-comademig-blue hover:bg-comademig-blue/90"
                     >
                       <Eye className="mr-2 h-4 w-4" />
                       Visualizar Perfil Público
                     </Button>
-                    <Button variant="outline">
+                    <Button 
+                      variant="outline"
+                      onClick={handleSave}
+                      disabled={isLoading('save')}
+                    >
                       <Save className="mr-2 h-4 w-4" />
                       Salvar Alterações
                     </Button>
@@ -955,7 +1003,10 @@ const PerfilCompleto = () => {
                   <Input id="new-password" type="password" placeholder="••••••••" />
                 </div>
               </div>
-              <Button className="bg-comademig-blue hover:bg-comademig-blue/90">
+              <Button 
+                className="bg-comademig-blue hover:bg-comademig-blue/90"
+                onClick={handleChangePassword}
+              >
                 <Lock className="mr-2 h-4 w-4" />
                 Alterar Senha
               </Button>

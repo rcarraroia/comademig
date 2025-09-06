@@ -34,21 +34,7 @@ export const useProfilePhoto = () => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/profile.${fileExt}`;
 
-      // Verificar se bucket existe, se não, criar
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const avatarBucket = buckets?.find(bucket => bucket.name === 'avatars');
-
-      if (!avatarBucket) {
-        const { error: bucketError } = await supabase.storage.createBucket('avatars', {
-          public: true,
-          allowedMimeTypes: ['image/*'],
-          fileSizeLimit: 5242880 // 5MB
-        });
-
-        if (bucketError) {
-          console.error('Erro ao criar bucket:', bucketError);
-        }
-      }
+      // O bucket 'avatars' deve existir (criado via migração)
 
       // Upload do arquivo
       const { error: uploadError } = await supabase.storage
