@@ -123,3 +123,5 @@ export const DeletePlanModal = ({ isOpen, onClose, plan }: DeletePlanModalProps)
     </Dialog>
   );
 };
+
+export default DeletePlanModal;

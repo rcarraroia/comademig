@@ -8,8 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, Users, DollarSign, Calendar } from 'lucide-react';
 import { useMemberTypes } from '@/hooks/useMemberTypes';
 import { useSubscriptionPlans, useSubscriptionStats, SubscriptionPlan } from '@/hooks/useSubscriptions';
-import { SubscriptionPlanModal } from '@/components/admin/subscriptions/SubscriptionPlanModal';
-import { DeletePlanModal } from '@/components/admin/subscriptions/DeletePlanModal';
+import SubscriptionPlanModal from '@/components/admin/subscriptions/SubscriptionPlanModal';
+import DeletePlanModal from '@/components/admin/subscriptions/DeletePlanModal';
 
 const Subscriptions = () => {
   const { hasPermission, loading } = useAuth();
