@@ -86,7 +86,7 @@ const HomeContentEdit = () => {
 
     // Atualizar formulário quando o conteúdo carregar (apenas uma vez)
     const [hasInitialized, setHasInitialized] = useState(false);
-    
+
     useEffect(() => {
         if (content && !hasInitialized) {
             reset(content);
@@ -101,7 +101,7 @@ const HomeContentEdit = () => {
                 pageName: 'home',
                 content: data
             });
-            
+
             toast.success('Conteúdo da página inicial salvo com sucesso!');
         } catch (error) {
             console.error('Erro ao salvar conteúdo:', error);
@@ -165,8 +165,8 @@ const HomeContentEdit = () => {
                         <p className="text-gray-600">Configure o conteúdo da página inicial do site</p>
                     </div>
                 </div>
-                
-                <Button 
+
+                <Button
                     onClick={handleSubmit(onSubmit)}
                     disabled={isSaving || !isDirty}
                     className="bg-comademig-blue hover:bg-comademig-blue/90"
@@ -364,9 +364,9 @@ const HomeContentEdit = () => {
                                     {watch(`destaques_convencao.${index}.imagem_evento`) && (
                                         <div className="mt-2">
                                             <p className="text-sm text-green-600">✅ Imagem carregada com sucesso!</p>
-                                            <img 
-                                                src={watch(`destaques_convencao.${index}.imagem_evento`)} 
-                                                alt="Preview" 
+                                            <img
+                                                src={watch(`destaques_convencao.${index}.imagem_evento`)}
+                                                alt="Preview"
                                                 className="w-20 h-20 object-cover rounded border mt-1"
                                             />
                                         </div>
@@ -474,9 +474,9 @@ const HomeContentEdit = () => {
                                     {watch(`noticias_recentes.${index}.imagem_noticia`) && (
                                         <div className="mt-2">
                                             <p className="text-sm text-green-600">✅ Imagem carregada com sucesso!</p>
-                                            <img 
-                                                src={watch(`noticias_recentes.${index}.imagem_noticia`)} 
-                                                alt="Preview" 
+                                            <img
+                                                src={watch(`noticias_recentes.${index}.imagem_noticia`)}
+                                                alt="Preview"
                                                 className="w-20 h-20 object-cover rounded border mt-1"
                                             />
                                         </div>
