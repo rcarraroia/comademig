@@ -245,24 +245,30 @@ const PerfilCompleto = () => {
   };
 
   const handleChangePassword = async () => {
+    setLoading('changePassword', true);
+    
     try {
-      // Implementar mudança de senha via Supabase Auth
       const { error } = await supabase.auth.resetPasswordForEmail(user?.email || '', {
         redirectTo: `${window.location.origin}/reset-password`
       });
       
       if (error) throw error;
       
+      announceToScreenReader("Email de redefinição de senha enviado");
+      
       toast({
-        title: "Email enviado",
-        description: "Verifique seu email para redefinir a senha",
+        title: "Email enviado com sucesso!",
+        description: "Verifique sua caixa de entrada para redefinir sua senha. O link expira em 1 hora.",
       });
     } catch (error: any) {
+      console.error('Erro ao enviar email de reset:', error);
       toast({
-        title: "Erro",
-        description: error.message,
+        title: "Erro ao enviar email",
+        description: error.message || "Não foi possível enviar o email. Tente novamente.",
         variant: "destructive",
       });
+    } finally {
+      setLoading('changePassword', false);
     }
   };
 
@@ -1095,25 +1101,58 @@ const PerfilCompleto = () => {
                 <Lock size={20} />
                 Segurança da Conta
               </CardTitle>
+              <p className="text-sm text-gray-600">
+                Gerencie a segurança da sua conta
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="current-password">Senha Atual</Label>
-                  <Input id="current-password" type="password" placeholder="••••••••" />
+              <Alert className="border-blue-200 bg-blue-50">
+                <Lock className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800">
+                  <strong>Redefinição Segura de Senha</strong>
+                  <p className="mt-1 text-sm">
+                    Por segurança, enviaremos um link para seu email para redefinir sua senha. 
+                    Este método garante que apenas você possa alterar sua senha.
+                  </p>
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-3">
+                <div className="p-4 border rounded-lg bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium">Email da conta</h4>
+                      <p className="text-sm text-gray-600">{user?.email}</p>
+                    </div>
+                    <Badge variant="outline">Verificado</Badge>
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="new-password">Nova Senha</Label>
-                  <Input id="new-password" type="password" placeholder="••••••••" />
-                </div>
+
+                <Button 
+                  className="bg-comademig-blue hover:bg-comademig-blue/90"
+                  onClick={handleChangePassword}
+                  disabled={isLoading('changePassword')}
+                >
+                  {isLoading('changePassword') ? (
+                    <>
+                      <LoadingSpinner size="sm" className="mr-2" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="mr-2 h-4 w-4" />
+                      Enviar Link para Redefinir Senha
+                    </>
+                  )}
+                </Button>
               </div>
-              <Button 
-                className="bg-comademig-blue hover:bg-comademig-blue/90"
-                onClick={handleChangePassword}
-              >
-                <Lock className="mr-2 h-4 w-4" />
-                Alterar Senha
-              </Button>
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-xs text-yellow-800">
+                  <strong>Como funciona:</strong> Ao clicar no botão acima, você receberá um email 
+                  com um link seguro para redefinir sua senha. O link expira em 1 hora por segurança.
+                </p>
+              </div>
             </CardContent>
           </Card>
 
