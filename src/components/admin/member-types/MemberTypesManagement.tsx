@@ -133,7 +133,6 @@ const MemberTypesManagement = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => handleDelete(type)}
-                    disabled={(type._count?.users || 0) > 0}
                   >
                     Excluir
                   </Button>
