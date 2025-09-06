@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAsaasPayments, PaymentData } from '@/hooks/useAsaasPayments';
 import { useMemberTypes } from '@/hooks/useMemberTypes';
-import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
+import { useSubscriptionPlans } from '@/hooks/useSubscriptions';
 import { CreditCard, FileText, Smartphone, CheckCircle, Info, Users } from 'lucide-react';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
@@ -30,11 +30,15 @@ export const PaymentForm = ({
   showMemberTypeSelection = false 
 }: PaymentFormProps) => {
   const { createPayment, loading } = useAsaasPayments();
-  const { memberTypes, isLoading: loadingMemberTypes } = useMemberTypes();
+  const { memberTypes: allMemberTypes, isLoading: loadingMemberTypes } = useMemberTypes();
+  
+  // Filtrar apenas tipos ativos para o formulário de registro
+  const memberTypes = allMemberTypes.filter(type => type.is_active);
+  const { plans, isLoading: loadingPlans } = useSubscriptionPlans();
   
   // Debug: verificar os tipos de membro carregados
   console.log('Member Types carregados:', memberTypes);
-  const { getPlansForMemberType, formatPrice } = useSubscriptionPlans();
+  console.log('Plans carregados:', plans);
   const [paymentResult, setPaymentResult] = useState<any>(null);
   const [selectedMemberType, setSelectedMemberType] = useState<string>('');
   const [selectedPlan, setSelectedPlan] = useState<string>('');
@@ -61,17 +65,29 @@ export const PaymentForm = ({
     affiliateId: defaultData?.affiliateId
   });
 
+  // Função para formatar preços
+  const formatPrice = (price: number, recurrence: string) => {
+    const formatted = new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(price);
+
+    const cycleMap = {
+      monthly: 'mês',
+      semestral: 'semestre',
+      annual: 'ano'
+    };
+
+    return `${formatted}/${cycleMap[recurrence as keyof typeof cycleMap] || 'período'}`;
+  };
+
   // Carregar planos quando o tipo de membro for selecionado
   useEffect(() => {
     if (selectedMemberType && showMemberTypeSelection) {
-      loadPlansForMemberType(selectedMemberType);
-    }
-  }, [selectedMemberType, showMemberTypeSelection]);
-
-  const loadPlansForMemberType = async (memberTypeId: string) => {
-    try {
-      const plans = await getPlansForMemberType(memberTypeId);
-      setAvailablePlans(plans);
+      // Para agora, mostrar todos os planos ativos
+      // TODO: Implementar associação entre tipos de membro e planos
+      const activePlans = plans.filter(plan => plan.is_active);
+      setAvailablePlans(activePlans);
       
       // Reset selected plan when member type changes
       setSelectedPlan('');
@@ -80,11 +96,8 @@ export const PaymentForm = ({
       if (showMemberTypeSelection) {
         setFormData(prev => ({ ...prev, value: 0 }));
       }
-    } catch (error) {
-      console.error('Erro ao carregar planos:', error);
-      setAvailablePlans([]);
     }
-  };
+  }, [selectedMemberType, showMemberTypeSelection, plans]);
 
   // Atualizar valor quando plano for selecionado
   useEffect(() => {
@@ -295,7 +308,7 @@ export const PaymentForm = ({
                   <Select 
                     value={selectedPlan} 
                     onValueChange={setSelectedPlan}
-                    disabled={!selectedMemberType || availablePlans.length === 0}
+                    disabled={!selectedMemberType || availablePlans.length === 0 || loadingPlans}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione um plano" />
@@ -313,7 +326,10 @@ export const PaymentForm = ({
                       ))}
                     </SelectContent>
                   </Select>
-                  {selectedMemberType && availablePlans.length === 0 && (
+                  {loadingPlans && (
+                    <p className="text-sm text-gray-500 mt-1">Carregando planos...</p>
+                  )}
+                  {!loadingPlans && selectedMemberType && availablePlans.length === 0 && (
                     <p className="text-sm text-orange-600 mt-1">
                       Nenhum plano disponível para este cargo
                     </p>
