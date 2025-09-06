@@ -215,7 +215,7 @@ const PerfilCompleto = () => {
 
   const handleViewPublicProfile = () => {
     // Abrir perfil público em nova aba
-    window.open(`/perfil-publico/${user?.id}`, '_blank');
+    window.open(`/dashboard/perfil-publico/${user?.id}`, '_blank');
   };
 
   const handleDownloadData = async () => {
@@ -800,7 +800,7 @@ const PerfilCompleto = () => {
                     <h4 className="font-medium text-blue-900 mb-2">URL do Seu Perfil Público</h4>
                     <div className="flex items-center space-x-2">
                       <Input
-                        value={`${window.location.origin}/perfil-publico/${user?.id}`}
+                        value={`${window.location.origin}/dashboard/perfil-publico/${user?.id}`}
                         readOnly
                         className="bg-white text-sm font-mono"
                       />
@@ -808,7 +808,7 @@ const PerfilCompleto = () => {
                         size="sm" 
                         variant="outline"
                         onClick={() => {
-                          navigator.clipboard.writeText(`${window.location.origin}/perfil-publico/${user?.id}`);
+                          navigator.clipboard.writeText(`${window.location.origin}/dashboard/perfil-publico/${user?.id}`);
                           toast({
                             title: "URL copiada",
                             description: "Link do perfil copiado para a área de transferência",
