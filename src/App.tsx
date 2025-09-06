@@ -95,6 +95,9 @@ function App() {
             <Route path="/validar-carteira/:numeroCarteira" element={<ValidarCarteira />} />
             <Route path="/validar-certificado/:numeroCertificado" element={<ValidarCertificado />} />
             <Route path="/validar-certidao/:numeroProtocolo" element={<ValidarCertidao />} />
+            
+            {/* Public profile route */}
+            <Route path="/perfil-publico/:userId" element={<PerfilPublico />} />
 
             {/* Protected routes */}
             <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
@@ -128,7 +131,6 @@ function App() {
               <Route path="/dashboard/admin/content/multimidia-editor" element={<MultimidiaContentEdit />} />
               <Route path="/dashboard/admin/content/contato-editor" element={<ContatoContentEdit />} />
               <Route path="/dashboard/admin/content/noticias-editor" element={<NoticiasContentEdit />} />
-              <Route path="/dashboard/perfil-publico/:userId?" element={<PerfilPublico />} />
               <Route path="/dashboard/perfil-completo" element={<PerfilCompleto />} />
             </Route>
 

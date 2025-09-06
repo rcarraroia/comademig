@@ -111,7 +111,7 @@ export default function PerfilPublico() {
   };
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/dashboard/perfil-publico/${publicProfile?.id}`;
+    const url = `${window.location.origin}/perfil-publico/${publicProfile?.id}`;
     
     if (navigator.share) {
       try {
