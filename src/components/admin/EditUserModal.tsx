@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,14 +24,29 @@ export const EditUserModal = ({ user, isOpen, onClose, onSuccess }: EditUserModa
   const memberTypes = getTypesWithFallback();
   
   const [formData, setFormData] = useState({
-    nome_completo: user?.nome_completo || "",
-    cpf: user?.cpf || "",
-    telefone: user?.telefone || "",
-    igreja: user?.igreja || "",
-    cargo: user?.cargo || "",
-    status: user?.status || "pendente",
-    tipo_membro: user?.tipo_membro || "membro",
+    nome_completo: "",
+    cpf: "",
+    telefone: "",
+    igreja: "",
+    cargo: "",
+    status: "pendente",
+    tipo_membro: "membro",
   });
+
+  // Atualizar formulário quando o usuário mudar
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        nome_completo: user.nome_completo || "",
+        cpf: user.cpf || "",
+        telefone: user.telefone || "",
+        igreja: user.igreja || "",
+        cargo: user.cargo || "",
+        status: user.status || "pendente",
+        tipo_membro: user.tipo_membro || "membro",
+      });
+    }
+  }, [user]);
 
   const updateUserMutation = useSupabaseMutation(
     async (data: any) => {
