@@ -81,7 +81,7 @@ const secaoSobreSchema = z.object({
 
 export const aboutContentSchema = z.object({
   titulo: z.string().min(1, "Título principal é obrigatório").max(100, "Título muito longo"),
-  descricao: z.string().min(1, "Descrição é obrigatória").max(300, "Descrição muito longa"),
+  descricao: z.string().min(1, "Descrição é obrigatória").max(2000, "Descrição muito longa"),
   missao: z.object({
     titulo: z.string().min(1, "Título da missão é obrigatório"),
     texto: z.string().min(1, "Texto da missão é obrigatório").max(500, "Texto da missão muito longo")
