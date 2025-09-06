@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { X, Home, User, CreditCard, FileText, Calendar, MessageSquare, HelpCircle, Settings, Globe, Building, Users, Bell, Activity } from "lucide-react";
+import { X, Home, User, CreditCard, FileText, HelpCircle, Settings, Globe, Building, Users, Bell, Activity, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -20,9 +20,7 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
     { path: "/dashboard/financeiro", label: "Financeiro", icon: FileText },
     { path: "/dashboard/certidoes", label: "Certidões", icon: FileText },
     { path: "/dashboard/regularizacao", label: "Regularização", icon: Building },
-    { path: "/dashboard/eventos", label: "Eventos", icon: Calendar },
     { path: "/dashboard/afiliados", label: "Afiliados", icon: Users },
-    { path: "/dashboard/comunicacao", label: "Comunicação", icon: MessageSquare },
     { path: "/dashboard/notifications", label: "Notificações", icon: Bell },
     { path: "/dashboard/suporte", label: "Suporte", icon: HelpCircle },
   ];
