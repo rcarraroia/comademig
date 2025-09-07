@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/hooks/useNotifications';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,7 +44,14 @@ interface NotificationSettings {
 
 export default function Notifications() {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const { 
+    notifications, 
+    unreadCount, 
+    isLoading: loading, 
+    markAsRead, 
+    markAllAsRead 
+  } = useNotifications();
+  
   const [settings, setSettings] = useState<NotificationSettings>({
     email_notifications: true,
     push_notifications: true,
@@ -52,75 +60,10 @@ export default function Notifications() {
     system_updates: true,
     communication_messages: true
   });
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadNotifications();
     loadSettings();
   }, []);
-
-  const loadNotifications = async () => {
-    setLoading(true);
-    try {
-      // Simular dados (implementar com Supabase depois)
-      const mockNotifications: Notification[] = [
-        {
-          id: '1',
-          title: 'Pagamento Aprovado',
-          message: 'Seu pagamento de R$ 150,00 foi aprovado com sucesso.',
-          type: 'success',
-          category: 'financial',
-          read: false,
-          created_at: '2024-08-26T10:30:00Z'
-        },
-        {
-          id: '2',
-          title: 'Novo Evento Disponível',
-          message: 'Congresso Nacional de Medicina 2024 - Inscrições abertas!',
-          type: 'info',
-          category: 'events',
-          read: false,
-          created_at: '2024-08-26T09:15:00Z',
-          action_url: '/dashboard/eventos'
-        },
-        {
-          id: '3',
-          title: 'Documentação Pendente',
-          message: 'Você possui documentos pendentes para regularização.',
-          type: 'warning',
-          category: 'system',
-          read: true,
-          created_at: '2024-08-25T16:45:00Z',
-          action_url: '/dashboard/regularizacao'
-        },
-        {
-          id: '4',
-          title: 'Nova Mensagem',
-          message: 'Você recebeu uma nova mensagem do suporte.',
-          type: 'info',
-          category: 'communication',
-          read: true,
-          created_at: '2024-08-25T14:20:00Z',
-          action_url: '/dashboard/comunicacao'
-        },
-        {
-          id: '5',
-          title: 'Lembrete de Pagamento',
-          message: 'Sua anuidade vence em 7 dias. Regularize sua situação.',
-          type: 'warning',
-          category: 'financial',
-          read: false,
-          created_at: '2024-08-24T08:00:00Z',
-          action_url: '/dashboard/financeiro'
-        }
-      ];
-      setNotifications(mockNotifications);
-    } catch (error) {
-      console.error('Erro ao carregar notificações:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadSettings = async () => {
     // Carregar configurações do usuário (implementar com Supabase)
@@ -157,21 +100,25 @@ export default function Notifications() {
     );
   };
 
-  const markAsRead = async (notificationId: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
-    );
-    // Implementar atualização no Supabase
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await markAsRead.mutateAsync(notificationId);
+    } catch (error) {
+      console.error('Erro ao marcar como lida:', error);
+    }
   };
 
-  const markAllAsRead = async () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    // Implementar atualização no Supabase
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsRead.mutateAsync();
+    } catch (error) {
+      console.error('Erro ao marcar todas como lidas:', error);
+    }
   };
 
   const deleteNotification = async (notificationId: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== notificationId));
-    // Implementar remoção no Supabase
+    // TODO: Implementar remoção no Supabase
+    console.log('Deletar notificação:', notificationId);
   };
 
   const updateSettings = async (key: keyof NotificationSettings, value: boolean) => {
@@ -179,7 +126,7 @@ export default function Notifications() {
     // Implementar atualização no Supabase
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // unreadCount já vem do hook
   const filteredNotifications = {
     all: notifications,
     unread: notifications.filter(n => !n.read),
@@ -211,7 +158,7 @@ export default function Notifications() {
               {unreadCount} não lidas
             </Badge>
           )}
-          <Button variant="outline" onClick={markAllAsRead}>
+          <Button variant="outline" onClick={handleMarkAllAsRead} disabled={markAllAsRead.isPending}>
             <Check className="w-4 h-4 mr-2" />
             Marcar todas como lidas
           </Button>
@@ -270,7 +217,8 @@ export default function Notifications() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => markAsRead(notification.id)}
+                          onClick={() => handleMarkAsRead(notification.id)}
+                          disabled={markAsRead.isPending}
                         >
                           <CheckCircle className="w-4 h-4" />
                         </Button>
@@ -336,7 +284,8 @@ export default function Notifications() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => markAsRead(notification.id)}
+                        onClick={() => handleMarkAsRead(notification.id)}
+                        disabled={markAsRead.isPending}
                       >
                         <CheckCircle className="w-4 h-4" />
                       </Button>

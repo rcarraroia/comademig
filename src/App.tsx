@@ -15,6 +15,8 @@ import Multimidia from '@/pages/Multimidia';
 import Contato from '@/pages/Contato';
 import Filiacao from '@/pages/Filiacao';
 import Auth from '@/pages/Auth';
+import EsqueciSenha from '@/pages/EsqueciSenha';
+import ResetPassword from '@/pages/ResetPassword';
 import Checkout from '@/pages/Checkout';
 import PagamentoSucesso from '@/pages/PagamentoSucesso';
 import ValidarCarteira from '@/pages/ValidarCarteira';
@@ -42,6 +44,7 @@ import AdminUsersPage from '@/pages/dashboard/AdminUsers';
 import AdminSupportPage from '@/pages/dashboard/AdminSupportPage';
 import MemberTypes from '@/pages/dashboard/admin/MemberTypes';
 import Subscriptions from '@/pages/dashboard/admin/Subscriptions';
+import NotificationManagement from '@/pages/dashboard/admin/NotificationManagement';
 import ContentManagement from '@/pages/dashboard/ContentManagement';
 import SystemDiagnosticsPage from '@/pages/dashboard/admin/SystemDiagnostics';
 import ContentEdit from '@/pages/dashboard/ContentEdit';
@@ -90,12 +93,14 @@ function App() {
             <Route path="/privacidade" element={<Layout><Privacidade /></Layout>} />
             <Route path="/termos" element={<Layout><Termos /></Layout>} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/pagamento-sucesso" element={<PagamentoSucesso />} />
             <Route path="/validar-carteira/:numeroCarteira" element={<ValidarCarteira />} />
             <Route path="/validar-certificado/:numeroCertificado" element={<ValidarCertificado />} />
             <Route path="/validar-certidao/:numeroProtocolo" element={<ValidarCertidao />} />
-            
+
             {/* Public profile route */}
             <Route path="/perfil-publico/:userId" element={<PerfilPublico />} />
 
@@ -119,6 +124,7 @@ function App() {
               <Route path="/dashboard/admin/usuarios" element={<AdminUsersPage />} />
               <Route path="/dashboard/admin/member-types" element={<MemberTypes />} />
               <Route path="/dashboard/admin/subscriptions" element={<Subscriptions />} />
+              <Route path="/dashboard/admin/notifications" element={<NotificationManagement />} />
               <Route path="/dashboard/admin/diagnostics" element={<SystemDiagnosticsPage />} />
               <Route path="/dashboard/admin/suporte" element={<AdminSupportPage />} />
               <Route path="/dashboard/admin/content" element={<ContentManagement />} />

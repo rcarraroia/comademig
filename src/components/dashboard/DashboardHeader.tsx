@@ -3,6 +3,7 @@ import { Bell, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserAvatar } from "@/components/common/UserAvatar";
+import { NotificationDropdown } from "@/components/communication/NotificationDropdown";
 
 interface DashboardHeaderProps {
   onMenuToggle: () => void;
@@ -28,12 +29,7 @@ export default function DashboardHeader({ onMenuToggle }: DashboardHeaderProps) 
       </div>
       
       <div className="flex items-center space-x-4">
-        <Button variant="ghost" size="sm" className="relative">
-          <Bell size={20} />
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-            3
-          </span>
-        </Button>
+        <NotificationDropdown />
         
         <div className="flex items-center space-x-2">
           <UserAvatar size="md" />
