@@ -26,20 +26,20 @@ WHERE tablename = 'notifications'
 AND schemaname = 'public'
 AND cmd = 'INSERT';
 
--- 4. Testar se agora pode criar notificação (como admin)
-INSERT INTO public.notifications (user_id, title, message, type, read)
-VALUES (
-  auth.uid(), 
-  'Teste Admin - Política Corrigida', 
-  'Se você está vendo esta notificação, a política RLS foi corrigida com sucesso!', 
-  'success', 
-  false
-);
-
--- 5. Verificar se a notificação foi criada
+-- 4. Verificar se auth.uid() está funcionando
 SELECT 
-  id, title, message, created_at
-FROM public.notifications 
-WHERE title LIKE '%Teste Admin%'
-ORDER BY created_at DESC
-LIMIT 1;
+  auth.uid() as current_user_id,
+  CASE 
+    WHEN auth.uid() IS NULL THEN 'Não logado - Execute este script logado no painel'
+    ELSE 'Logado - Política deve funcionar agora'
+  END as status_auth;
+
+-- 5. Se quiser testar manualmente, use este comando (substitua o UUID pelo seu ID):
+-- INSERT INTO public.notifications (user_id, title, message, type, read)
+-- VALUES (
+--   'c2e01b5c-f6af-4906-94e3-ea7cdf1ec02a',  -- Seu ID de usuário
+--   'Teste Admin - Política Corrigida', 
+--   'Se você está vendo esta notificação, a política RLS foi corrigida com sucesso!', 
+--   'success', 
+--   false
+-- );
