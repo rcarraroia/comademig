@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMemberTypes } from '@/hooks/useMemberTypes';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +9,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,13 +16,9 @@ import {
   Bell, 
   Send, 
   Users, 
-  User, 
   AlertTriangle,
   CheckCircle,
   Info,
-  DollarSign,
-  Calendar,
-  MessageSquare,
   Plus,
   Edit,
   Trash2,
@@ -35,7 +31,6 @@ interface NotificationTemplate {
   title: string;
   message: string;
   type: 'info' | 'success' | 'warning' | 'error';
-  category: 'system' | 'financial' | 'events' | 'communication';
   active: boolean;
   created_at: string;
 }
@@ -43,7 +38,6 @@ interface NotificationTemplate {
 interface NotificationRecipient {
   id: string;
   nome_completo: string;
-  email: string;
   status: string;
   tipo_membro: string;
 }
@@ -55,64 +49,109 @@ export default function NotificationManagement() {
   const [loading, setLoading] = useState(false);
   const [templates, setTemplates] = useState<NotificationTemplate[]>([]);
   const [recipients, setRecipients] = useState<NotificationRecipient[]>([]);
+  const [memberTypeOptions, setMemberTypeOptions] = useState<string[]>([]);
   
   // Form states
   const [notificationForm, setNotificationForm] = useState({
     title: '',
     message: '',
     type: 'info' as const,
-    category: 'system' as const,
     recipients: 'all' as 'all' | 'specific' | 'type',
     specificUsers: [] as string[],
     memberType: '',
-    scheduleDate: '',
-    saveAsTemplate: false,
-    templateName: ''
+    actionUrl: ''
   });
 
   const [templateForm, setTemplateForm] = useState({
     name: '',
     title: '',
     message: '',
-    type: 'info' as const,
-    category: 'system' as const
+    type: 'info' as const
   });
 
   useEffect(() => {
-    loadTemplates();
     loadRecipients();
+    loadMemberTypes();
+    loadTemplates();
   }, []);
+
+  const loadRecipients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, nome_completo, status, tipo_membro')
+        .eq('status', 'ativo')
+        .order('nome_completo');
+
+      if (error) throw error;
+      
+      const formattedRecipients = data?.map(profile => ({
+        id: profile.id,
+        nome_completo: profile.nome_completo || 'Nome não informado',
+        status: profile.status || 'ativo',
+        tipo_membro: profile.tipo_membro || 'membro'
+      })) || [];
+
+      setRecipients(formattedRecipients);
+      console.log('Destinatários carregados:', formattedRecipients.length);
+    } catch (error) {
+      console.error('Erro ao carregar destinatários:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar a lista de usuários",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const loadMemberTypes = async () => {
+    try {
+      // Buscar tipos únicos da tabela profiles
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('tipo_membro')
+        .not('tipo_membro', 'is', null)
+        .eq('status', 'ativo');
+
+      if (error) throw error;
+
+      const uniqueTypes = [...new Set(data?.map(p => p.tipo_membro).filter(Boolean))];
+      setMemberTypeOptions(uniqueTypes);
+      console.log('Tipos de membro encontrados:', uniqueTypes);
+    } catch (error) {
+      console.error('Erro ao carregar tipos de membro:', error);
+    }
+  };
 
   const loadTemplates = async () => {
     try {
       const { data, error } = await supabase
         .from('notification_templates')
         .select('*')
+        .eq('active', true)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
       setTemplates(data || []);
+      console.log('Templates carregados:', data?.length || 0);
     } catch (error) {
       console.error('Erro ao carregar templates:', error);
     }
   };
 
-  const loadRecipients = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, nome_completo, email, status, tipo_membro')
-        .eq('status', 'ativo')
-        .order('nome_completo');
-
-      if (error) throw error;
-      setRecipients(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar destinatários:', error);
-    }
-  };
-
   const sendNotification = async () => {
+    if (!notificationForm.title || !notificationForm.message) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Título e mensagem são obrigatórios",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       let targetUsers: string[] = [];
@@ -123,10 +162,31 @@ export default function NotificationManagement() {
       } else if (notificationForm.recipients === 'specific') {
         targetUsers = notificationForm.specificUsers;
       } else if (notificationForm.recipients === 'type') {
+        if (!notificationForm.memberType) {
+          toast({
+            title: "Tipo de membro obrigatório",
+            description: "Selecione um tipo de membro",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
         targetUsers = recipients
           .filter(r => r.tipo_membro === notificationForm.memberType)
           .map(r => r.id);
       }
+
+      if (targetUsers.length === 0) {
+        toast({
+          title: "Nenhum destinatário",
+          description: "Nenhum usuário foi selecionado para receber a notificação",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      console.log(`Enviando notificação para ${targetUsers.length} usuários`);
 
       // Criar notificações para cada usuário
       const notifications = targetUsers.map(userId => ({
@@ -134,6 +194,7 @@ export default function NotificationManagement() {
         title: notificationForm.title,
         message: notificationForm.message,
         type: notificationForm.type,
+        action_url: notificationForm.actionUrl || null,
         read: false
       }));
 
@@ -141,25 +202,14 @@ export default function NotificationManagement() {
         .from('notifications')
         .insert(notifications);
 
-      if (error) throw error;
-
-      // Salvar como template se solicitado
-      if (notificationForm.saveAsTemplate && notificationForm.templateName) {
-        await supabase
-          .from('notification_templates')
-          .insert({
-            name: notificationForm.templateName,
-            title: notificationForm.title,
-            message: notificationForm.message,
-            type: notificationForm.type,
-            category: notificationForm.category,
-            active: true
-          });
+      if (error) {
+        console.error('Erro ao inserir notificações:', error);
+        throw error;
       }
 
       toast({
         title: "Notificações enviadas!",
-        description: `${targetUsers.length} notificações foram enviadas com sucesso`,
+        description: `${targetUsers.length} notificação(ões) enviada(s) com sucesso`,
       });
 
       // Reset form
@@ -167,22 +217,17 @@ export default function NotificationManagement() {
         title: '',
         message: '',
         type: 'info',
-        category: 'system',
         recipients: 'all',
         specificUsers: [],
         memberType: '',
-        scheduleDate: '',
-        saveAsTemplate: false,
-        templateName: ''
+        actionUrl: ''
       });
-
-      loadTemplates();
 
     } catch (error: any) {
       console.error('Erro ao enviar notificações:', error);
       toast({
         title: "Erro ao enviar notificações",
-        description: error.message,
+        description: error.message || "Ocorreu um erro inesperado",
         variant: "destructive",
       });
     } finally {
@@ -191,6 +236,15 @@ export default function NotificationManagement() {
   };
 
   const createTemplate = async () => {
+    if (!templateForm.name || !templateForm.title || !templateForm.message) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Nome, título e mensagem são obrigatórios",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('notification_templates')
@@ -199,7 +253,6 @@ export default function NotificationManagement() {
           title: templateForm.title,
           message: templateForm.message,
           type: templateForm.type,
-          category: templateForm.category,
           active: true
         });
 
@@ -214,8 +267,7 @@ export default function NotificationManagement() {
         name: '',
         title: '',
         message: '',
-        type: 'info',
-        category: 'system'
+        type: 'info'
       });
 
       loadTemplates();
@@ -224,7 +276,7 @@ export default function NotificationManagement() {
       console.error('Erro ao criar template:', error);
       toast({
         title: "Erro ao criar template",
-        description: error.message,
+        description: error.message || "Ocorreu um erro inesperado",
         variant: "destructive",
       });
     }
@@ -235,12 +287,18 @@ export default function NotificationManagement() {
       ...prev,
       title: template.title,
       message: template.message,
-      type: template.type,
-      category: template.category
+      type: template.type
     }));
+    
+    toast({
+      title: "Template aplicado",
+      description: `Template "${template.name}" foi aplicado ao formulário`,
+    });
   };
 
   const deleteTemplate = async (templateId: string) => {
+    if (!confirm('Tem certeza que deseja excluir este template?')) return;
+
     try {
       const { error } = await supabase
         .from('notification_templates')
@@ -251,16 +309,15 @@ export default function NotificationManagement() {
 
       toast({
         title: "Template excluído",
-        description: "O template foi excluído com sucesso",
+        description: "Template removido com sucesso",
       });
 
       loadTemplates();
-
     } catch (error: any) {
       console.error('Erro ao excluir template:', error);
       toast({
-        title: "Erro ao excluir template",
-        description: error.message,
+        title: "Erro ao excluir",
+        description: error.message || "Ocorreu um erro inesperado",
         variant: "destructive",
       });
     }
@@ -272,15 +329,6 @@ export default function NotificationManagement() {
       case 'warning': return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
       case 'error': return <AlertTriangle className="h-4 w-4 text-red-600" />;
       default: return <Info className="h-4 w-4 text-blue-600" />;
-    }
-  };
-
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'financial': return <DollarSign className="h-4 w-4" />;
-      case 'events': return <Calendar className="h-4 w-4" />;
-      case 'communication': return <MessageSquare className="h-4 w-4" />;
-      default: return <Bell className="h-4 w-4" />;
     }
   };
 
@@ -300,7 +348,7 @@ export default function NotificationManagement() {
       </div>
 
       <Tabs defaultValue="send" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="send">
             <Send className="w-4 h-4 mr-2" />
             Enviar Notificação
@@ -308,10 +356,6 @@ export default function NotificationManagement() {
           <TabsTrigger value="templates">
             <Bell className="w-4 h-4 mr-2" />
             Templates
-          </TabsTrigger>
-          <TabsTrigger value="history">
-            <Eye className="w-4 h-4 mr-2" />
-            Histórico
           </TabsTrigger>
         </TabsList>
 
@@ -327,19 +371,22 @@ export default function NotificationManagement() {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="title">Título</Label>
+                  <Label htmlFor="title">Título *</Label>
                   <Input
                     id="title"
                     value={notificationForm.title}
                     onChange={(e) => setNotificationForm(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Título da notificação"
+                    placeholder="Digite o título da notificação"
                   />
                 </div>
+                
                 <div>
                   <Label htmlFor="type">Tipo</Label>
                   <Select 
                     value={notificationForm.type} 
-                    onValueChange={(value: any) => setNotificationForm(prev => ({ ...prev, type: value }))}
+                    onValueChange={(value: any) => 
+                      setNotificationForm(prev => ({ ...prev, type: value }))
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -375,13 +422,23 @@ export default function NotificationManagement() {
               </div>
 
               <div>
-                <Label htmlFor="message">Mensagem</Label>
+                <Label htmlFor="message">Mensagem *</Label>
                 <Textarea
                   id="message"
                   value={notificationForm.message}
                   onChange={(e) => setNotificationForm(prev => ({ ...prev, message: e.target.value }))}
-                  placeholder="Conteúdo da notificação"
+                  placeholder="Digite a mensagem da notificação"
                   rows={4}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="actionUrl">URL de Ação (opcional)</Label>
+                <Input
+                  id="actionUrl"
+                  value={notificationForm.actionUrl}
+                  onChange={(e) => setNotificationForm(prev => ({ ...prev, actionUrl: e.target.value }))}
+                  placeholder="/dashboard/pagina-destino"
                 />
               </div>
 
@@ -419,37 +476,16 @@ export default function NotificationManagement() {
                         <SelectValue placeholder="Selecione o tipo de membro" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pastor">Pastor</SelectItem>
-                        <SelectItem value="evangelista">Evangelista</SelectItem>
-                        <SelectItem value="presbitero">Presbítero</SelectItem>
-                        <SelectItem value="diacono">Diácono</SelectItem>
-                        <SelectItem value="membro">Membro</SelectItem>
+                        {memberTypeOptions.map(type => (
+                          <SelectItem key={type} value={type}>
+                            {type} ({recipients.filter(r => r.tipo_membro === type).length} usuários)
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   )}
                 </div>
               </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="save-template"
-                  checked={notificationForm.saveAsTemplate}
-                  onCheckedChange={(value) => setNotificationForm(prev => ({ ...prev, saveAsTemplate: value }))}
-                />
-                <Label htmlFor="save-template">Salvar como template</Label>
-              </div>
-
-              {notificationForm.saveAsTemplate && (
-                <div>
-                  <Label htmlFor="template-name">Nome do Template</Label>
-                  <Input
-                    id="template-name"
-                    value={notificationForm.templateName}
-                    onChange={(e) => setNotificationForm(prev => ({ ...prev, templateName: e.target.value }))}
-                    placeholder="Nome para salvar o template"
-                  />
-                </div>
-              )}
 
               <Button 
                 onClick={sendNotification} 
@@ -485,19 +521,19 @@ export default function NotificationManagement() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="template-name-new">Nome do Template</Label>
+                  <Label htmlFor="templateName">Nome do Template *</Label>
                   <Input
-                    id="template-name-new"
+                    id="templateName"
                     value={templateForm.name}
                     onChange={(e) => setTemplateForm(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Nome do template"
+                    placeholder="Ex: Lembrete de Pagamento"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="template-title">Título</Label>
+                  <Label htmlFor="templateTitle">Título *</Label>
                   <Input
-                    id="template-title"
+                    id="templateTitle"
                     value={templateForm.title}
                     onChange={(e) => setTemplateForm(prev => ({ ...prev, title: e.target.value }))}
                     placeholder="Título da notificação"
@@ -505,52 +541,32 @@ export default function NotificationManagement() {
                 </div>
 
                 <div>
-                  <Label htmlFor="template-message">Mensagem</Label>
+                  <Label htmlFor="templateMessage">Mensagem *</Label>
                   <Textarea
-                    id="template-message"
+                    id="templateMessage"
                     value={templateForm.message}
                     onChange={(e) => setTemplateForm(prev => ({ ...prev, message: e.target.value }))}
-                    placeholder="Conteúdo da notificação"
-                    rows={3}
+                    placeholder="Mensagem da notificação"
+                    rows={4}
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label>Tipo</Label>
-                    <Select 
-                      value={templateForm.type} 
-                      onValueChange={(value: any) => setTemplateForm(prev => ({ ...prev, type: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="info">Informação</SelectItem>
-                        <SelectItem value="success">Sucesso</SelectItem>
-                        <SelectItem value="warning">Aviso</SelectItem>
-                        <SelectItem value="error">Erro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>Categoria</Label>
-                    <Select 
-                      value={templateForm.category} 
-                      onValueChange={(value: any) => setTemplateForm(prev => ({ ...prev, category: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="system">Sistema</SelectItem>
-                        <SelectItem value="financial">Financeiro</SelectItem>
-                        <SelectItem value="events">Eventos</SelectItem>
-                        <SelectItem value="communication">Comunicação</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div>
+                  <Label>Tipo</Label>
+                  <Select 
+                    value={templateForm.type} 
+                    onValueChange={(value: any) => setTemplateForm(prev => ({ ...prev, type: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="info">Informação</SelectItem>
+                      <SelectItem value="success">Sucesso</SelectItem>
+                      <SelectItem value="warning">Aviso</SelectItem>
+                      <SelectItem value="error">Erro</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <Button 
@@ -580,7 +596,6 @@ export default function NotificationManagement() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             {getTypeIcon(template.type)}
-                            {getCategoryIcon(template.category)}
                             <h4 className="font-medium">{template.name}</h4>
                           </div>
                           <p className="text-sm text-gray-600 mb-1">{template.title}</p>
@@ -606,6 +621,7 @@ export default function NotificationManagement() {
                       </div>
                     </div>
                   ))}
+                  
                   {templates.length === 0 && (
                     <div className="text-center py-8 text-gray-500">
                       <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -616,24 +632,6 @@ export default function NotificationManagement() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-
-        {/* Histórico */}
-        <TabsContent value="history">
-          <Card>
-            <CardHeader>
-              <CardTitle>Histórico de Notificações</CardTitle>
-              <CardDescription>
-                Visualize as notificações enviadas recentemente
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-gray-500">
-                <Eye className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Histórico será implementado em breve</p>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
