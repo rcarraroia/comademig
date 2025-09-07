@@ -89,7 +89,7 @@ function App() {
             <Route path="/eventos" element={<Layout><Eventos /></Layout>} />
             <Route path="/multimidia" element={<Layout><Multimidia /></Layout>} />
             <Route path="/contato" element={<Layout><Contato /></Layout>} />
-            <Route path="/filiacao" element={<Layout><Filiacao /></Layout>} />
+            <Route path="/filiacao" element={<Filiacao />} />
             <Route path="/privacidade" element={<Layout><Privacidade /></Layout>} />
             <Route path="/termos" element={<Layout><Termos /></Layout>} />
             <Route path="/auth" element={<Auth />} />

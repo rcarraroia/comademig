@@ -44,20 +44,46 @@ serve(async (req) => {
     // Verificar autenticação
     const { data: { user } } = await supabaseClient.auth.getUser()
     if (!user) {
-      return new Response('Não autorizado', { status: 401, headers: corsHeaders })
+      console.error('Usuário não autenticado')
+      return new Response(JSON.stringify({ error: 'Não autorizado' }), { 
+        status: 401, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
 
     const paymentData: PaymentRequest = await req.json()
     const asaasApiKey = Deno.env.get('ASAAS_API_KEY')
 
     if (!asaasApiKey) {
-      return new Response('Chave da API Asaas não configurada', { status: 500, headers: corsHeaders })
+      console.error('ASAAS_API_KEY não configurada')
+      return new Response(JSON.stringify({ error: 'Chave da API Asaas não configurada' }), { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
 
     console.log('Criando cobrança para usuário:', user.id)
-    console.log('Dados do pagamento:', paymentData)
+    console.log('Dados do pagamento:', JSON.stringify(paymentData, null, 2))
+
+    // Validar dados obrigatórios
+    if (!paymentData.customer?.name || !paymentData.customer?.email || !paymentData.customer?.cpfCnpj) {
+      console.error('Dados do cliente incompletos:', paymentData.customer)
+      return new Response(JSON.stringify({ error: 'Dados do cliente são obrigatórios (nome, email, CPF)' }), { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    if (!paymentData.value || paymentData.value <= 0) {
+      console.error('Valor inválido:', paymentData.value)
+      return new Response(JSON.stringify({ error: 'Valor deve ser maior que zero' }), { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
 
     // Primeiro, criar/buscar o cliente no Asaas
+    console.log('Criando cliente no Asaas:', paymentData.customer)
     const customerResponse = await fetch('https://www.asaas.com/api/v3/customers', {
       method: 'POST',
       headers: {
@@ -68,8 +94,10 @@ serve(async (req) => {
     })
 
     let customerId: string
+    
     if (customerResponse.status === 400) {
       // Cliente já existe, buscar pelo CPF
+      console.log('Cliente já existe, buscando pelo CPF:', paymentData.customer.cpfCnpj)
       const searchResponse = await fetch(`https://www.asaas.com/api/v3/customers?cpfCnpj=${paymentData.customer.cpfCnpj}`, {
         method: 'GET',
         headers: {
@@ -77,14 +105,39 @@ serve(async (req) => {
           'access_token': asaasApiKey,
         }
       })
+      
+      if (!searchResponse.ok) {
+        const searchError = await searchResponse.json()
+        console.error('Erro ao buscar cliente:', searchError)
+        return new Response(JSON.stringify({ error: 'Erro ao buscar cliente existente', details: searchError }), { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      
       const searchData = await searchResponse.json()
       customerId = searchData.data[0]?.id
+      
+      if (!customerId) {
+        console.error('Cliente não encontrado após busca')
+        return new Response(JSON.stringify({ error: 'Cliente não encontrado' }), { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+    } else if (!customerResponse.ok) {
+      const customerError = await customerResponse.json()
+      console.error('Erro ao criar cliente:', customerError)
+      return new Response(JSON.stringify({ error: 'Erro ao criar cliente', details: customerError }), { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     } else {
       const customerData = await customerResponse.json()
       customerId = customerData.id
     }
 
-    console.log('ID do cliente:', customerId)
+    console.log('ID do cliente obtido:', customerId)
 
     // Criar a cobrança no Asaas
     const paymentPayload = {

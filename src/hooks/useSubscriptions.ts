@@ -61,22 +61,22 @@ export interface MemberTypeSubscription {
 export const useSubscriptionPlans = () => {
   const queryClient = useQueryClient();
 
-  // Buscar todos os planos
+  // Buscar todos os planos (otimizado para evitar loop)
   const { data: plans = [], isLoading, error, refetch } = useQuery({
     queryKey: ['subscription-plans'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('subscription_plans')
-        .select(`
-          *,
-          _count:member_type_subscriptions(count),
-          user_subscriptions(count)
-        `)
+        .select('*')
+        .eq('is_active', true)
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
       return data as SubscriptionPlan[];
     },
+    staleTime: 10 * 60 * 1000, // 10 minutos
+    refetchOnWindowFocus: false,
+    refetchOnMount: false
   });
 
   // Criar plano

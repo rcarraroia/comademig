@@ -43,46 +43,28 @@ export interface UpdateMemberTypeData extends CreateMemberTypeData {
 export const useMemberTypes = () => {
   const { toast } = useToast();
 
-  // Query para buscar todos os tipos de membro
+  // Query simples para buscar tipos de membro (SEM LOGS PARA EVITAR LOOP)
   const { data: memberTypes = [], isLoading, error, refetch } = useSupabaseQuery(
     ['member-types'],
     async (): Promise<MemberType[]> => {
-      // Buscar tipos de membro
       const { data: types, error: typesError } = await supabase
         .from('member_types')
         .select('*')
-        .order('sort_order', { ascending: true })
-        .order('name', { ascending: true });
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
       
       if (typesError) throw typesError;
       
-      // Para cada tipo, buscar contadores reais
-      const typesWithCounts = await Promise.all(
-        (types || []).map(async (type) => {
-          // Contar usuários reais associados a este tipo
-          const { count: usersCount } = await supabase
-            .from('profiles')
-            .select('*', { count: 'exact', head: true })
-            .eq('tipo_membro', type.name.toLowerCase());
-          
-          // Contar assinaturas reais associadas a este tipo
-          const { count: subscriptionsCount } = await supabase
-            .from('user_subscriptions')
-            .select('*', { count: 'exact', head: true })
-            .eq('member_type_id', type.id);
-          
-          return {
-            ...type,
-            _count: {
-              users: usersCount || 0,
-              subscriptions: subscriptionsCount || 0
-            }
-          };
-        })
-      );
-      
-      console.log('Tipos de membro com contadores reais:', typesWithCounts);
-      return typesWithCounts;
+      return (types || []).map(type => ({
+        ...type,
+        _count: { users: 0, subscriptions: 0 }
+      }));
+    },
+    {
+      staleTime: 10 * 60 * 1000, // 10 minutos
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchInterval: false
     }
   ); 
  // Mutation para criar tipo de membro

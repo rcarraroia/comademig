@@ -36,9 +36,7 @@ export const PaymentForm = ({
   const memberTypes = allMemberTypes.filter(type => type.is_active);
   const { plans, isLoading: loadingPlans } = useSubscriptionPlans();
   
-  // Debug: verificar os tipos de membro carregados
-  console.log('Member Types carregados:', memberTypes);
-  console.log('Plans carregados:', plans);
+  // Tipos e planos carregados (logs removidos para evitar loop)
   const [paymentResult, setPaymentResult] = useState<any>(null);
   const [selectedMemberType, setSelectedMemberType] = useState<string>('');
   const [selectedPlan, setSelectedPlan] = useState<string>('');
