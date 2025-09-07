@@ -1,11 +1,12 @@
 -- Create notification_templates table
-CREATE TABLE IF NOT EXISTS public.notification_templates (
+CREATE TABLE public.notification_templates (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   title VARCHAR(255) NOT NULL,
   message TEXT NOT NULL,
-  type VARCHAR(50) NOT NULL CHECK (type IN ('info', 'success', 'warning', 'error')),
-  category VARCHAR(50) NOT NULL CHECK (category IN ('system', 'financial', 'events', 'communication')),
+  type VARCHAR(50) NOT NULL DEFAULT 'info' CHECK (type IN ('info', 'success', 'warning', 'error')),
+  category VARCHAR(50) NOT NULL DEFAULT 'system' CHECK (category IN ('system', 'financial', 'events', 'communication')),
+  active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -13,7 +14,7 @@ CREATE TABLE IF NOT EXISTS public.notification_templates (
 -- Enable RLS
 ALTER TABLE public.notification_templates ENABLE ROW LEVEL SECURITY;
 
--- Create policies (apenas admins podem gerenciar templates)
+-- Create policies
 CREATE POLICY "Admins can manage notification templates" 
   ON public.notification_templates 
   FOR ALL 
@@ -25,9 +26,10 @@ CREATE POLICY "Admins can manage notification templates"
     )
   );
 
--- Create index for performance
-CREATE INDEX IF NOT EXISTS idx_notification_templates_category ON public.notification_templates(category);
-CREATE INDEX IF NOT EXISTS idx_notification_templates_type ON public.notification_templates(type);
+-- Create indexes for performance
+CREATE INDEX idx_notification_templates_active ON public.notification_templates(active);
+CREATE INDEX idx_notification_templates_category ON public.notification_templates(category);
+CREATE INDEX idx_notification_templates_type ON public.notification_templates(type);
 
 -- Add updated_at trigger
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -44,10 +46,12 @@ CREATE TRIGGER update_notification_templates_updated_at
 
 -- Insert some default templates
 INSERT INTO public.notification_templates (name, title, message, type, category) VALUES
-('Pagamento Aprovado', 'Pagamento Aprovado', 'Seu pagamento foi processado com sucesso. Obrigado!', 'success', 'financial'),
-('Lembrete de Vencimento', 'Lembrete de Pagamento', 'Sua anuidade vence em breve. Regularize sua situação para manter seus benefícios.', 'warning', 'financial'),
-('Novo Evento', 'Novo Evento Disponível', 'Um novo evento foi adicionado. Confira e faça sua inscrição!', 'info', 'events'),
-('Documentação Pendente', 'Documentação Pendente', 'Você possui documentos pendentes. Acesse sua área para regularizar.', 'warning', 'system'),
-('Bem-vindo', 'Bem-vindo à COMADEMIG', 'Seja bem-vindo! Complete seu perfil para aproveitar todos os recursos.', 'info', 'system');
+('welcome', 'Bem-vindo ao COMADEMIG!', 'Seja bem-vindo à nossa plataforma. Sua conta foi criada com sucesso e você já pode acessar todos os recursos disponíveis.', 'success', 'system'),
+('payment_approved', 'Pagamento Aprovado', 'Seu pagamento foi processado com sucesso. Obrigado por manter sua situação regularizada.', 'success', 'financial'),
+('payment_pending', 'Pagamento Pendente', 'Identificamos um pagamento pendente em sua conta. Por favor, regularize sua situação para continuar aproveitando nossos serviços.', 'warning', 'financial'),
+('event_reminder', 'Lembrete de Evento', 'Não se esqueça! O evento que você se inscreveu acontecerá em breve. Verifique os detalhes e prepare-se.', 'info', 'events'),
+('document_required', 'Documentação Necessária', 'Para completar seu cadastro, precisamos de alguns documentos adicionais. Acesse sua área de documentos para enviar.', 'warning', 'system'),
+('maintenance_notice', 'Manutenção Programada', 'Informamos que haverá uma manutenção programada no sistema. Durante este período, alguns serviços podem ficar indisponíveis.', 'info', 'system');
 
+-- Add comment
 COMMENT ON TABLE public.notification_templates IS 'Templates reutilizáveis para notificações do sistema';

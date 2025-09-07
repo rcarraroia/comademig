@@ -1,9 +1,9 @@
 
-import { Bell, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserAvatar } from "@/components/common/UserAvatar";
-import { NotificationDropdown } from "@/components/communication/NotificationDropdown";
+import NotificationDropdown from "@/components/communication/NotificationDropdown";
 
 interface DashboardHeaderProps {
   onMenuToggle: () => void;

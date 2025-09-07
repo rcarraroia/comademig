@@ -1,57 +1,40 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Bell, CheckCircle, Clock, Eye, Settings } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Bell, Check, Trash2, Eye, Clock, AlertCircle, CheckCircle, Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
+  DropdownMenuHeader,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useNotifications } from "@/hooks/useNotifications";
-import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { useNotifications } from '@/hooks/useNotifications';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
-export function NotificationDropdown() {
-  const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead } = useNotifications();
+export default function NotificationDropdown() {
+  const { 
+    notifications, 
+    unreadCount, 
+    isLoading, 
+    markAsRead, 
+    markAllAsRead 
+  } = useNotifications();
+
   const [isOpen, setIsOpen] = useState(false);
-
-  // Mostrar apenas as 5 notificações mais recentes no dropdown
-  const recentNotifications = notifications.slice(0, 5);
-
-  const handleMarkAsRead = async (notificationId: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    try {
-      await markAsRead.mutateAsync(notificationId);
-    } catch (error) {
-      console.error('Erro ao marcar como lida:', error);
-    }
-  };
-
-  const handleMarkAllAsRead = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    try {
-      await markAllAsRead.mutateAsync();
-    } catch (error) {
-      console.error('Erro ao marcar todas como lidas:', error);
-    }
-  };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'success':
         return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'warning':
-        return <Clock className="h-4 w-4 text-yellow-600" />;
+        return <AlertCircle className="h-4 w-4 text-yellow-600" />;
       case 'error':
-        return <Clock className="h-4 w-4 text-red-600" />;
+        return <AlertCircle className="h-4 w-4 text-red-600" />;
       default:
-        return <Bell className="h-4 w-4 text-blue-600" />;
+        return <Info className="h-4 w-4 text-blue-600" />;
     }
   };
 
@@ -64,6 +47,18 @@ export function NotificationDropdown() {
     if (diffInMinutes < 60) return `${diffInMinutes}m`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h`;
     return `${Math.floor(diffInMinutes / 1440)}d`;
+  };
+
+  const recentNotifications = notifications.slice(0, 5);
+
+  const handleMarkAsRead = async (notificationId: string, event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    await markAsRead.mutateAsync(notificationId);
+  };
+
+  const handleMarkAllAsRead = async () => {
+    await markAllAsRead.mutateAsync();
   };
 
   return (
@@ -83,55 +78,81 @@ export function NotificationDropdown() {
       </DropdownMenuTrigger>
       
       <DropdownMenuContent align="end" className="w-80">
-        <DropdownMenuLabel className="flex items-center justify-between">
-          <span>Notificações</span>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleMarkAllAsRead}
-              disabled={markAllAsRead.isPending}
-              className="h-6 px-2 text-xs"
-            >
-              {markAllAsRead.isPending ? (
-                <LoadingSpinner size="sm" />
-              ) : (
-                'Marcar todas como lidas'
-              )}
-            </Button>
-          )}
-        </DropdownMenuLabel>
-        
-        <DropdownMenuSeparator />
-        
-        {isLoading ? (
-          <div className="flex items-center justify-center py-4">
-            <LoadingSpinner size="sm" />
-          </div>
-        ) : recentNotifications.length > 0 ? (
-          <ScrollArea className="h-80">
-            {recentNotifications.map((notification) => (
-              <DropdownMenuItem
-                key={notification.id}
-                className={`flex items-start gap-3 p-3 cursor-pointer ${
-                  !notification.read ? 'bg-blue-50 border-l-2 border-l-blue-500' : ''
-                }`}
-                asChild
+        <DropdownMenuHeader className="p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold">Notificações</h3>
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleMarkAllAsRead}
+                disabled={markAllAsRead.isPending}
+                className="text-xs"
               >
-                <Link 
-                  to={notification.action_url || '/dashboard/notifications'}
-                  onClick={() => setIsOpen(false)}
+                {markAllAsRead.isPending ? (
+                  <LoadingSpinner size="sm" />
+                ) : (
+                  <>
+                    <Check className="h-3 w-3 mr-1" />
+                    Marcar todas como lidas
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+          {unreadCount > 0 && (
+            <p className="text-sm text-muted-foreground">
+              {unreadCount} não {unreadCount === 1 ? 'lida' : 'lidas'}
+            </p>
+          )}
+        </DropdownMenuHeader>
+
+        <DropdownMenuSeparator />
+
+        <ScrollArea className="h-80">
+          {isLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <LoadingSpinner />
+            </div>
+          ) : recentNotifications.length > 0 ? (
+            <div className="space-y-1">
+              {recentNotifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className={`p-3 hover:bg-gray-50 cursor-pointer border-l-2 ${
+                    !notification.read 
+                      ? 'border-l-blue-500 bg-blue-50/30' 
+                      : 'border-l-transparent'
+                  }`}
+                  onClick={() => {
+                    if (!notification.read) {
+                      handleMarkAsRead(notification.id, {} as React.MouseEvent);
+                    }
+                    if (notification.action_url) {
+                      window.location.href = notification.action_url;
+                    }
+                    setIsOpen(false);
+                  }}
                 >
-                  <div className="flex-shrink-0 mt-0.5">
+                  <div className="flex items-start gap-3">
                     {getNotificationIcon(notification.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {notification.title}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className={`text-sm font-medium truncate ${
+                          !notification.read ? 'text-gray-900' : 'text-gray-700'
+                        }`}>
+                          {notification.title}
+                        </h4>
+                        {!notification.read && (
+                          <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                        {notification.message}
                       </p>
-                      <div className="flex items-center gap-1 ml-2">
-                        <span className="text-xs text-gray-500">
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-gray-500 flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
                           {formatTimeAgo(notification.created_at)}
                         </span>
                         {!notification.read && (
@@ -139,44 +160,35 @@ export function NotificationDropdown() {
                             variant="ghost"
                             size="sm"
                             onClick={(e) => handleMarkAsRead(notification.id, e)}
-                            disabled={markAsRead.isPending}
-                            className="h-4 w-4 p-0 hover:bg-blue-100"
+                            className="h-6 w-6 p-0 hover:bg-blue-100"
                           >
-                            <CheckCircle className="h-3 w-3" />
+                            <Check className="h-3 w-3" />
                           </Button>
                         )}
                       </div>
                     </div>
-                    <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                      {notification.message}
-                    </p>
-                    {!notification.read && (
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-1"></div>
-                    )}
                   </div>
-                </Link>
-              </DropdownMenuItem>
-            ))}
-          </ScrollArea>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-6 text-gray-500">
-            <Bell className="h-8 w-8 mb-2 opacity-50" />
-            <p className="text-sm">Nenhuma notificação</p>
-          </div>
-        )}
-        
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-gray-500">
+              <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Nenhuma notificação</p>
+            </div>
+          )}
+        </ScrollArea>
+
         <DropdownMenuSeparator />
-        
-        <DropdownMenuItem asChild>
-          <Link 
-            to="/dashboard/notifications" 
-            className="flex items-center justify-center gap-2 py-2"
-            onClick={() => setIsOpen(false)}
-          >
-            <Eye className="h-4 w-4" />
-            Ver todas as notificações
-          </Link>
-        </DropdownMenuItem>
+
+        <div className="p-3">
+          <Button asChild variant="outline" className="w-full" size="sm">
+            <Link to="/dashboard/notifications" onClick={() => setIsOpen(false)}>
+              <Eye className="h-4 w-4 mr-2" />
+              Ver todas as notificações
+            </Link>
+          </Button>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

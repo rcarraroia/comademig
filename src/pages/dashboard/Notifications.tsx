@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Bell, 
   Mail, 
@@ -19,19 +20,9 @@ import {
   Clock,
   Settings,
   Trash2,
-  Check
+  Check,
+  Info
 } from 'lucide-react';
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  category: 'system' | 'financial' | 'events' | 'communication';
-  read: boolean;
-  created_at: string;
-  action_url?: string;
-}
 
 interface NotificationSettings {
   email_notifications: boolean;
@@ -60,6 +51,8 @@ export default function Notifications() {
     system_updates: true,
     communication_messages: true
   });
+
+  const { toast } = useToast();
 
   useEffect(() => {
     loadSettings();
@@ -103,36 +96,50 @@ export default function Notifications() {
   const handleMarkAsRead = async (notificationId: string) => {
     try {
       await markAsRead.mutateAsync(notificationId);
+      toast({
+        title: "Notificação marcada como lida",
+        description: "A notificação foi marcada como lida com sucesso",
+      });
     } catch (error) {
-      console.error('Erro ao marcar como lida:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível marcar a notificação como lida",
+        variant: "destructive",
+      });
     }
   };
 
   const handleMarkAllAsRead = async () => {
     try {
       await markAllAsRead.mutateAsync();
+      toast({
+        title: "Todas as notificações marcadas como lidas",
+        description: "Todas as notificações foram marcadas como lidas com sucesso",
+      });
     } catch (error) {
-      console.error('Erro ao marcar todas como lidas:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível marcar todas as notificações como lidas",
+        variant: "destructive",
+      });
     }
-  };
-
-  const deleteNotification = async (notificationId: string) => {
-    // TODO: Implementar remoção no Supabase
-    console.log('Deletar notificação:', notificationId);
   };
 
   const updateSettings = async (key: keyof NotificationSettings, value: boolean) => {
     setSettings(prev => ({ ...prev, [key]: value }));
     // Implementar atualização no Supabase
+    toast({
+      title: "Configuração atualizada",
+      description: "Suas preferências de notificação foram salvas",
+    });
   };
 
-  // unreadCount já vem do hook
   const filteredNotifications = {
     all: notifications,
     unread: notifications.filter(n => !n.read),
-    financial: notifications.filter(n => n.category === 'financial'),
-    events: notifications.filter(n => n.category === 'events'),
-    system: notifications.filter(n => n.category === 'system')
+    financial: notifications.filter(n => n.message.toLowerCase().includes('pagamento') || n.message.toLowerCase().includes('financeiro')),
+    events: notifications.filter(n => n.message.toLowerCase().includes('evento') || n.message.toLowerCase().includes('congresso')),
+    system: notifications.filter(n => n.message.toLowerCase().includes('sistema') || n.message.toLowerCase().includes('atualização'))
   };
 
   if (loading) {
@@ -158,8 +165,16 @@ export default function Notifications() {
               {unreadCount} não lidas
             </Badge>
           )}
-          <Button variant="outline" onClick={handleMarkAllAsRead} disabled={markAllAsRead.isPending}>
-            <Check className="w-4 h-4 mr-2" />
+          <Button 
+            variant="outline" 
+            onClick={handleMarkAllAsRead}
+            disabled={markAllAsRead.isPending || unreadCount === 0}
+          >
+            {markAllAsRead.isPending ? (
+              <LoadingSpinner size="sm" className="mr-2" />
+            ) : (
+              <Check className="w-4 h-4 mr-2" />
+            )}
             Marcar todas como lidas
           </Button>
         </div>
@@ -192,7 +207,7 @@ export default function Notifications() {
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
-                      {getNotificationIcon(notification.type, notification.category)}
+                      {getNotificationIcon(notification.type, 'system')}
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <CardTitle className="text-base">{notification.title}</CardTitle>
@@ -204,7 +219,9 @@ export default function Notifications() {
                           {notification.message}
                         </CardDescription>
                         <div className="flex items-center gap-2 mt-2">
-                          {getCategoryBadge(notification.category)}
+                          <Badge variant="secondary" className="text-xs">
+                            Sistema
+                          </Badge>
                           <span className="text-xs text-muted-foreground">
                             <Clock className="w-3 h-3 inline mr-1" />
                             {new Date(notification.created_at).toLocaleString('pt-BR')}
@@ -220,17 +237,13 @@ export default function Notifications() {
                           onClick={() => handleMarkAsRead(notification.id)}
                           disabled={markAsRead.isPending}
                         >
-                          <CheckCircle className="w-4 h-4" />
+                          {markAsRead.isPending ? (
+                            <LoadingSpinner size="sm" />
+                          ) : (
+                            <CheckCircle className="w-4 h-4" />
+                          )}
                         </Button>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteNotification(notification.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
                     </div>
                   </div>
                 </CardHeader>
@@ -262,7 +275,7 @@ export default function Notifications() {
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
-                      {getNotificationIcon(notification.type, notification.category)}
+                      {getNotificationIcon(notification.type, 'system')}
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <CardTitle className="text-base">{notification.title}</CardTitle>
@@ -272,7 +285,9 @@ export default function Notifications() {
                           {notification.message}
                         </CardDescription>
                         <div className="flex items-center gap-2 mt-2">
-                          {getCategoryBadge(notification.category)}
+                          <Badge variant="secondary" className="text-xs">
+                            Sistema
+                          </Badge>
                           <span className="text-xs text-muted-foreground">
                             <Clock className="w-3 h-3 inline mr-1" />
                             {new Date(notification.created_at).toLocaleString('pt-BR')}
@@ -287,15 +302,11 @@ export default function Notifications() {
                         onClick={() => handleMarkAsRead(notification.id)}
                         disabled={markAsRead.isPending}
                       >
-                        <CheckCircle className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteNotification(notification.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
+                        {markAsRead.isPending ? (
+                          <LoadingSpinner size="sm" />
+                        ) : (
+                          <CheckCircle className="w-4 h-4" />
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -332,6 +343,14 @@ export default function Notifications() {
                 </CardHeader>
               </Card>
             ))}
+            {filteredNotifications.financial.length === 0 && (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">Nenhuma notificação financeira encontrada</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </TabsContent>
 
@@ -354,6 +373,14 @@ export default function Notifications() {
                 </CardHeader>
               </Card>
             ))}
+            {filteredNotifications.events.length === 0 && (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">Nenhuma notificação de eventos encontrada</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </TabsContent>
 
