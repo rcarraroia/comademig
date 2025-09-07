@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState } from 'react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,7 +33,6 @@ interface NotificationSettings {
 }
 
 export default function Notifications() {
-  const { user } = useAuth();
   const { 
     notifications, 
     unreadCount, 
@@ -54,14 +52,11 @@ export default function Notifications() {
 
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
-    // Carregar configurações do usuário (implementar com Supabase)
-    console.log('Carregando configurações de notificação');
-  };
+  console.log('Notifications Debug:', { 
+    notifications: notifications?.length || 0, 
+    unreadCount, 
+    loading 
+  });
 
   const getNotificationIcon = (type: string, category: string) => {
     if (type === 'success') return <CheckCircle className="h-5 w-5 text-green-600" />;
