@@ -88,26 +88,13 @@ export const useCertidoesWithPayment = () => {
     async (): Promise<SolicitacaoCertidao[]> => {
       const { data, error } = await supabase
         .from('solicitacoes_certidoes')
-        .select(`
-          *,
-          profiles (
-            nome_completo,
-            cpf,
-            cargo,
-            igreja
-          )
-        `)
+        .select('*')
         .in('status', ['pago', 'em_analise', 'aprovada', 'rejeitada', 'entregue'])
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      const transformedData = (data || []).map(item => ({
-        ...item,
-        profiles: Array.isArray(item.profiles) ? item.profiles[0] : item.profiles
-      }));
-      
-      return transformedData as SolicitacaoCertidao[];
+      return (data || []) as SolicitacaoCertidao[];
     },
     { enabled: !!user }
   );

@@ -105,26 +105,13 @@ export const useRegularizacaoWithPayment = () => {
     async (): Promise<SolicitacaoRegularizacao[]> => {
       const { data, error } = await supabase
         .from('solicitacoes_regularizacao')
-        .select(`
-          *,
-          profiles (
-            nome_completo,
-            cpf,
-            cargo,
-            igreja
-          )
-        `)
+        .select('*')
         .in('status', ['pago', 'em_analise', 'aprovada', 'rejeitada', 'entregue'])
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      const transformedData = (data || []).map(item => ({
-        ...item,
-        profiles: Array.isArray(item.profiles) ? item.profiles[0] : item.profiles
-      }));
-      
-      return transformedData as SolicitacaoRegularizacao[];
+      return (data || []) as SolicitacaoRegularizacao[];
     },
     { enabled: !!user }
   );
