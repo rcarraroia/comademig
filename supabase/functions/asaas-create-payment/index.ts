@@ -44,15 +44,21 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
-    // Verificar autenticação
+    // Verificar autenticação - permitir filiação sem login
     const { data: { user } } = await supabaseClient.auth.getUser()
-    if (!user) {
-      console.error('Usuário não autenticado')
-      return new Response(JSON.stringify({ error: 'Não autorizado' }), { 
+    
+    // Para filiação, permitir usuários não autenticados
+    const isFiliacaoPayment = paymentData.tipoCobranca === 'filiacao' || paymentData.serviceType === 'filiacao'
+    
+    if (!user && !isFiliacaoPayment) {
+      console.error('Usuário não autenticado para serviço que requer login')
+      return new Response(JSON.stringify({ error: 'Não autorizado - login necessário' }), { 
         status: 401, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
+    
+    const userId = user?.id || 'anonymous_' + Date.now() // ID temporário para filiação
 
     const paymentData: PaymentRequest = await req.json()
     const asaasApiKey = Deno.env.get('ASAAS_API_KEY')
@@ -65,9 +71,10 @@ serve(async (req) => {
       })
     }
 
-    console.log('Criando cobrança para usuário:', user.id)
+    console.log('Criando cobrança para usuário:', userId)
     console.log('Tipo de serviço:', paymentData.serviceType || paymentData.tipoCobranca)
     console.log('Valor da cobrança:', paymentData.value)
+    console.log('É filiação?', isFiliacaoPayment)
 
     // Validações aprimoradas
     const validationErrors = []
@@ -95,11 +102,11 @@ serve(async (req) => {
     const customerId = await createOrFindCustomer(paymentData.customer, asaasApiKey)
 
     // Criar a cobrança no Asaas com retry
-    const asaasPayment = await createAsaasPayment(customerId, paymentData, asaasApiKey, user.id)
+    const asaasPayment = await createAsaasPayment(customerId, paymentData, asaasApiKey, userId)
 
     // Salvar a cobrança no banco de dados com dados do serviço
     const cobrancaData = {
-      user_id: user.id,
+      user_id: userId,
       asaas_id: asaasPayment.id,
       customer_id: customerId,
       valor: paymentData.value,
