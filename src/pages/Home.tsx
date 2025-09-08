@@ -54,9 +54,6 @@ const Home = () => {
               <Button asChild size="lg" className="bg-comademig-gold hover:bg-comademig-gold/90 text-white font-montserrat font-semibold">
                 <Link to={content.banner_principal?.link_botao || '/sobre'}>{content.banner_principal?.texto_botao}</Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-comademig-blue font-montserrat font-semibold">
-                <Link to="/eventos">Ver Eventos</Link>
-              </Button>
             </div>
           </div>
         </div>

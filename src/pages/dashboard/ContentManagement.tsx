@@ -124,20 +124,7 @@ const ContentManagement = () => {
       status: "não implementado",
       implemented: false
     },
-    { 
-      name: "Eventos", 
-      key: "eventos", 
-      description: "Calendário de eventos, workshops e treinamentos",
-      hasCustomContent: false,
-      content: null,
-      isLoading: false,
-      publicUrl: "/eventos",
-      editorUrl: "/dashboard/admin/content/eventos-editor",
-      icon: Calendar,
-      priority: "média",
-      status: "não implementado",
-      implemented: false
-    },
+
     { 
       name: "Multimídia", 
       key: "multimidia", 

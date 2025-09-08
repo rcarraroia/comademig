@@ -42,14 +42,7 @@ const Footer = () => {
                   Liderança
                 </Link>
               </li>
-              <li>
-                <Link 
-                  to="/eventos" 
-                  className="text-gray-300 hover:text-comademig-gold transition-colors flex items-center"
-                >
-                  Eventos
-                </Link>
-              </li>
+
               <li>
                 <Link 
                   to="/noticias" 

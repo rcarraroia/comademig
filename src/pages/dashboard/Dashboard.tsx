@@ -25,13 +25,7 @@ const Dashboard = () => {
       href: "/dashboard/carteira-digital",
       feature: "carteira-digital"
     },
-    {
-      title: "Eventos",
-      description: "Veja eventos disponíveis",
-      icon: Calendar,
-      href: "/dashboard/eventos",
-      feature: "eventos"
-    },
+
     {
       title: "Financeiro", 
       description: "Consulte sua situação financeira",

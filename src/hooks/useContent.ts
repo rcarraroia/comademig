@@ -84,8 +84,8 @@ export const useHomeContent = () => {
     cards_acao: [
       {
         titulo: 'Inscreva-se',
-        descricao: 'Participe dos nossos eventos e congressos',
-        link_botao: '/eventos'
+        descricao: 'Participe da nossa comunidade ministerial',
+        link_botao: '/filiacao'
       },
       {
         titulo: 'Filie-se',
@@ -99,8 +99,8 @@ export const useHomeContent = () => {
       },
       {
         titulo: 'Ao Vivo',
-        descricao: 'Acompanhe nossos cultos e eventos',
-        link_botao: '/eventos'
+        descricao: 'Acompanhe nossas atividades ministeriais',
+        link_botao: '/sobre'
       }
     ],
     destaques_convencao: [],
