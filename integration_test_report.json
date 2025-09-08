@@ -1,0 +1,205 @@
+{
+  "summary": {
+    "total_tests": 32,
+    "passed": 32,
+    "failed": 0,
+    "warnings": 0,
+    "success_rate": 100.0,
+    "total_duration": 1.8821890354156494
+  },
+  "details": {
+    "database_connectivity": {
+      "status": "PASS",
+      "details": "Conectado em 0.44s",
+      "duration": 0.4365653991699219,
+      "timestamp": 1757364445.5627432
+    },
+    "table_profiles": {
+      "status": "PASS",
+      "details": "Estrutura OK",
+      "duration": 0.08071565628051758,
+      "timestamp": 1757364445.6464577
+    },
+    "table_member_types": {
+      "status": "PASS",
+      "details": "Estrutura OK",
+      "duration": 0.06968021392822266,
+      "timestamp": 1757364445.719999
+    },
+    "table_subscription_plans": {
+      "status": "PASS",
+      "details": "Estrutura OK",
+      "duration": 0.08224248886108398,
+      "timestamp": 1757364445.8042438
+    },
+    "table_user_subscriptions": {
+      "status": "PASS",
+      "details": "Estrutura OK",
+      "duration": 0.0901944637298584,
+      "timestamp": 1757364445.8954377
+    },
+    "table_asaas_cobrancas": {
+      "status": "PASS",
+      "details": "Estrutura OK",
+      "duration": 0.07799220085144043,
+      "timestamp": 1757364445.9744353
+    },
+    "table_admin_notifications": {
+      "status": "PASS",
+      "details": "Estrutura OK",
+      "duration": 0.0922238826751709,
+      "timestamp": 1757364446.0666592
+    },
+    "table_audit_logs": {
+      "status": "PASS",
+      "details": "Estrutura OK",
+      "duration": 0.10263395309448242,
+      "timestamp": 1757364446.1692932
+    },
+    "member_types": {
+      "status": "PASS",
+      "details": "2 tipos ativos",
+      "duration": 0,
+      "timestamp": 1757364446.2609448
+    },
+    "subscription_plans": {
+      "status": "PASS",
+      "details": "4 planos ativos",
+      "duration": 0,
+      "timestamp": 1757364446.3359714
+    },
+    "plan_integrity": {
+      "status": "PASS",
+      "details": "Todos os planos t\u00eam pre\u00e7os v\u00e1lidos",
+      "duration": 0,
+      "timestamp": 1757364446.3359714
+    },
+    "payment_data_structure": {
+      "status": "PASS",
+      "details": "Estrutura de dados v\u00e1lida",
+      "duration": 0,
+      "timestamp": 1757364446.3369722
+    },
+    "customer_data_validation": {
+      "status": "PASS",
+      "details": "Dados do cliente v\u00e1lidos",
+      "duration": 0,
+      "timestamp": 1757364446.3379717
+    },
+    "payment_value_validation": {
+      "status": "PASS",
+      "details": "Valor v\u00e1lido: R$ 39.90",
+      "duration": 0,
+      "timestamp": 1757364446.3379717
+    },
+    "webhook_event_field": {
+      "status": "PASS",
+      "details": "Evento: PAYMENT_CONFIRMED",
+      "duration": 0,
+      "timestamp": 1757364446.3389702
+    },
+    "webhook_payment_field": {
+      "status": "PASS",
+      "details": "Dados de pagamento presentes",
+      "duration": 0,
+      "timestamp": 1757364446.3389702
+    },
+    "webhook_event_validation": {
+      "status": "PASS",
+      "details": "Evento v\u00e1lido",
+      "duration": 0,
+      "timestamp": 1757364446.3409739
+    },
+    "service_filiacao_validation": {
+      "status": "PASS",
+      "details": "Estrutura v\u00e1lida",
+      "duration": 0,
+      "timestamp": 1757364446.3419719
+    },
+    "service_certidao_validation": {
+      "status": "PASS",
+      "details": "Estrutura v\u00e1lida",
+      "duration": 0,
+      "timestamp": 1757364446.342973
+    },
+    "service_regularizacao_validation": {
+      "status": "PASS",
+      "details": "Estrutura v\u00e1lida",
+      "duration": 0,
+      "timestamp": 1757364446.3439722
+    },
+    "admin_notifications_table": {
+      "status": "PASS",
+      "details": "0 notifica\u00e7\u00f5es encontradas",
+      "duration": 0,
+      "timestamp": 1757364446.4011033
+    },
+    "admin_notifications_function": {
+      "status": "PASS",
+      "details": "Fun\u00e7\u00e3o dispon\u00edvel",
+      "duration": 0,
+      "timestamp": 1757364446.4011033
+    },
+    "audit_logs_table": {
+      "status": "PASS",
+      "details": "0 logs encontrados",
+      "duration": 0,
+      "timestamp": 1757364446.4942267
+    },
+    "security_events_table": {
+      "status": "PASS",
+      "details": "0 eventos encontrados",
+      "duration": 0,
+      "timestamp": 1757364446.5600436
+    },
+    "integrity_checks_table": {
+      "status": "PASS",
+      "details": "0 verifica\u00e7\u00f5es encontradas",
+      "duration": 0,
+      "timestamp": 1757364446.655503
+    },
+    "performance_profiles": {
+      "status": "PASS",
+      "details": "0.06s",
+      "duration": 0,
+      "timestamp": 1757364446.717741
+    },
+    "performance_member_types": {
+      "status": "PASS",
+      "details": "0.07s",
+      "duration": 0,
+      "timestamp": 1757364446.7875037
+    },
+    "performance_subscription_plans": {
+      "status": "PASS",
+      "details": "0.08s",
+      "duration": 0,
+      "timestamp": 1757364446.8723657
+    },
+    "performance_asaas_cobrancas": {
+      "status": "PASS",
+      "details": "0.07s",
+      "duration": 0,
+      "timestamp": 1757364446.9413657
+    },
+    "performance_average": {
+      "status": "PASS",
+      "details": "Tempo m\u00e9dio: 0.07s",
+      "duration": 0,
+      "timestamp": 1757364446.9413657
+    },
+    "referential_integrity": {
+      "status": "PASS",
+      "details": "Integridade referencial OK",
+      "duration": 0,
+      "timestamp": 1757364447.0053642
+    },
+    "duplicate_data_check": {
+      "status": "PASS",
+      "details": "Nenhuma duplicata encontrada",
+      "duration": 0,
+      "timestamp": 1757364447.0063655
+    }
+  },
+  "timestamp": 1757364447.0063655
+}

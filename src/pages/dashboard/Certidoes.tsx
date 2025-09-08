@@ -4,12 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Download, Plus, Clock, CheckCircle, AlertCircle, Shield } from "lucide-react";
-import { useCertidoes } from "@/hooks/useCertidoes";
+import { FileText, Download, Plus, Clock, CheckCircle, AlertCircle, Shield, ArrowLeft } from "lucide-react";
+import { useCertidoesWithPayment } from "@/hooks/useCertidoesWithPayment";
 import { useAuth } from "@/contexts/AuthContext";
 import { FormSolicitacaoCertidao } from "@/components/certidoes/FormSolicitacaoCertidao";
 import { TabelaSolicitacoes } from "@/components/certidoes/TabelaSolicitacoes";
 import { AdminCertidoes } from "@/components/certidoes/AdminCertidoes";
+import { PaymentCheckout } from "@/components/payments/PaymentCheckout";
+import { PaymentResult } from "@/components/payments/PaymentResult";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 
 const certidaoTypes = [
@@ -40,17 +42,91 @@ const certidaoTypes = [
   }
 ];
 
+type ViewState = 'list' | 'form' | 'checkout' | 'payment-result';
+
 const Certidoes = () => {
-  const [showForm, setShowForm] = useState(false);
-  const { minhasSolicitacoes, isLoading } = useCertidoes();
+  const [currentView, setCurrentView] = useState<ViewState>('list');
+  const [checkoutData, setCheckoutData] = useState<any>(null);
+  const [paymentResult, setPaymentResult] = useState<any>(null);
+  
+  const { minhasSolicitacoes, isLoading } = useCertidoesWithPayment();
   const { hasPermission } = useAuth();
 
   const isAdmin = hasPermission('manage_users');
+
+  // Handlers para navegação entre views
+  const handleNewSolicitacao = () => {
+    setCurrentView('form');
+  };
+
+  const handleProceedToPayment = (certidaoData: any, valor: number) => {
+    setCheckoutData({
+      serviceType: 'certidao',
+      serviceData: certidaoData.serviceData,
+      calculatedValue: valor,
+      title: `Certidão de ${getCertidaoDisplayName(certidaoData.serviceData.tipo_certidao)}`,
+      description: certidaoData.serviceData.justificativa
+    });
+    setCurrentView('checkout');
+  };
+
+  const handlePaymentSuccess = (result: any) => {
+    setPaymentResult(result);
+    setCurrentView('payment-result');
+  };
+
+  const handleBackToList = () => {
+    setCurrentView('list');
+    setCheckoutData(null);
+    setPaymentResult(null);
+  };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // Renderizar view de checkout
+  if (currentView === 'checkout' && checkoutData) {
+    return (
+      <PaymentCheckout
+        serviceType={checkoutData.serviceType}
+        serviceData={checkoutData.serviceData}
+        calculatedValue={checkoutData.calculatedValue}
+        title={checkoutData.title}
+        description={checkoutData.description}
+        onSuccess={handlePaymentSuccess}
+        onCancel={handleBackToList}
+      />
+    );
+  }
+
+  // Renderizar resultado do pagamento
+  if (currentView === 'payment-result' && paymentResult) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center space-x-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleBackToList}
+            className="text-comademig-blue"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-comademig-blue">Pagamento Realizado</h1>
+            <p className="text-gray-600">Sua solicitação será processada após confirmação do pagamento</p>
+          </div>
+        </div>
+        
+        <PaymentResult 
+          paymentData={paymentResult}
+          onClose={handleBackToList}
+        />
       </div>
     );
   }
@@ -74,7 +150,7 @@ const Certidoes = () => {
           <p className="text-gray-600">Solicite documentos oficiais da COMADEMIG</p>
         </div>
         <Button 
-          onClick={() => setShowForm(!showForm)}
+          onClick={handleNewSolicitacao}
           className="bg-comademig-gold hover:bg-comademig-gold/90"
         >
           <Plus size={16} className="mr-2" />
@@ -82,8 +158,11 @@ const Certidoes = () => {
         </Button>
       </div>
 
-      {showForm && (
-        <FormSolicitacaoCertidao onClose={() => setShowForm(false)} />
+      {currentView === 'form' && (
+        <FormSolicitacaoCertidao 
+          onClose={handleBackToList}
+          onProceedToPayment={handleProceedToPayment}
+        />
       )}
 
       <Tabs defaultValue="minhas" className="space-y-6">
@@ -216,5 +295,18 @@ const Certidoes = () => {
     </div>
   );
 };
+
+// Função auxiliar para nomes de certidão
+function getCertidaoDisplayName(tipo: string): string {
+  const nomes: Record<string, string> = {
+    'ministerio': 'Ministério',
+    'vinculo': 'Vínculo',
+    'atuacao': 'Atuação',
+    'historico': 'Histórico Ministerial',
+    'ordenacao': 'Ordenação'
+  };
+  
+  return nomes[tipo] || tipo;
+}
 
 export default Certidoes;

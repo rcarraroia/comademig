@@ -114,23 +114,91 @@ export const PaymentForm = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validação adicional para seleção de cargo ministerial
-    if (showMemberTypeSelection && !selectedMemberType) {
-      alert('Por favor, selecione seu cargo ministerial.');
+    // Validações específicas para filiação
+    if (showMemberTypeSelection) {
+      if (!selectedMemberType) {
+        alert('Por favor, selecione seu cargo ministerial.');
+        return;
+      }
+      
+      if (!selectedPlan) {
+        alert('Por favor, selecione um plano de assinatura.');
+        return;
+      }
+
+      // Validar se o plano selecionado ainda está ativo
+      const selectedPlanData = availablePlans.find(p => p.id === selectedPlan);
+      if (!selectedPlanData) {
+        alert('O plano selecionado não está mais disponível. Por favor, selecione outro plano.');
+        return;
+      }
+
+      // Validar valor mínimo
+      if (formData.value <= 0) {
+        alert('Valor inválido. Por favor, selecione um plano válido.');
+        return;
+      }
+    }
+
+    // Validações gerais
+    if (!formData.customer.name.trim()) {
+      alert('Por favor, preencha seu nome completo.');
       return;
     }
-    
-    if (showMemberTypeSelection && !selectedPlan) {
-      alert('Por favor, selecione um plano de assinatura.');
+
+    if (!formData.customer.email.trim()) {
+      alert('Por favor, preencha seu e-mail.');
+      return;
+    }
+
+    if (!formData.customer.cpfCnpj.trim()) {
+      alert('Por favor, preencha seu CPF/CNPJ.');
+      return;
+    }
+
+    if (!formData.description.trim()) {
+      alert('Por favor, preencha a descrição da cobrança.');
       return;
     }
     
     try {
+      console.log('Iniciando criação de pagamento com dados:', {
+        ...formData,
+        selectedMemberType,
+        selectedPlan
+      });
+
       const cobranca = await createPayment(formData);
+      
+      if (!cobranca) {
+        throw new Error('Nenhuma cobrança foi retornada');
+      }
+
+      console.log('Cobrança criada com sucesso:', cobranca);
+      
       setPaymentResult(cobranca);
       onSuccess?.(cobranca, selectedMemberType, selectedPlan);
-    } catch (error) {
-      console.error('Erro ao criar pagamento:', error);
+      
+    } catch (error: any) {
+      console.error('Erro detalhado ao criar pagamento:', error);
+      
+      // Tratamento específico de erros
+      let errorMessage = 'Erro ao processar pagamento. ';
+      
+      if (error?.message?.includes('network') || error?.message?.includes('fetch')) {
+        errorMessage += 'Verifique sua conexão com a internet e tente novamente.';
+      } else if (error?.message?.includes('validation')) {
+        errorMessage += 'Dados inválidos. Verifique as informações preenchidas.';
+      } else if (error?.message?.includes('timeout')) {
+        errorMessage += 'Tempo limite excedido. Tente novamente em alguns minutos.';
+      } else {
+        errorMessage += 'Tente novamente ou entre em contato com o suporte.';
+      }
+      
+      alert(errorMessage);
+      
+      // Log para debugging
+      console.error('Dados do formulário no momento do erro:', formData);
     }
   };
 

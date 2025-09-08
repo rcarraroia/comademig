@@ -41,25 +41,62 @@ export default function Filiacao() {
     console.log('Tipo de membro selecionado:', selectedMemberType);
     console.log('Plano selecionado:', selectedPlan);
     
-    // Criar assinatura do usuário automaticamente
-    if (user && selectedMemberType && selectedPlan) {
-      try {
-        await createUserSubscription.mutateAsync({
-          user_id: user.id,
-          subscription_plan_id: selectedPlan,
-          member_type_id: selectedMemberType,
-          status: 'pending', // Será ativada quando o pagamento for confirmado
-          payment_reference: cobranca.id
-        });
-        
-        toast.success('Filiação processada com sucesso! Sua assinatura será ativada após a confirmação do pagamento.');
-      } catch (error) {
-        console.error('Erro ao criar assinatura:', error);
-        toast.error('Pagamento criado, mas houve erro ao processar a assinatura. Entre em contato com o suporte.');
-      }
+    // Validações adicionais
+    if (!user) {
+      toast.error('Usuário não autenticado. Faça login e tente novamente.');
+      return;
+    }
+
+    if (!selectedMemberType || !selectedPlan) {
+      toast.error('Dados de filiação incompletos. Verifique se selecionou o cargo ministerial e o plano.');
+      return;
+    }
+
+    if (!cobranca?.id) {
+      toast.error('Erro na cobrança gerada. Tente novamente ou entre em contato com o suporte.');
+      return;
     }
     
-    // A própria PaymentForm já mostra o resultado do pagamento
+    // Criar assinatura do usuário automaticamente
+    try {
+      const subscriptionData = {
+        user_id: user.id,
+        subscription_plan_id: selectedPlan,
+        member_type_id: selectedMemberType,
+        status: 'pending' as const, // Será ativada quando o pagamento for confirmado
+        payment_reference: cobranca.id
+      };
+
+      console.log('Criando assinatura com dados:', subscriptionData);
+
+      await createUserSubscription.mutateAsync(subscriptionData);
+      
+      toast.success('Filiação processada com sucesso! Sua assinatura será ativada após a confirmação do pagamento.');
+      
+      // Log para auditoria
+      console.log('Assinatura criada com sucesso para usuário:', user.id);
+      
+    } catch (error: any) {
+      console.error('Erro detalhado ao criar assinatura:', error);
+      
+      // Tratamento específico de diferentes tipos de erro
+      let errorMessage = 'Pagamento criado, mas houve erro ao processar a assinatura.';
+      
+      if (error?.message?.includes('duplicate')) {
+        errorMessage = 'Você já possui uma assinatura ativa. Entre em contato com o suporte se precisar de ajuda.';
+      } else if (error?.message?.includes('foreign key')) {
+        errorMessage = 'Dados de plano ou cargo ministerial inválidos. Tente novamente.';
+      } else if (error?.message?.includes('permission')) {
+        errorMessage = 'Erro de permissão. Verifique se está logado corretamente.';
+      }
+      
+      toast.error(errorMessage + ' Entre em contato com o suporte se o problema persistir.');
+      
+      // Tentar novamente após um delay
+      setTimeout(() => {
+        toast.info('Você pode tentar reprocessar a assinatura acessando seu painel de usuário.');
+      }, 3000);
+    }
   };
 
   return (
