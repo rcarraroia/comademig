@@ -69,6 +69,7 @@ export const useSubscriptionPlans = () => {
         .from('subscription_plans')
         .select('*')
         .eq('is_active', true)
+        .not('name', 'ilike', '%administrador%') // Excluir planos de administrador
         .order('sort_order', { ascending: true });
 
       if (error) throw error;

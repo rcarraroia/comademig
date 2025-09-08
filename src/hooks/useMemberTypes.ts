@@ -51,6 +51,7 @@ export const useMemberTypes = () => {
         .from('member_types')
         .select('*')
         .eq('is_active', true)
+        .neq('name', 'Administrador') // Excluir administrador - não é tipo de membro da convenção
         .order('sort_order', { ascending: true });
       
       if (typesError) throw typesError;
@@ -213,12 +214,13 @@ export const useMemberTypes = () => {
       return memberTypes;
     }
     
-    // Fallback para tipos hardcoded existentes
+    // Fallback para tipos hardcoded existentes (SEM ADMINISTRADOR - não é tipo de membro da convenção)
     return [
-      { id: 'membro', name: 'Membro', description: 'Membro regular', is_active: true },
-      { id: 'tesoureiro', name: 'Tesoureiro', description: 'Responsável financeiro', is_active: true },
-      { id: 'moderador', name: 'Moderador', description: 'Moderador do sistema', is_active: true },
-      { id: 'admin', name: 'Administrador', description: 'Administrador do sistema', is_active: true }
+      { id: 'pastor', name: 'Pastor', description: 'Pastor titular ou auxiliar', is_active: true },
+      { id: 'evangelista', name: 'Evangelista', description: 'Ministro evangelista', is_active: true },
+      { id: 'presbitero', name: 'Presbítero', description: 'Presbítero da igreja', is_active: true },
+      { id: 'diacono', name: 'Diácono', description: 'Diácono da igreja', is_active: true },
+      { id: 'membro', name: 'Membro', description: 'Membro regular da convenção', is_active: true }
     ] as MemberType[];
   };
 
