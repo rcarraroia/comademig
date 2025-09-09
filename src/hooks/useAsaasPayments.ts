@@ -33,8 +33,8 @@ export const useAsaasPayments = () => {
     try {
       console.log('Iniciando criação de pagamento com dados:', paymentData);
       
-      // Usar servidor Node.js ao invés de Edge Functions
-      const serverUrl = 'https://comademig-payment-server.vercel.app'; // Será configurado após deploy
+      // Usar servidor Node.js - URL correta
+      const serverUrl = 'https://comademig.vercel.app';
       let endpoint;
       
       if (paymentData.tipoCobranca === 'filiacao') {
@@ -69,6 +69,9 @@ export const useAsaasPayments = () => {
         };
       }
       
+      console.log('Chamando endpoint:', endpoint);
+      console.log('Dados enviados:', requestBody);
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -77,12 +80,16 @@ export const useAsaasPayments = () => {
         body: JSON.stringify(requestBody)
       });
 
+      console.log('Response status:', response.status);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro ao processar pagamento');
+        const errorText = await response.text();
+        console.error('Erro da API:', errorText);
+        throw new Error(`Erro ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('Resposta da API:', data);
 
       if (!data.success) {
         throw new Error(data.error || 'Erro ao criar cobrança');
