@@ -58,30 +58,61 @@ serve(async (req) => {
     console.log('Dados do pagamento:', paymentData)
 
     // Primeiro, criar/buscar o cliente no Asaas
-    const customerResponse = await fetch('https://www.asaas.com/api/v3/customers', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'access_token': asaasApiKey,
-      },
-      body: JSON.stringify(paymentData.customer)
-    })
-
-    let customerId: string
-    if (customerResponse.status === 400) {
-      // Cliente já existe, buscar pelo CPF
-      const searchResponse = await fetch(`https://www.asaas.com/api/v3/customers?cpfCnpj=${paymentData.customer.cpfCnpj}`, {
-        method: 'GET',
+    let customerId: string;
+    
+    try {
+      const customerResponse = await fetch('https://www.asaas.com/api/v3/customers', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'access_token': asaasApiKey,
+        },
+        body: JSON.stringify(paymentData.customer)
+      });
+
+      if (customerResponse.ok) {
+        // Cliente criado com sucesso
+        const customerData = await customerResponse.json();
+        customerId = customerData.id;
+        console.log('Cliente criado com sucesso:', customerId);
+      } else if (customerResponse.status === 400) {
+        // Cliente já existe, buscar pelo CPF
+        console.log('Cliente já existe, buscando pelo CPF...');
+        
+        const searchResponse = await fetch(`https://www.asaas.com/api/v3/customers?cpfCnpj=${paymentData.customer.cpfCnpj}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'access_token': asaasApiKey,
+          }
+        });
+        
+        if (!searchResponse.ok) {
+          throw new Error(`Erro ao buscar cliente existente: ${searchResponse.status}`);
         }
-      })
-      const searchData = await searchResponse.json()
-      customerId = searchData.data[0]?.id
-    } else {
-      const customerData = await customerResponse.json()
-      customerId = customerData.id
+        
+        const searchData = await searchResponse.json();
+        
+        if (!searchData.data || searchData.data.length === 0) {
+          throw new Error('Cliente não encontrado após erro de criação');
+        }
+        
+        customerId = searchData.data[0].id;
+        console.log('Cliente encontrado:', customerId);
+      } else {
+        // Outro erro na criação
+        const errorData = await customerResponse.json();
+        throw new Error(`Erro ao criar cliente: ${JSON.stringify(errorData)}`);
+      }
+    } catch (error) {
+      console.error('Erro no processo de criação/busca de cliente:', error);
+      return new Response(JSON.stringify({ 
+        error: 'Erro ao processar dados do cliente',
+        details: error.message 
+      }), { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     console.log('ID do cliente:', customerId)
