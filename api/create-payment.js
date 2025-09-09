@@ -107,7 +107,7 @@ module.exports = async (req, res) => {
     
     // 3. Salvar no banco
     const cobrancaData = {
-      user_id: 'anonymous_' + Date.now(),
+      user_id: null, // Para usuários anônimos, usar null em vez de string inválida
       asaas_id: payment.id,
       customer_id: customerId,
       valor: value,
