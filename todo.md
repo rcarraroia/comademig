@@ -38,8 +38,17 @@
 - [x] Testar fluxos de pagamento (filiação, afiliados)
 - [x] Documentar problemas encontrados em `/home/ubuntu/comademig/analise_fluxo_frontend.md`
 
-## Fase 6: Implementação de correções e melhorias
-- [ ] Corrigir problemas identificados nas Edge Functions
+## Fase 6: Implementação de correções e melhorias ⏳
+- [x] **CORREÇÃO CRÍTICA:** Implementar redirecionamento para checkout (Filiacao.tsx)
+- [x] **CORREÇÃO CRÍTICA:** Corrigir lógica de criação de clientes (asaas-create-payment)
+- [x] **CORREÇÃO CRÍTICA:** Padronizar Edge Functions (asaas-create-payment-with-split)
+- [x] Adicionar tratamento robusto de erros nas Edge Functions
+- [x] Implementar logs detalhados para debugging
+- [x] Fazer commit das correções no repositório local
+- [ ] Fazer push das correções para repositório remoto (aguardando credenciais)
+- [ ] Verificar variáveis de ambiente no Supabase (aguardando login)
+- [ ] Fazer deploy das Edge Functions corrigidas
+- [ ] Testar fluxo completo de pagamento
 - [ ] Implementar melhorias no tratamento de erros
 - [ ] Atualizar configurações necessárias
 - [ ] Testar correções implementadas
