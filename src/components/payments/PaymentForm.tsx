@@ -162,7 +162,8 @@ export const PaymentForm = ({
     }
     
     try {
-      console.log('Iniciando criação de pagamento com dados:', {
+      alert('🚀 TESTE: PaymentForm foi atualizado!');
+      console.log('🚀 VERSÃO ATUALIZADA - Iniciando criação de pagamento com dados:', {
         ...formData,
         selectedMemberType,
         selectedPlan
@@ -174,10 +175,18 @@ export const PaymentForm = ({
         throw new Error('Nenhuma cobrança foi retornada');
       }
 
-      console.log('Cobrança criada com sucesso:', cobranca);
+      console.log('✅ Cobrança criada com sucesso:', cobranca);
       
       setPaymentResult(cobranca);
-      onSuccess?.(cobranca, selectedMemberType, selectedPlan);
+      
+      // FORÇAR CHAMADA DO onSuccess
+      console.log('🔍 onSuccess existe?', !!onSuccess);
+      if (onSuccess) {
+        console.log('🔍 CHAMANDO onSuccess AGORA!');
+        onSuccess(cobranca, selectedMemberType, selectedPlan);
+      } else {
+        console.error('❌ CRÍTICO: onSuccess não foi passado para PaymentForm!');
+      }
       
     } catch (error: any) {
       console.error('Erro detalhado ao criar pagamento:', error);
@@ -262,31 +271,7 @@ export const PaymentForm = ({
             </div>
           )}
 
-          {formData.billingType === 'BOLETO' && paymentResult.bankSlipUrl && (
-            <div className="text-center space-y-4">
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Seu boleto foi gerado. Clique no botão abaixo para visualizar e imprimir.
-                </AlertDescription>
-              </Alert>
-              <Button asChild className="w-full">
-                <a href={paymentResult.bankSlipUrl} target="_blank" rel="noopener noreferrer">
-                  Visualizar Boleto
-                </a>
-              </Button>
-              {paymentResult.identificationField && (
-                <div>
-                  <Label>Linha Digitável</Label>
-                  <Input 
-                    value={paymentResult.identificationField} 
-                    readOnly 
-                    className="font-mono text-sm"
-                  />
-                </div>
-              )}
-            </div>
-          )}
+
 
           <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
             <h4 className="font-semibold text-blue-800 mb-2">Informações do Pagamento</h4>
@@ -525,7 +510,7 @@ export const PaymentForm = ({
             <Label>Forma de Pagamento</Label>
             <RadioGroup
               value={formData.billingType}
-              onValueChange={(value: 'BOLETO' | 'CREDIT_CARD' | 'PIX') => handleInputChange('billingType', value)}
+              onValueChange={(value: 'CREDIT_CARD' | 'PIX') => handleInputChange('billingType', value)}
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="PIX" id="pix" />
@@ -535,13 +520,7 @@ export const PaymentForm = ({
                 </Label>
               </div>
               
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="BOLETO" id="boleto" />
-                <Label htmlFor="boleto" className="flex items-center space-x-2 cursor-pointer">
-                  <FileText className="h-4 w-4" />
-                  <span>Boleto Bancário</span>
-                </Label>
-              </div>
+
               
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="CREDIT_CARD" id="card" />

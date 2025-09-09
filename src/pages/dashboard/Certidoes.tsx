@@ -70,9 +70,9 @@ const Certidoes = () => {
     setCurrentView('checkout');
   };
 
-  const handlePaymentSuccess = (result: any) => {
-    setPaymentResult(result);
-    setCurrentView('payment-result');
+  const handlePaymentSuccess = (cobranca: any) => {
+    // Redirecionar para página de checkout
+    window.location.href = `/checkout/${cobranca.id}`;
   };
 
   const handleBackToList = () => {

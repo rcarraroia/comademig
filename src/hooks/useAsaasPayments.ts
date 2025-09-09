@@ -15,7 +15,7 @@ export interface PaymentData {
     city?: string;
     postalCode?: string;
   };
-  billingType: 'BOLETO' | 'CREDIT_CARD' | 'PIX';
+  billingType: 'CREDIT_CARD' | 'PIX';
   value: number;
   dueDate: string;
   description: string;
@@ -63,7 +63,7 @@ export const useAsaasPayments = () => {
 
       toast({
         title: "Cobrança criada com sucesso",
-        description: `${paymentData.billingType === 'PIX' ? 'PIX' : 'Boleto'} gerado com sucesso${data.split_configured ? ' (com comissão de afiliado)' : ''}`,
+        description: `${paymentData.billingType === 'PIX' ? 'PIX' : 'Cartão de Crédito'} processado com sucesso${data.split_configured ? ' (com comissão de afiliado)' : ''}`,
       });
 
       return data.cobranca;

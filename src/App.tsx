@@ -97,7 +97,7 @@ function App() {
             <Route path="/auth" element={<Auth />} />
             <Route path="/esqueci-senha" element={<EsqueciSenha />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/checkout/:cobrancaId" element={<Checkout />} />
             <Route path="/pagamento-sucesso" element={<PagamentoSucesso />} />
             <Route path="/validar-carteira/:numeroCarteira" element={<ValidarCarteira />} />
             <Route path="/validar-certificado/:numeroCertificado" element={<ValidarCertificado />} />

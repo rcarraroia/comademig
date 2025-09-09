@@ -55,9 +55,10 @@ export const EventRegistrationModal = ({
     }
   };
 
-  const handlePaymentSuccess = () => {
-    onSuccess();
+  const handlePaymentSuccess = (cobranca: any) => {
     onClose();
+    // Redirecionar para página de checkout
+    window.location.href = `/checkout/${cobranca.id}`;
   };
 
   return (

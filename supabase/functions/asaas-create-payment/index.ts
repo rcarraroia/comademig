@@ -20,7 +20,7 @@ interface PaymentRequest {
     city?: string
     postalCode?: string
   }
-  billingType: 'BOLETO' | 'CREDIT_CARD' | 'PIX'
+  billingType: 'CREDIT_CARD' | 'PIX'
   value: number
   dueDate: string
   description: string
@@ -165,6 +165,16 @@ serve(async (req) => {
     // Criar a cobrança no Asaas com retry
     const asaasPayment = await createAsaasPayment(customerId, paymentData, asaasApiKey, userId)
 
+    // Determinar URL de pagamento baseada no tipo
+    let urlPagamento = null;
+    if (paymentData.billingType === 'PIX') {
+      urlPagamento = asaasPayment.invoiceUrl || `https://www.asaas.com/c/${asaasPayment.id}`;
+    } else if (paymentData.billingType === 'CREDIT_CARD') {
+      urlPagamento = asaasPayment.invoiceUrl || `https://www.asaas.com/c/${asaasPayment.id}`;
+    }
+
+    console.log('URL de pagamento determinada:', urlPagamento);
+
     // Salvar a cobrança no banco de dados com dados do serviço
     const cobrancaData = {
       user_id: userId,
@@ -175,7 +185,7 @@ serve(async (req) => {
       data_vencimento: paymentData.dueDate,
       status: asaasPayment.status,
       forma_pagamento: paymentData.billingType,
-      url_pagamento: asaasPayment.invoiceUrl,
+      url_pagamento: urlPagamento,
       linha_digitavel: asaasPayment.bankSlipUrl,
       tipo_cobranca: paymentData.tipoCobranca,
       referencia_id: paymentData.referenciaId,

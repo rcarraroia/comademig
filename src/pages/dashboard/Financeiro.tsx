@@ -29,10 +29,9 @@ const Financeiro = () => {
   }, []);
 
   const handleCreatePayment = (cobranca: any) => {
-    setSelectedPayment(cobranca);
     setShowPaymentForm(false);
-    setShowPaymentResult(true);
-    loadPayments(); // Recarregar lista
+    // Redirecionar para página de checkout
+    window.location.href = `/checkout/${cobranca.id}`;
   };
 
   const handleCheckStatus = async (paymentId: string) => {

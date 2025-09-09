@@ -1,39 +1,108 @@
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { CreditCard, QrCode, Copy, Check } from 'lucide-react';
 
-import { useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { CreditCard, Barcode, CheckCircle } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
+interface CobrancaData {
+  id: string;
+  asaas_id: string;
+  valor: number;
+  descricao: string;
+  forma_pagamento: string;
+  status: string;
+  qr_code_pix?: string;
+  linha_digitavel?: string;
+  data_vencimento: string;
+}
 
-const Checkout = () => {
-  const location = useLocation();
+export default function Checkout() {
+  const { cobrancaId } = useParams();
   const navigate = useNavigate();
-  const { signUp } = useAuth();
   const { toast } = useToast();
-  const { formData, taxa, cargoDisplay } = location.state || {};
-  const [metodoPagamento, setMetodoPagamento] = useState("");
-  const [processandoPagamento, setProcessandoPagamento] = useState(false);
-  const [dadosCartao, setDadosCartao] = useState({
-    numero: "",
-    nome: "",
-    validade: "",
-    cvv: ""
+  const [cobranca, setCobranca] = useState<CobrancaData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  // Estados para cartão de crédito
+  const [cardData, setCardData] = useState({
+    number: '',
+    name: '',
+    expiryMonth: '',
+    expiryYear: '',
+    ccv: ''
   });
 
-  if (!formData) {
+  useEffect(() => {
+    if (cobrancaId) {
+      loadCobranca();
+    }
+  }, [cobrancaId]);
+
+  const loadCobranca = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('asaas_cobrancas')
+        .select('*')
+        .eq('id', cobrancaId)
+        .single();
+
+      if (error) throw error;
+      setCobranca(data);
+    } catch (error) {
+      console.error('Erro ao carregar cobrança:', error);
+      toast({
+        title: "Erro",
+        description: "Cobrança não encontrada",
+        variant: "destructive"
+      });
+      navigate('/');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast({
+        title: "Copiado!",
+        description: "Código copiado para área de transferência"
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível copiar",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-comademig-light flex items-center justify-center">
-        <Card>
-          <CardContent className="p-6 text-center">
-            <p>Dados não encontrados. Por favor, preencha o formulário novamente.</p>
-            <Button onClick={() => navigate("/filiacao")} className="mt-4">
-              Voltar ao Formulário
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando dados do pagamento...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!cobranca) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center">
+            <p className="text-gray-600">Cobrança não encontrada</p>
+            <Button onClick={() => navigate('/')} className="mt-4">
+              Voltar ao início
             </Button>
           </CardContent>
         </Card>
@@ -41,243 +110,169 @@ const Checkout = () => {
     );
   }
 
-  const handlePagamento = async () => {
-    setProcessandoPagamento(true);
-    
-    try {
-      // Simular processamento do pagamento
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Após pagamento bem-sucedido, criar conta do usuário
-      const { error } = await signUp(formData.email, formData.senha, {
-        nome_completo: formData.nomeCompleto,
-        cpf: formData.cpf,
-        telefone: formData.celular,
-        igreja: formData.nomeIgreja
-      });
-      
-      if (error) {
-        console.error('Erro ao criar conta:', error);
-        toast({
-          title: "Erro ao criar conta",
-          description: "Pagamento processado, mas houve um erro ao criar sua conta. Entre em contato conosco.",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Conta criada com sucesso",
-          description: "Verifique seu email para confirmar a conta.",
-        });
-      }
-      
-      // Navegar para página de sucesso independentemente do resultado do signup
-      navigate("/pagamento-sucesso", {
-        state: {
-          formData,
-          taxa,
-          cargoDisplay,
-          metodoPagamento
-        }
-      });
-      
-    } catch (error) {
-      console.error('Erro no processamento:', error);
-      toast({
-        title: "Erro no pagamento",
-        description: "Ocorreu um erro ao processar o pagamento. Tente novamente.",
-        variant: "destructive"
-      });
-    } finally {
-      setProcessandoPagamento(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-comademig-light py-8">
-      <div className="container mx-auto px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-comademig-blue mb-4">
-              Finalizar Filiação
-            </h1>
-            <p className="text-gray-600">
-              Confirme seus dados e escolha a forma de pagamento
-            </p>
-          </div>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4 max-w-4xl">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-gray-900">Finalizar Pagamento</h1>
+          <p className="text-gray-600 mt-2">{cobranca.descricao}</p>
+        </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Resumo do Pedido */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-comademig-blue">Resumo da Filiação</CardTitle>
-                <CardDescription>Confirme os dados da sua solicitação</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-comademig-light p-4 rounded-lg">
-                  <h3 className="font-semibold text-comademig-blue mb-2">Dados Pessoais</h3>
-                  <p><strong>Nome:</strong> {formData.nomeCompleto}</p>
-                  <p><strong>CPF:</strong> {formData.cpf}</p>
-                  <p><strong>E-mail:</strong> {formData.email}</p>
-                  <p><strong>Celular:</strong> {formData.celular}</p>
-                </div>
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Resumo do Pedido */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Resumo do Pedido</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Descrição:</span>
+                <span className="font-medium">{cobranca.descricao}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Valor:</span>
+                <span className="font-bold text-xl text-green-600">
+                  R$ {cobranca.valor.toFixed(2).replace('.', ',')}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Vencimento:</span>
+                <span>{new Date(cobranca.data_vencimento).toLocaleDateString('pt-BR')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Status:</span>
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-sm">
+                  {cobranca.status}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
 
-                <div className="bg-comademig-light p-4 rounded-lg">
-                  <h3 className="font-semibold text-comademig-blue mb-2">Dados Ministeriais</h3>
-                  <p><strong>Cargo:</strong> {cargoDisplay}</p>
-                  <p><strong>Igreja:</strong> {formData.nomeIgreja}</p>
-                  <p><strong>Pastor:</strong> {formData.nomePastor}</p>
-                </div>
-
-                <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold">Taxa de Filiação:</span>
-                    <Badge className="bg-comademig-blue text-white text-lg px-3 py-1">
-                      R$ {taxa.toFixed(2)}
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                  <h4 className="font-semibold text-blue-800 mb-2">Após o Pagamento</h4>
-                  <ul className="text-blue-700 text-sm space-y-1">
-                    <li>• Sua conta será criada automaticamente</li>
-                    <li>• Você receberá um email de confirmação</li>
-                    <li>• Acesso imediato ao portal do membro</li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Forma de Pagamento */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-comademig-blue">Forma de Pagamento</CardTitle>
-                <CardDescription>Escolha como deseja pagar a taxa de filiação</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <RadioGroup value={metodoPagamento} onValueChange={setMetodoPagamento}>
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50">
-                    <RadioGroupItem value="cartao" id="cartao" />
-                    <Label htmlFor="cartao" className="flex items-center cursor-pointer">
-                      <CreditCard className="mr-2 h-5 w-5 text-comademig-blue" />
-                      Cartão de Crédito
-                    </Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50">
-                    <RadioGroupItem value="boleto" id="boleto" />
-                    <Label htmlFor="boleto" className="flex items-center cursor-pointer">
-                      <Barcode className="mr-2 h-5 w-5 text-comademig-blue" />
-                      Boleto Bancário
-                    </Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50">
-                    <RadioGroupItem value="pix" id="pix" />
-                    <Label htmlFor="pix" className="flex items-center cursor-pointer">
-                      <CheckCircle className="mr-2 h-5 w-5 text-comademig-blue" />
-                      PIX (Desconto de 5%)
-                    </Label>
-                  </div>
-                </RadioGroup>
-
-                {/* Dados do Cartão */}
-                {metodoPagamento === "cartao" && (
-                  <div className="space-y-4 border-t pt-4">
-                    <h4 className="font-semibold text-comademig-blue">Dados do Cartão</h4>
-                    <div className="grid grid-cols-1 gap-4">
-                      <div>
-                        <Label htmlFor="numeroCartao">Número do Cartão</Label>
-                        <Input
-                          id="numeroCartao"
-                          placeholder="0000 0000 0000 0000"
-                          value={dadosCartao.numero}
-                          onChange={(e) => setDadosCartao(prev => ({...prev, numero: e.target.value}))}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="nomeCartao">Nome no Cartão</Label>
-                        <Input
-                          id="nomeCartao"
-                          placeholder="Nome como impresso no cartão"
-                          value={dadosCartao.nome}
-                          onChange={(e) => setDadosCartao(prev => ({...prev, nome: e.target.value}))}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="validade">Validade</Label>
-                          <Input
-                            id="validade"
-                            placeholder="MM/AA"
-                            value={dadosCartao.validade}
-                            onChange={(e) => setDadosCartao(prev => ({...prev, validade: e.target.value}))}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="cvv">CVV</Label>
-                          <Input
-                            id="cvv"
-                            placeholder="000"
-                            value={dadosCartao.cvv}
-                            onChange={(e) => setDadosCartao(prev => ({...prev, cvv: e.target.value}))}
-                          />
+          {/* Formas de Pagamento */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                {cobranca.forma_pagamento === 'PIX' && <QrCode className="h-5 w-5" />}
+                {cobranca.forma_pagamento === 'CREDIT_CARD' && <CreditCard className="h-5 w-5" />}
+                Pagamento via {cobranca.forma_pagamento === 'PIX' ? 'PIX' : 'Cartão de Crédito'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* PIX */}
+              {cobranca.forma_pagamento === 'PIX' && (
+                <div className="space-y-4">
+                  {cobranca.qr_code_pix ? (
+                    <>
+                      <div className="text-center">
+                        <div className="bg-white p-4 rounded-lg border-2 border-dashed border-gray-300 inline-block">
+                          <QrCode className="h-32 w-32 mx-auto text-gray-400" />
+                          <p className="text-sm text-gray-600 mt-2">QR Code PIX</p>
                         </div>
                       </div>
+                      <div>
+                        <Label>Código PIX (Copia e Cola)</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input 
+                            value={cobranca.qr_code_pix} 
+                            readOnly 
+                            className="font-mono text-xs"
+                          />
+                          <Button
+                            onClick={() => copyToClipboard(cobranca.qr_code_pix!)}
+                            variant="outline"
+                            size="sm"
+                          >
+                            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-8">
+                      <QrCode className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                      <p className="text-gray-600">QR Code PIX sendo gerado...</p>
+                      <Button 
+                        onClick={loadCobranca} 
+                        variant="outline" 
+                        className="mt-4"
+                      >
+                        Atualizar
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Cartão de Crédito */}
+              {cobranca.forma_pagamento === 'CREDIT_CARD' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <Label htmlFor="cardNumber">Número do Cartão</Label>
+                      <Input
+                        id="cardNumber"
+                        placeholder="0000 0000 0000 0000"
+                        value={cardData.number}
+                        onChange={(e) => setCardData({...cardData, number: e.target.value})}
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Label htmlFor="cardName">Nome no Cartão</Label>
+                      <Input
+                        id="cardName"
+                        placeholder="Nome como está no cartão"
+                        value={cardData.name}
+                        onChange={(e) => setCardData({...cardData, name: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="expiryMonth">Mês</Label>
+                      <Input
+                        id="expiryMonth"
+                        placeholder="MM"
+                        value={cardData.expiryMonth}
+                        onChange={(e) => setCardData({...cardData, expiryMonth: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="expiryYear">Ano</Label>
+                      <Input
+                        id="expiryYear"
+                        placeholder="AAAA"
+                        value={cardData.expiryYear}
+                        onChange={(e) => setCardData({...cardData, expiryYear: e.target.value})}
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Label htmlFor="ccv">CCV</Label>
+                      <Input
+                        id="ccv"
+                        placeholder="000"
+                        value={cardData.ccv}
+                        onChange={(e) => setCardData({...cardData, ccv: e.target.value})}
+                      />
                     </div>
                   </div>
-                )}
-
-                {/* Informações sobre PIX */}
-                {metodoPagamento === "pix" && (
-                  <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                    <h4 className="font-semibold text-green-800 mb-2">PIX - Desconto de 5%</h4>
-                    <p className="text-green-700 text-sm mb-2">
-                      Valor com desconto: <strong>R$ {(taxa * 0.95).toFixed(2)}</strong>
-                    </p>
-                    <p className="text-green-700 text-sm">
-                      Você receberá o código PIX para pagamento na próxima tela.
-                    </p>
-                  </div>
-                )}
-
-                {/* Informações sobre Boleto */}
-                {metodoPagamento === "boleto" && (
-                  <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                    <h4 className="font-semibold text-blue-800 mb-2">Boleto Bancário</h4>
-                    <p className="text-blue-700 text-sm">
-                      O boleto será gerado e enviado para seu e-mail. 
-                      Prazo de vencimento: 3 dias úteis.
-                    </p>
-                  </div>
-                )}
-
-                <div className="flex space-x-4 pt-4">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => navigate("/filiacao")}
-                    className="flex-1"
-                    disabled={processandoPagamento}
-                  >
-                    Voltar
-                  </Button>
-                  <Button 
-                    onClick={handlePagamento}
-                    disabled={!metodoPagamento || processandoPagamento}
-                    className="flex-1 bg-comademig-blue hover:bg-comademig-blue/90"
-                  >
-                    {processandoPagamento ? "Processando..." : 
-                     metodoPagamento === "boleto" ? "Gerar Boleto" : 
-                     metodoPagamento === "pix" ? "Gerar PIX" : "Finalizar Pagamento"}
+                  <Button className="w-full" size="lg">
+                    Pagar R$ {cobranca.valor.toFixed(2).replace('.', ',')}
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              )}
+
+
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="mt-8 text-center">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/dashboard/financeiro')}
+          >
+            Voltar ao Painel Financeiro
+          </Button>
         </div>
       </div>
     </div>
   );
-};
-
-export default Checkout;
+}

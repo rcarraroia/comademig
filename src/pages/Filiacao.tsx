@@ -37,14 +37,14 @@ export default function Filiacao() {
   };
 
   const handlePaymentSuccess = async (cobranca: any, selectedMemberType?: string, selectedPlan?: string) => {
-    console.log('Pagamento criado com sucesso:', cobranca);
-    console.log('Tipo de membro selecionado:', selectedMemberType);
-    console.log('Plano selecionado:', selectedPlan);
+    console.log('✅ Pagamento criado com sucesso:', cobranca);
+    console.log('📋 Tipo de membro selecionado:', selectedMemberType);
+    console.log('💰 Plano selecionado:', selectedPlan);
     
-    // Redirecionar para URL de pagamento do Asaas PRIMEIRO
+    // Determinar URL de pagamento
     let paymentUrl = null;
     
-    // Verificar diferentes possíveis campos de URL de pagamento
+    // Prioridade: url_pagamento do banco > invoiceUrl do Asaas > URL padrão
     if (cobranca.url_pagamento) {
       paymentUrl = cobranca.url_pagamento;
     } else if (cobranca.asaas_data?.invoiceUrl) {
@@ -53,26 +53,15 @@ export default function Filiacao() {
       paymentUrl = cobranca.asaas_data.bankSlipUrl;
     }
     
-    if (paymentUrl) {
-      // Abrir URL de pagamento em nova aba
-      window.open(paymentUrl, '_blank');
-      toast.success('Cobrança criada com sucesso! A página de pagamento foi aberta em uma nova aba.');
-    } else {
-      // Fallback: mostrar dados de pagamento se não houver URL
-      let message = 'Cobrança criada com sucesso!\n\n';
-      
-      if (cobranca.qr_code_pix) {
-        message += 'Código PIX: ' + cobranca.qr_code_pix + '\n\n';
-      }
-      
-      if (cobranca.linha_digitavel) {
-        message += 'Linha digitável do boleto: ' + cobranca.linha_digitavel + '\n\n';
-      }
-      
-      message += 'ID da cobrança: ' + (cobranca.asaas_id || cobrança.id);
-      
-      alert(message);
-    }
+    console.log('🎯 Redirecionando para checkout interno');
+    
+    // Mostrar toast de sucesso
+    toast.success('Cobrança criada! Redirecionando para pagamento...');
+    
+    // Redirecionar para nossa página de checkout interna
+    setTimeout(() => {
+      navigate(`/checkout/${cobranca.id}`);
+    }, 1500);
     
     // Validações adicionais para criação de assinatura
     if (!user) {
