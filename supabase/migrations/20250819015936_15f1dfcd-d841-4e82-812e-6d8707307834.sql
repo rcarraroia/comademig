@@ -13,9 +13,9 @@ CREATE TABLE public.webhook_events (
 CREATE TABLE public.affiliates (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  display_name TEXT,
-  cpf_cnpj TEXT,
-  asaas_wallet_id UUID NOT NULL, -- walletId exigido pelo Asaas para repasses
+  display_name TEXT NOT NULL,
+  cpf_cnpj TEXT NOT NULL,
+  asaas_wallet_id TEXT NOT NULL, -- walletId exigido pelo Asaas para repasses (formato string)
   contact_email TEXT,
   phone TEXT,
   status TEXT NOT NULL DEFAULT 'pending', -- pending | active | suspended

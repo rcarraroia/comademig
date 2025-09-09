@@ -8,11 +8,16 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, Users, Info } from 'lucide-react';
 import { useAsaasPayments } from '@/hooks/useAsaasPayments';
+import { useUserSubscriptions } from '@/hooks/useUserSubscriptions';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 export default function Filiacao() {
   const location = useLocation();
+  const { user } = useAuth();
   const [affiliateInfo, setAffiliateInfo] = useState<any>(null);
   const { getAffiliateByReferralCode } = useAsaasPayments();
+  const { createUserSubscription } = useUserSubscriptions();
 
   useEffect(() => {
     // Verificar se há código de referral na URL
@@ -31,10 +36,12 @@ export default function Filiacao() {
     }
   };
 
-  const handlePaymentSuccess = (cobranca: any) => {
+  const handlePaymentSuccess = async (cobranca: any, selectedMemberType?: string, selectedPlan?: string) => {
     console.log('Pagamento criado com sucesso:', cobranca);
+    console.log('Tipo de membro selecionado:', selectedMemberType);
+    console.log('Plano selecionado:', selectedPlan);
     
-    // Redirecionar para URL de pagamento do Asaas
+    // Redirecionar para URL de pagamento do Asaas PRIMEIRO
     let paymentUrl = null;
     
     // Verificar diferentes possíveis campos de URL de pagamento
@@ -49,9 +56,7 @@ export default function Filiacao() {
     if (paymentUrl) {
       // Abrir URL de pagamento em nova aba
       window.open(paymentUrl, '_blank');
-      
-      // Mostrar mensagem de sucesso
-      alert('Cobrança criada com sucesso! A página de pagamento foi aberta em uma nova aba.');
+      toast.success('Cobrança criada com sucesso! A página de pagamento foi aberta em uma nova aba.');
     } else {
       // Fallback: mostrar dados de pagamento se não houver URL
       let message = 'Cobrança criada com sucesso!\n\n';
@@ -64,9 +69,66 @@ export default function Filiacao() {
         message += 'Linha digitável do boleto: ' + cobranca.linha_digitavel + '\n\n';
       }
       
-      message += 'ID da cobrança: ' + (cobranca.asaas_id || cobranca.id);
+      message += 'ID da cobrança: ' + (cobranca.asaas_id || cobrança.id);
       
       alert(message);
+    }
+    
+    // Validações adicionais para criação de assinatura
+    if (!user) {
+      toast.error('Usuário não autenticado. Faça login e tente novamente.');
+      return;
+    }
+
+    if (!selectedMemberType || !selectedPlan) {
+      toast.error('Dados de filiação incompletos. Verifique se selecionou o cargo ministerial e o plano.');
+      return;
+    }
+
+    if (!cobranca?.id) {
+      toast.error('Erro na cobrança gerada. Tente novamente ou entre em contato com o suporte.');
+      return;
+    }
+    
+    // Criar assinatura do usuário automaticamente
+    try {
+      const subscriptionData = {
+        user_id: user.id,
+        subscription_plan_id: selectedPlan,
+        member_type_id: selectedMemberType,
+        status: 'pending' as const, // Será ativada quando o pagamento for confirmado
+        payment_reference: cobranca.id
+      };
+
+      console.log('Criando assinatura com dados:', subscriptionData);
+
+      await createUserSubscription.mutateAsync(subscriptionData);
+      
+      toast.success('Filiação processada com sucesso! Sua assinatura será ativada após a confirmação do pagamento.');
+      
+      // Log para auditoria
+      console.log('Assinatura criada com sucesso para usuário:', user.id);
+      
+    } catch (error: any) {
+      console.error('Erro detalhado ao criar assinatura:', error);
+      
+      // Tratamento específico de diferentes tipos de erro
+      let errorMessage = 'Pagamento criado, mas houve erro ao processar a assinatura.';
+      
+      if (error?.message?.includes('duplicate')) {
+        errorMessage = 'Você já possui uma assinatura ativa. Entre em contato com o suporte se precisar de ajuda.';
+      } else if (error?.message?.includes('foreign key')) {
+        errorMessage = 'Dados de plano ou cargo ministerial inválidos. Tente novamente.';
+      } else if (error?.message?.includes('permission')) {
+        errorMessage = 'Erro de permissão. Verifique se está logado corretamente.';
+      }
+      
+      toast.error(errorMessage + ' Entre em contato com o suporte se o problema persistir.');
+      
+      // Tentar novamente após um delay
+      setTimeout(() => {
+        toast.info('Você pode tentar reprocessar a assinatura acessando seu painel de usuário.');
+      }, 3000);
     }
   };
 
@@ -95,97 +157,95 @@ export default function Filiacao() {
             </Alert>
           )}
 
-          <div className="grid lg:grid-cols-2 gap-8">
-            {/* Informações da Filiação */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  Benefícios da Filiação
-                </CardTitle>
-                <CardDescription>
-                  Vantagens exclusivas para membros da COMADEMIG
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium">Carteira Digital</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Identificação oficial reconhecida em todo território nacional
-                      </p>
-                    </div>
+          {/* Benefícios da Filiação */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-center">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+                Benefícios da Filiação COMADEMIG
+              </CardTitle>
+              <CardDescription className="text-center">
+                Vantagens exclusivas para membros da convenção
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle className="h-6 w-6 text-green-600" />
                   </div>
-
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium">Eventos e Congressos</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Acesso a eventos, congressos e capacitações exclusivas
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium">Rede de Contatos</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Conexão com ministros e líderes de todo o estado
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium">Suporte Jurídico</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Orientações jurídicas e documentação eclesiástica
-                      </p>
-                    </div>
-                  </div>
+                  <h4 className="font-medium">Carteira Digital</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Identificação oficial reconhecida nacionalmente
+                  </p>
                 </div>
 
-                <div className="pt-4 border-t">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-primary">R$ 250,00</p>
-                    <p className="text-sm text-muted-foreground">Taxa única de filiação</p>
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle className="h-6 w-6 text-blue-600" />
                   </div>
+                  <h4 className="font-medium">Eventos Exclusivos</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Congressos e capacitações para membros
+                  </p>
                 </div>
 
-                {/* Informação sobre PIX com desconto */}
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>Desconto de 5% no PIX!</strong>
-                    <br />
-                    Pagando via PIX você paga apenas <strong>R$ 237,50</strong>
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <h4 className="font-medium">Rede Ministerial</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Conexão com líderes de todo o estado
+                  </p>
+                </div>
+
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <h4 className="font-medium">Suporte Jurídico</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Orientações e documentação eclesiástica
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-6 border-t">
+                <Alert className="border-blue-200 bg-blue-50">
+                  <Info className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    <strong>Novo Sistema de Filiação!</strong><br />
+                    Agora você pode escolher seu cargo ministerial e o plano de assinatura mais adequado.
+                    Os valores variam conforme o plano selecionado.
+                    <br /><br />
+                    <strong>Desconto PIX:</strong> 5% de desconto em todos os planos pagos via PIX.
                   </AlertDescription>
                 </Alert>
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Formulário de Pagamento */}
+          {/* Formulário de Pagamento */}
+          <div className="max-w-2xl mx-auto">
             <Card>
               <CardHeader>
                 <CardTitle>Dados para Filiação</CardTitle>
                 <CardDescription>
-                  Preencha seus dados e escolha a forma de pagamento
+                  Preencha seus dados e escolha a forma de pagamento para concluir sua filiação
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <PaymentForm 
                   defaultData={{
-                    value: 250,
-                    description: "Taxa de Filiação - COMADEMIG",
+                    value: 0, // Será definido pelo plano selecionado
+                    description: "Filiação COMADEMIG",
                     tipoCobranca: "filiacao",
                     affiliateId: affiliateInfo?.id
                   }}
                   onSuccess={handlePaymentSuccess}
+                  showTitle={false}
+                  showMemberTypeSelection={true}
                 />
               </CardContent>
             </Card>

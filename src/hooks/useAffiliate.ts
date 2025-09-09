@@ -55,7 +55,10 @@ export const useAffiliate = () => {
 
   const createAffiliate = async (data: AffiliateData) => {
     setLoading(true);
-    console.log('Creating affiliate with data:', data);
+    console.log('Creating affiliate with data:', {
+      ...data,
+      asaas_wallet_id: '[HIDDEN]' // Não logar o wallet ID
+    });
     
     try {
       const { data: result, error } = await supabase.functions.invoke('affiliates-management', {
@@ -64,14 +67,30 @@ export const useAffiliate = () => {
 
       if (error) {
         console.error('Edge function error:', error);
-        throw new Error(error.message || 'Erro ao criar afiliado');
+        
+        // Tratar diferentes tipos de erro
+        let errorMessage = 'Erro ao criar afiliado';
+        
+        if (error.message?.includes('FunctionsHttpError')) {
+          errorMessage = 'Erro de comunicação com o servidor. Tente novamente.';
+        } else if (error.message?.includes('unauthorized')) {
+          errorMessage = 'Sessão expirada. Faça login novamente.';
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       if (result?.error) {
         throw new Error(result.error);
       }
 
-      console.log('Create affiliate result:', result);
+      if (!result?.success) {
+        throw new Error('Resposta inválida do servidor');
+      }
+
+      console.log('Create affiliate result: success');
 
       toast({
         title: "Cadastro realizado com sucesso",
@@ -81,9 +100,21 @@ export const useAffiliate = () => {
       return result.affiliate;
     } catch (error: any) {
       console.error('Erro ao criar afiliado:', error);
+      
+      // Mensagens de erro mais específicas
+      let errorMessage = error.message || 'Ocorreu um erro inesperado';
+      
+      if (errorMessage.includes('Wallet ID')) {
+        errorMessage = 'Problema com o Wallet ID fornecido. Verifique se está correto.';
+      } else if (errorMessage.includes('já possui cadastro')) {
+        errorMessage = 'Você já possui um cadastro de afiliado.';
+      } else if (errorMessage.includes('obrigatório')) {
+        errorMessage = 'Dados obrigatórios não foram preenchidos. Complete seu perfil primeiro.';
+      }
+      
       toast({
         title: "Erro ao criar afiliado",
-        description: error.message || 'Ocorreu um erro inesperado',
+        description: errorMessage,
         variant: "destructive",
       });
       throw error;

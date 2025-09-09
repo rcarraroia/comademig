@@ -152,37 +152,76 @@ async function createAffiliate(req: Request, supabaseClient: any, userId: string
     // Validate required fields
     const { display_name, cpf_cnpj, asaas_wallet_id, contact_email, phone } = body;
 
-    if (!display_name || !cpf_cnpj || !asaas_wallet_id) {
-      return handleError('Nome, CPF/CNPJ e Wallet ID são obrigatórios');
+    // Validação mais robusta
+    if (!asaas_wallet_id || asaas_wallet_id.trim() === '') {
+      return handleError('Wallet ID da Asaas é obrigatório');
+    }
+
+    if (!display_name || display_name.trim() === '') {
+      return handleError('Nome de exibição é obrigatório');
+    }
+
+    if (!cpf_cnpj || cpf_cnpj.trim() === '') {
+      return handleError('CPF/CNPJ é obrigatório');
+    }
+
+    // Validar formato do Wallet ID (básico)
+    const walletIdTrimmed = asaas_wallet_id.trim();
+    if (walletIdTrimmed.length < 10) {
+      return handleError('Wallet ID deve ter pelo menos 10 caracteres');
     }
 
     // Check if affiliate already exists
-    const { data: existingAffiliate } = await supabaseClient
+    const { data: existingAffiliate, error: checkError } = await supabaseClient
       .from('affiliates')
       .select('id')
       .eq('user_id', userId)
       .maybeSingle();
 
+    if (checkError) {
+      console.error('Error checking existing affiliate:', checkError);
+      return handleError(`Erro ao verificar afiliado existente: ${checkError.message}`);
+    }
+
     if (existingAffiliate) {
       return handleError('Usuário já possui cadastro de afiliado');
+    }
+
+    // Check if wallet ID is already in use
+    const { data: existingWallet, error: walletCheckError } = await supabaseClient
+      .from('affiliates')
+      .select('id')
+      .eq('asaas_wallet_id', walletIdTrimmed)
+      .maybeSingle();
+
+    if (walletCheckError) {
+      console.error('Error checking existing wallet:', walletCheckError);
+      return handleError(`Erro ao verificar Wallet ID: ${walletCheckError.message}`);
+    }
+
+    if (existingWallet) {
+      return handleError('Este Wallet ID já está sendo usado por outro afiliado');
     }
 
     // Generate referral code
     const referralCode = `REF${Date.now()}${userId.slice(-4).toUpperCase()}`;
 
-    // Create affiliate
+    // Create affiliate with validated data
     const affiliateData = {
       user_id: userId,
-      display_name,
-      cpf_cnpj,
-      asaas_wallet_id,
-      contact_email: contact_email || '',
-      phone: phone || '',
+      display_name: display_name.trim(),
+      cpf_cnpj: cpf_cnpj.trim(),
+      asaas_wallet_id: walletIdTrimmed,
+      contact_email: contact_email?.trim() || '',
+      phone: phone?.trim() || '',
       status: 'pending',
       referral_code: referralCode
     };
 
-    console.log('Inserting affiliate:', affiliateData);
+    console.log('Inserting affiliate with validated data:', {
+      ...affiliateData,
+      asaas_wallet_id: '[HIDDEN]' // Não logar o wallet ID completo
+    });
 
     const { data: affiliate, error } = await supabaseClient
       .from('affiliates')
@@ -192,6 +231,20 @@ async function createAffiliate(req: Request, supabaseClient: any, userId: string
 
     if (error) {
       console.error('Error creating affiliate:', error);
+      
+      // Tratar erros específicos
+      if (error.code === '23505') { // Unique constraint violation
+        if (error.message.includes('referral_code')) {
+          return handleError('Erro interno: código de referência duplicado. Tente novamente.');
+        }
+        if (error.message.includes('user_id')) {
+          return handleError('Usuário já possui cadastro de afiliado');
+        }
+        if (error.message.includes('asaas_wallet_id')) {
+          return handleError('Este Wallet ID já está sendo usado por outro afiliado');
+        }
+      }
+      
       return handleError(`Erro ao criar afiliado: ${error.message}`);
     }
 
@@ -199,7 +252,10 @@ async function createAffiliate(req: Request, supabaseClient: any, userId: string
 
     return new Response(JSON.stringify({ 
       success: true, 
-      affiliate 
+      affiliate: {
+        ...affiliate,
+        asaas_wallet_id: '[HIDDEN]' // Não retornar o wallet ID completo
+      }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 201
@@ -207,6 +263,12 @@ async function createAffiliate(req: Request, supabaseClient: any, userId: string
 
   } catch (error) {
     console.error('Error in createAffiliate:', error);
+    
+    // Tratar erro de JSON parsing
+    if (error.message.includes('JSON')) {
+      return handleError('Dados inválidos enviados na requisição');
+    }
+    
     return handleError(`Erro ao processar cadastro: ${error.message}`);
   }
 }

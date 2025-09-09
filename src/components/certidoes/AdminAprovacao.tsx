@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Eye, CheckCircle, XCircle, FileText } from "lucide-react";
-import { useCertidoes } from "@/hooks/useCertidoes";
+import { Eye, CheckCircle, XCircle, FileText, CreditCard } from "lucide-react";
+import { useCertidoesWithPayment } from "@/hooks/useCertidoesWithPayment";
 import { useCertidoesPDF } from "@/hooks/useCertidoesPDF";
 
 interface SolicitacaoDetalhes {
@@ -17,6 +17,8 @@ interface SolicitacaoDetalhes {
   numero_protocolo: string;
   data_solicitacao: string;
   status: string;
+  payment_reference?: string;
+  valor?: number;
   profiles?: {
     nome_completo: string;
     cpf: string;
@@ -33,7 +35,7 @@ interface AdminAprovacaoProps {
 export const AdminAprovacao = ({ solicitacao, onStatusChange }: AdminAprovacaoProps) => {
   const [observacoes, setObservacoes] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const { atualizarStatusCertidao } = useCertidoes();
+  const { atualizarStatusCertidao } = useCertidoesWithPayment();
   const { gerarCertidaoPDF } = useCertidoesPDF();
 
   const handleAprovar = async () => {
@@ -79,10 +81,12 @@ export const AdminAprovacao = ({ solicitacao, onStatusChange }: AdminAprovacaoPr
 
   const getStatusBadge = (status: string) => {
     const badges = {
+      pago: <Badge className="bg-blue-100 text-blue-800">Pago</Badge>,
       pendente: <Badge variant="secondary">Pendente</Badge>,
       em_analise: <Badge className="bg-yellow-100 text-yellow-800">Em Análise</Badge>,
       aprovada: <Badge className="bg-green-100 text-green-800">Aprovada</Badge>,
       rejeitada: <Badge className="bg-red-100 text-red-800">Rejeitada</Badge>,
+      entregue: <Badge className="bg-purple-100 text-purple-800">Entregue</Badge>,
     };
     return badges[status as keyof typeof badges] || <Badge>{status}</Badge>;
   };
@@ -103,9 +107,20 @@ export const AdminAprovacao = ({ solicitacao, onStatusChange }: AdminAprovacaoPr
             <h3 className="font-semibold text-lg">{solicitacao.profiles?.nome_completo}</h3>
             <p className="text-sm text-gray-600">{solicitacao.profiles?.igreja}</p>
             <p className="text-sm text-gray-600">Protocolo: {solicitacao.numero_protocolo}</p>
+            {solicitacao.payment_reference && (
+              <p className="text-xs text-blue-600 flex items-center mt-1">
+                <CreditCard className="h-3 w-3 mr-1" />
+                Pagamento: {solicitacao.payment_reference}
+              </p>
+            )}
           </div>
           <div className="text-right">
             <div className="mb-2">{getStatusBadge(solicitacao.status)}</div>
+            {solicitacao.valor && (
+              <p className="text-sm font-semibold text-green-600 mb-1">
+                R$ {solicitacao.valor.toFixed(2)}
+              </p>
+            )}
             <p className="text-xs text-gray-500">
               {new Date(solicitacao.data_solicitacao).toLocaleDateString('pt-BR')}
             </p>
@@ -117,7 +132,7 @@ export const AdminAprovacao = ({ solicitacao, onStatusChange }: AdminAprovacaoPr
           <p className="text-sm text-gray-600">Justificativa: {solicitacao.justificativa}</p>
         </div>
 
-        {solicitacao.status === 'pendente' && (
+        {(solicitacao.status === 'pago' || solicitacao.status === 'em_analise') && (
           <div className="flex space-x-2">
             <Dialog open={showModal} onOpenChange={setShowModal}>
               <DialogTrigger asChild>
@@ -138,6 +153,12 @@ export const AdminAprovacao = ({ solicitacao, onStatusChange }: AdminAprovacaoPr
                     <p className="text-sm"><strong>Cargo:</strong> {solicitacao.profiles?.cargo}</p>
                     <p className="text-sm"><strong>Tipo:</strong> {certidaoLabels[solicitacao.tipo_certidao]}</p>
                     <p className="text-sm"><strong>Justificativa:</strong> {solicitacao.justificativa}</p>
+                    {solicitacao.valor && (
+                      <p className="text-sm"><strong>Valor Pago:</strong> R$ {solicitacao.valor.toFixed(2)}</p>
+                    )}
+                    {solicitacao.payment_reference && (
+                      <p className="text-sm"><strong>Referência Pagamento:</strong> {solicitacao.payment_reference}</p>
+                    )}
                   </div>
 
                   <div>

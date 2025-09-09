@@ -1,10 +1,10 @@
 
 import AdminSupport from "@/components/admin/AdminSupport";
-import { useUserRoles } from "@/hooks/useUserRoles";
+import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 
 const AdminSupportPage = () => {
-  const { isAdmin, loading } = useUserRoles();
+  const { isAdmin, loading } = useAuth();
 
   if (loading) {
     return (

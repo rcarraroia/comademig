@@ -15,7 +15,7 @@ interface AffiliateRegistrationProps {
 export const AffiliateRegistration = ({ onSuccess }: AffiliateRegistrationProps) => {
   const [walletId, setWalletId] = useState('');
   const { createAffiliate, loading } = useAffiliate();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,13 +24,24 @@ export const AffiliateRegistration = ({ onSuccess }: AffiliateRegistrationProps)
       return;
     }
 
+    // Validar dados obrigatórios do perfil
+    if (!profile?.nome_completo || profile.nome_completo.trim() === '') {
+      alert('Seu perfil precisa ter o nome completo preenchido. Por favor, complete seu perfil primeiro.');
+      return;
+    }
+
+    if (!profile?.cpf || profile.cpf.trim() === '') {
+      alert('Seu perfil precisa ter o CPF preenchido. Por favor, complete seu perfil primeiro.');
+      return;
+    }
+
     try {
       await createAffiliate({
-        display_name: profile?.nome_completo || '',
-        cpf_cnpj: profile?.cpf || '',
-        asaas_wallet_id: walletId,
-        contact_email: profile?.id ? '' : undefined, // Usar email do auth
-        phone: profile?.telefone || ''
+        display_name: profile.nome_completo.trim(),
+        cpf_cnpj: profile.cpf.trim(),
+        asaas_wallet_id: walletId.trim(),
+        contact_email: user?.email || '',
+        phone: profile.telefone?.trim() || ''
       });
       
       // Aguardar um pouco e então chamar onSuccess para recarregar os dados
@@ -133,14 +144,32 @@ export const AffiliateRegistration = ({ onSuccess }: AffiliateRegistrationProps)
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Verificação de Dados do Perfil */}
+            {(!profile?.nome_completo || !profile?.cpf) && (
+              <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+                <h4 className="font-semibold text-yellow-800 mb-2">Perfil Incompleto</h4>
+                <p className="text-yellow-700 text-sm mb-2">
+                  Para se tornar um afiliado, você precisa completar seu perfil com:
+                </p>
+                <ul className="text-yellow-700 text-sm space-y-1">
+                  {!profile?.nome_completo && <li>• Nome completo</li>}
+                  {!profile?.cpf && <li>• CPF</li>}
+                </ul>
+                <p className="text-yellow-700 text-sm mt-2">
+                  <strong>Complete seu perfil primeiro em "Meus Dados"</strong>
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="walletId">Wallet ID do Asaas *</Label>
               <Input
                 id="walletId"
                 value={walletId}
                 onChange={(e) => setWalletId(e.target.value)}
-                placeholder="Digite seu Wallet ID"
+                placeholder="Digite seu Wallet ID (ex: wal_123456789)"
                 required
+                minLength={10}
               />
               <p className="text-xs text-muted-foreground">
                 ID da sua carteira no Asaas. Encontre em: Conta → Configurações → API/Integrações → Wallet ID
@@ -151,7 +180,13 @@ export const AffiliateRegistration = ({ onSuccess }: AffiliateRegistrationProps)
               <Button 
                 type="submit" 
                 className="flex-1" 
-                disabled={loading || !walletId.trim()}
+                disabled={
+                  loading || 
+                  !walletId.trim() || 
+                  walletId.trim().length < 10 ||
+                  !profile?.nome_completo || 
+                  !profile?.cpf
+                }
               >
                 {loading ? 'Processando...' : 'Quero Participar'}
               </Button>

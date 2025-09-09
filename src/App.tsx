@@ -15,6 +15,8 @@ import Multimidia from '@/pages/Multimidia';
 import Contato from '@/pages/Contato';
 import Filiacao from '@/pages/Filiacao';
 import Auth from '@/pages/Auth';
+import EsqueciSenha from '@/pages/EsqueciSenha';
+import ResetPassword from '@/pages/ResetPassword';
 import Checkout from '@/pages/Checkout';
 import PagamentoSucesso from '@/pages/PagamentoSucesso';
 import ValidarCarteira from '@/pages/ValidarCarteira';
@@ -24,7 +26,7 @@ import NotFound from '@/pages/NotFound';
 
 // Dashboard Pages
 import Dashboard from '@/pages/dashboard/Dashboard';
-import Perfil from '@/pages/dashboard/Perfil';
+
 import MeusDados from '@/pages/dashboard/MeusDados';
 import CarteiraDigital from '@/pages/dashboard/CarteiraDigital';
 import Comunicacao from '@/pages/dashboard/Comunicacao';
@@ -40,17 +42,26 @@ import Afiliados from '@/pages/dashboard/Afiliados';
 // Admin Pages
 import AdminUsersPage from '@/pages/dashboard/AdminUsers';
 import AdminSupportPage from '@/pages/dashboard/AdminSupportPage';
+import AdminRegularizacaoPage from '@/pages/dashboard/admin/Regularizacao';
+import MemberTypes from '@/pages/dashboard/admin/MemberTypes';
+import Subscriptions from '@/pages/dashboard/admin/Subscriptions';
+import NotificationManagement from '@/pages/dashboard/admin/NotificationManagement';
+import AdminNotificationsPage from '@/pages/dashboard/admin/AdminNotifications';
 import ContentManagement from '@/pages/dashboard/ContentManagement';
+import SystemDiagnosticsPage from '@/pages/dashboard/admin/SystemDiagnostics';
 import ContentEdit from '@/pages/dashboard/ContentEdit';
 import UserManagement from '@/pages/dashboard/UserManagement';
 import Notifications from '@/pages/dashboard/Notifications';
 import PerfilPublico from '@/pages/dashboard/PerfilPublico';
 import PerfilCompleto from '@/pages/dashboard/PerfilCompleto';
 import HomeContentEdit from '@/pages/dashboard/HomeContentEdit';
-import SobreContentEdit from '@/pages/dashboard/SobreContentEdit';
-import LiderancaContentEdit from '@/pages/dashboard/LiderancaContentEdit';
+import AboutContentEdit from '@/pages/dashboard/AboutContentEdit';
+import Privacidade from '@/pages/Privacidade';
+import Termos from '@/pages/Termos';
+import LeadershipContentEdit from '@/pages/dashboard/LeadershipContentEdit';
 import EventosContentEdit from '@/pages/dashboard/EventosContentEdit';
 import MultimidiaContentEdit from '@/pages/dashboard/MultimidiaContentEdit';
+import ContatoContentEdit from '@/pages/dashboard/ContatoContentEdit';
 import NoticiasContentEdit from '@/pages/dashboard/NoticiasContentEdit';
 
 // Layouts
@@ -80,18 +91,25 @@ function App() {
             <Route path="/eventos" element={<Layout><Eventos /></Layout>} />
             <Route path="/multimidia" element={<Layout><Multimidia /></Layout>} />
             <Route path="/contato" element={<Layout><Contato /></Layout>} />
-            <Route path="/filiacao" element={<Layout><Filiacao /></Layout>} />
+            <Route path="/filiacao" element={<Filiacao />} />
+            <Route path="/privacidade" element={<Layout><Privacidade /></Layout>} />
+            <Route path="/termos" element={<Layout><Termos /></Layout>} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/pagamento-sucesso" element={<PagamentoSucesso />} />
             <Route path="/validar-carteira/:numeroCarteira" element={<ValidarCarteira />} />
             <Route path="/validar-certificado/:numeroCertificado" element={<ValidarCertificado />} />
             <Route path="/validar-certidao/:numeroProtocolo" element={<ValidarCertidao />} />
 
+            {/* Public profile route */}
+            <Route path="/perfil-publico/:userId" element={<PerfilPublico />} />
+
             {/* Protected routes */}
             <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/dashboard/perfil" element={<Perfil />} />
+
               <Route path="/dashboard/meus-dados" element={<MeusDados />} />
               <Route path="/dashboard/carteira-digital" element={<CarteiraDigital />} />
               <Route path="/dashboard/comunicacao" element={<Comunicacao />} />
@@ -103,23 +121,28 @@ function App() {
               <Route path="/dashboard/checkout-regularizacao" element={<CheckoutRegularizacao />} />
               <Route path="/dashboard/suporte" element={<Suporte />} />
               <Route path="/dashboard/afiliados" element={<Afiliados />} />
-              
+
               {/* Admin routes */}
               <Route path="/dashboard/admin/usuarios" element={<AdminUsersPage />} />
+              <Route path="/dashboard/admin/member-types" element={<MemberTypes />} />
+              <Route path="/dashboard/admin/subscriptions" element={<Subscriptions />} />
+              <Route path="/dashboard/admin/regularizacao" element={<AdminRegularizacaoPage />} />
+              <Route path="/dashboard/admin/notifications" element={<AdminNotificationsPage />} />
+              <Route path="/dashboard/admin/diagnostics" element={<SystemDiagnosticsPage />} />
               <Route path="/dashboard/admin/suporte" element={<AdminSupportPage />} />
               <Route path="/dashboard/admin/content" element={<ContentManagement />} />
               <Route path="/dashboard/notifications" element={<Notifications />} />
               <Route path="/dashboard/admin/content/:pageName/edit" element={<ContentEdit />} />
               <Route path="/dashboard/admin/content/home-editor" element={<HomeContentEdit />} />
-              <Route path="/dashboard/admin/content/sobre-editor" element={<SobreContentEdit />} />
-              <Route path="/dashboard/admin/content/lideranca-editor" element={<LiderancaContentEdit />} />
+              <Route path="/dashboard/admin/content/sobre-editor" element={<AboutContentEdit />} />
+              <Route path="/dashboard/admin/content/lideranca-editor" element={<LeadershipContentEdit />} />
               <Route path="/dashboard/admin/content/eventos-editor" element={<EventosContentEdit />} />
               <Route path="/dashboard/admin/content/multimidia-editor" element={<MultimidiaContentEdit />} />
+              <Route path="/dashboard/admin/content/contato-editor" element={<ContatoContentEdit />} />
               <Route path="/dashboard/admin/content/noticias-editor" element={<NoticiasContentEdit />} />
-              <Route path="/dashboard/perfil-publico/:userId?" element={<PerfilPublico />} />
               <Route path="/dashboard/perfil-completo" element={<PerfilCompleto />} />
             </Route>
-            
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>

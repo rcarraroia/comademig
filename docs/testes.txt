@@ -1,0 +1,21 @@
+Excelente pergunta! Sim, é possível criar um sistema de testes automatizados para verificar o estado de todos os componentes do site. Vou explicar as diferentes abordagens e criar um sistema de diagnóstico para o COMADEMIG.
+
+🧪 Tipos de Testes Automatizados Possíveis
+1. Testes Unitários (Componentes individuais)
+Testam cada componente isoladamente
+Verificam se props são processadas corretamente
+Validam renderização e comportamento
+2. Testes de Integração (Componentes + Hooks)
+Testam interação entre componentes
+Verificam fluxos de dados
+Validam comunicação com APIs
+3. Testes E2E (End-to-End) (Fluxos completos)
+Simulam usuário real navegando
+Testam jornadas completas
+Verificam funcionalidades críticas
+4. Testes de Saúde/Diagnóstico (Status geral)
+Verificam se páginas carregam
+Testam conectividade com APIs
+Monitoram performance
+
+Agora que temos o relatorio da auditoria, gostaria que voce executasse esses  testes automatizados (unitários, de integração e end-to-end) para garantir a qualidade do código, prevenir regressões e acelerar o ciclo de desenvolvimento alem de detectar o que esta funcionando de fato no sistema. É muito importante mitigarmos o maximo de erros possiveis de estarem acontecendo para minimizar a verificação manual. Após a aplicação de testes no sistema voce pode gerar um relatorio do que esta funcinando totalmente, parcialmente e o que nao esta funcionando e propor as açoes de correção ou implementação de paginas, componentes, scripts sql para tabelas, regras e ou politicas

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState } from 'react';
+import { useNotifications } from '@/hooks/useNotifications';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Bell, 
   Mail, 
@@ -18,19 +19,9 @@ import {
   Clock,
   Settings,
   Trash2,
-  Check
+  Check,
+  Info
 } from 'lucide-react';
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  category: 'system' | 'financial' | 'events' | 'communication';
-  read: boolean;
-  created_at: string;
-  action_url?: string;
-}
 
 interface NotificationSettings {
   email_notifications: boolean;
@@ -42,8 +33,14 @@ interface NotificationSettings {
 }
 
 export default function Notifications() {
-  const { user } = useAuth();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const { 
+    notifications, 
+    unreadCount, 
+    isLoading: loading, 
+    markAsRead, 
+    markAllAsRead 
+  } = useNotifications();
+  
   const [settings, setSettings] = useState<NotificationSettings>({
     email_notifications: true,
     push_notifications: true,
@@ -52,80 +49,14 @@ export default function Notifications() {
     system_updates: true,
     communication_messages: true
   });
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadNotifications();
-    loadSettings();
-  }, []);
+  const { toast } = useToast();
 
-  const loadNotifications = async () => {
-    setLoading(true);
-    try {
-      // Simular dados (implementar com Supabase depois)
-      const mockNotifications: Notification[] = [
-        {
-          id: '1',
-          title: 'Pagamento Aprovado',
-          message: 'Seu pagamento de R$ 150,00 foi aprovado com sucesso.',
-          type: 'success',
-          category: 'financial',
-          read: false,
-          created_at: '2024-08-26T10:30:00Z'
-        },
-        {
-          id: '2',
-          title: 'Novo Evento Disponível',
-          message: 'Congresso Nacional de Medicina 2024 - Inscrições abertas!',
-          type: 'info',
-          category: 'events',
-          read: false,
-          created_at: '2024-08-26T09:15:00Z',
-          action_url: '/dashboard/eventos'
-        },
-        {
-          id: '3',
-          title: 'Documentação Pendente',
-          message: 'Você possui documentos pendentes para regularização.',
-          type: 'warning',
-          category: 'system',
-          read: true,
-          created_at: '2024-08-25T16:45:00Z',
-          action_url: '/dashboard/regularizacao'
-        },
-        {
-          id: '4',
-          title: 'Nova Mensagem',
-          message: 'Você recebeu uma nova mensagem do suporte.',
-          type: 'info',
-          category: 'communication',
-          read: true,
-          created_at: '2024-08-25T14:20:00Z',
-          action_url: '/dashboard/comunicacao'
-        },
-        {
-          id: '5',
-          title: 'Lembrete de Pagamento',
-          message: 'Sua anuidade vence em 7 dias. Regularize sua situação.',
-          type: 'warning',
-          category: 'financial',
-          read: false,
-          created_at: '2024-08-24T08:00:00Z',
-          action_url: '/dashboard/financeiro'
-        }
-      ];
-      setNotifications(mockNotifications);
-    } catch (error) {
-      console.error('Erro ao carregar notificações:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadSettings = async () => {
-    // Carregar configurações do usuário (implementar com Supabase)
-    console.log('Carregando configurações de notificação');
-  };
+  console.log('Notifications Debug:', { 
+    notifications: notifications?.length || 0, 
+    unreadCount, 
+    loading 
+  });
 
   const getNotificationIcon = (type: string, category: string) => {
     if (type === 'success') return <CheckCircle className="h-5 w-5 text-green-600" />;
@@ -157,35 +88,53 @@ export default function Notifications() {
     );
   };
 
-  const markAsRead = async (notificationId: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
-    );
-    // Implementar atualização no Supabase
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await markAsRead.mutateAsync(notificationId);
+      toast({
+        title: "Notificação marcada como lida",
+        description: "A notificação foi marcada como lida com sucesso",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível marcar a notificação como lida",
+        variant: "destructive",
+      });
+    }
   };
 
-  const markAllAsRead = async () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    // Implementar atualização no Supabase
-  };
-
-  const deleteNotification = async (notificationId: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== notificationId));
-    // Implementar remoção no Supabase
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsRead.mutateAsync();
+      toast({
+        title: "Todas as notificações marcadas como lidas",
+        description: "Todas as notificações foram marcadas como lidas com sucesso",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível marcar todas as notificações como lidas",
+        variant: "destructive",
+      });
+    }
   };
 
   const updateSettings = async (key: keyof NotificationSettings, value: boolean) => {
     setSettings(prev => ({ ...prev, [key]: value }));
     // Implementar atualização no Supabase
+    toast({
+      title: "Configuração atualizada",
+      description: "Suas preferências de notificação foram salvas",
+    });
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
   const filteredNotifications = {
     all: notifications,
     unread: notifications.filter(n => !n.read),
-    financial: notifications.filter(n => n.category === 'financial'),
-    events: notifications.filter(n => n.category === 'events'),
-    system: notifications.filter(n => n.category === 'system')
+    financial: notifications.filter(n => n.message.toLowerCase().includes('pagamento') || n.message.toLowerCase().includes('financeiro')),
+    events: notifications.filter(n => n.message.toLowerCase().includes('evento') || n.message.toLowerCase().includes('congresso')),
+    system: notifications.filter(n => n.message.toLowerCase().includes('sistema') || n.message.toLowerCase().includes('atualização'))
   };
 
   if (loading) {
@@ -211,8 +160,16 @@ export default function Notifications() {
               {unreadCount} não lidas
             </Badge>
           )}
-          <Button variant="outline" onClick={markAllAsRead}>
-            <Check className="w-4 h-4 mr-2" />
+          <Button 
+            variant="outline" 
+            onClick={handleMarkAllAsRead}
+            disabled={markAllAsRead.isPending || unreadCount === 0}
+          >
+            {markAllAsRead.isPending ? (
+              <LoadingSpinner size="sm" className="mr-2" />
+            ) : (
+              <Check className="w-4 h-4 mr-2" />
+            )}
             Marcar todas como lidas
           </Button>
         </div>
@@ -245,7 +202,7 @@ export default function Notifications() {
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
-                      {getNotificationIcon(notification.type, notification.category)}
+                      {getNotificationIcon(notification.type, 'system')}
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <CardTitle className="text-base">{notification.title}</CardTitle>
@@ -257,7 +214,9 @@ export default function Notifications() {
                           {notification.message}
                         </CardDescription>
                         <div className="flex items-center gap-2 mt-2">
-                          {getCategoryBadge(notification.category)}
+                          <Badge variant="secondary" className="text-xs">
+                            Sistema
+                          </Badge>
                           <span className="text-xs text-muted-foreground">
                             <Clock className="w-3 h-3 inline mr-1" />
                             {new Date(notification.created_at).toLocaleString('pt-BR')}
@@ -270,19 +229,16 @@ export default function Notifications() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => markAsRead(notification.id)}
+                          onClick={() => handleMarkAsRead(notification.id)}
+                          disabled={markAsRead.isPending}
                         >
-                          <CheckCircle className="w-4 h-4" />
+                          {markAsRead.isPending ? (
+                            <LoadingSpinner size="sm" />
+                          ) : (
+                            <CheckCircle className="w-4 h-4" />
+                          )}
                         </Button>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteNotification(notification.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
                     </div>
                   </div>
                 </CardHeader>
@@ -314,7 +270,7 @@ export default function Notifications() {
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
-                      {getNotificationIcon(notification.type, notification.category)}
+                      {getNotificationIcon(notification.type, 'system')}
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <CardTitle className="text-base">{notification.title}</CardTitle>
@@ -324,7 +280,9 @@ export default function Notifications() {
                           {notification.message}
                         </CardDescription>
                         <div className="flex items-center gap-2 mt-2">
-                          {getCategoryBadge(notification.category)}
+                          <Badge variant="secondary" className="text-xs">
+                            Sistema
+                          </Badge>
                           <span className="text-xs text-muted-foreground">
                             <Clock className="w-3 h-3 inline mr-1" />
                             {new Date(notification.created_at).toLocaleString('pt-BR')}
@@ -336,17 +294,14 @@ export default function Notifications() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => markAsRead(notification.id)}
+                        onClick={() => handleMarkAsRead(notification.id)}
+                        disabled={markAsRead.isPending}
                       >
-                        <CheckCircle className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteNotification(notification.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
+                        {markAsRead.isPending ? (
+                          <LoadingSpinner size="sm" />
+                        ) : (
+                          <CheckCircle className="w-4 h-4" />
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -383,6 +338,14 @@ export default function Notifications() {
                 </CardHeader>
               </Card>
             ))}
+            {filteredNotifications.financial.length === 0 && (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">Nenhuma notificação financeira encontrada</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </TabsContent>
 
@@ -405,6 +368,14 @@ export default function Notifications() {
                 </CardHeader>
               </Card>
             ))}
+            {filteredNotifications.events.length === 0 && (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">Nenhuma notificação de eventos encontrada</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </TabsContent>
 

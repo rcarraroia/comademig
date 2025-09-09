@@ -1,7 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useUserRoles } from './useUserRoles';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface AdminProfile {
   id: string;
@@ -30,7 +30,7 @@ export interface AdminTicket {
 }
 
 export const useAdminData = () => {
-  const { isAdmin } = useUserRoles();
+  const { isAdmin } = useAuth();
 
   // Buscar todos os perfis para admins
   const { data: profiles = [], isLoading: loadingProfiles, refetch: refetchProfiles } = useQuery({

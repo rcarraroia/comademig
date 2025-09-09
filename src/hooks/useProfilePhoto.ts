@@ -34,21 +34,7 @@ export const useProfilePhoto = () => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/profile.${fileExt}`;
 
-      // Verificar se bucket existe, se não, criar
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const avatarBucket = buckets?.find(bucket => bucket.name === 'avatars');
-
-      if (!avatarBucket) {
-        const { error: bucketError } = await supabase.storage.createBucket('avatars', {
-          public: true,
-          allowedMimeTypes: ['image/*'],
-          fileSizeLimit: 5242880 // 5MB
-        });
-
-        if (bucketError) {
-          console.error('Erro ao criar bucket:', bucketError);
-        }
-      }
+      // O bucket 'avatars' deve existir (criado via migração)
 
       // Upload do arquivo
       const { error: uploadError } = await supabase.storage
@@ -77,9 +63,29 @@ export const useProfilePhoto = () => {
         throw updateError;
       }
 
+      // Sincronizar com carteira digital se existir
+      try {
+        const { data: carteira } = await supabase
+          .from('carteira_digital')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('status', 'ativa')
+          .maybeSingle();
+
+        if (carteira) {
+          await supabase
+            .from('carteira_digital')
+            .update({ foto_url: publicUrl })
+            .eq('id', carteira.id);
+        }
+      } catch (error) {
+        console.log('Aviso: Não foi possível sincronizar com a carteira digital:', error);
+        // Não falhar o processo principal por causa disso
+      }
+
       toast({
         title: "Sucesso",
-        description: "Foto atualizada com sucesso!",
+        description: "Foto atualizada com sucesso! A carteira digital também foi sincronizada.",
       });
 
       return publicUrl;

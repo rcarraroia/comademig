@@ -1,7 +1,6 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfileValidation } from "@/hooks/useProfileValidation";
-import { useUserRoles } from "@/hooks/useUserRoles";
 import { useAdminData } from "@/hooks/useAdminData";
 import { ProfileCompletion } from "@/components/auth/ProfileCompletion";
 
@@ -12,9 +11,8 @@ import { Calendar, CreditCard, FileText, MessageSquare, Users, TrendingUp, Alert
 import { Link } from "react-router-dom";
 
 const Dashboard = () => {
-  const { profile, user } = useAuth();
+  const { profile, user, isAdmin } = useAuth();
   const { getProfileCompletionPercentage, profileStatus, canAccessFeature } = useProfileValidation();
-  const { isAdmin } = useUserRoles();
   const { stats, isLoading: adminLoading } = useAdminData();
 
   const completionPercentage = getProfileCompletionPercentage();
@@ -27,13 +25,7 @@ const Dashboard = () => {
       href: "/dashboard/carteira-digital",
       feature: "carteira-digital"
     },
-    {
-      title: "Eventos",
-      description: "Veja eventos disponíveis",
-      icon: Calendar,
-      href: "/dashboard/eventos",
-      feature: "eventos"
-    },
+
     {
       title: "Financeiro", 
       description: "Consulte sua situação financeira",

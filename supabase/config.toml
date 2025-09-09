@@ -22,12 +22,10 @@ pop3_port = 54326
 
 [storage]
 enabled = true
-port = 54327
 image_transformation = {enabled = true}
 
 [auth]
 enabled = true
-port = 54328
 
 [functions.asaas-create-payment]
 verify_jwt = true
@@ -44,9 +42,8 @@ verify_jwt = true
 [functions.asaas-create-payment-with-split]
 verify_jwt = true
 
-[edge-runtime]
+[edge_runtime]
 enabled = true
-port = 54329
 
 [analytics]
 enabled = false

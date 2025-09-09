@@ -178,6 +178,38 @@ export const useCarteiraDigital = () => {
     }
   );
 
+  // Função para sincronizar foto do perfil com a carteira
+  const sincronizarFotoPerfil = useSupabaseMutation(
+    async () => {
+      if (!user || !carteira || !profile) throw new Error('Dados inválidos');
+      
+      const profileTyped = profile as Profile;
+      const fotoPerfilUrl = profileTyped.foto_url;
+      
+      if (!fotoPerfilUrl) {
+        throw new Error('Nenhuma foto de perfil encontrada para sincronizar');
+      }
+      
+      // Atualizar carteira com foto do perfil
+      const { data, error } = await (supabase as any)
+        .from('carteira_digital')
+        .update({ foto_url: fotoPerfilUrl })
+        .eq('id', (carteira as CarteiraDigital).id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    {
+      successMessage: 'Foto sincronizada com sucesso!',
+      errorMessage: 'Erro ao sincronizar foto do perfil',
+      onSuccess: () => {
+        refetch();
+      }
+    }
+  );
+
   const uploadFoto = useSupabaseMutation(
     async (file: File) => {
       if (!user || !carteira) throw new Error('Dados inválidos');
@@ -240,6 +272,7 @@ export const useCarteiraDigital = () => {
     renovarCarteira,
     atualizarFoto,
     uploadFoto,
+    sincronizarFotoPerfil,
     podeGerarCarteira,
     refetch
   };

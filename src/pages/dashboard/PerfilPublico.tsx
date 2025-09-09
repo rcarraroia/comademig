@@ -59,7 +59,12 @@ export default function PerfilPublico() {
       // Se não há userId, mostrar perfil do usuário atual
       const targetUserId = userId || user?.id;
       
+      console.log('Carregando perfil para userId:', targetUserId);
+      console.log('URL userId:', userId);
+      console.log('Current user id:', user?.id);
+      
       if (!targetUserId) {
+        console.log('Nenhum userId encontrado, redirecionando...');
         navigate('/dashboard');
         return;
       }
@@ -81,21 +86,31 @@ export default function PerfilPublico() {
           bio,
           show_contact,
           show_ministry,
-          created_at,
-          users!inner(email)
+          created_at
         `)
         .eq('id', targetUserId)
         .single();
 
       if (error) {
+        console.error('Erro na query:', error);
         throw error;
       }
 
       if (data) {
+        console.log('Dados encontrados:', data);
+        
+        // Buscar email separadamente se for o próprio usuário
+        let email = '';
+        if (isOwnProfile && user?.email) {
+          email = user.email;
+        }
+        
         setPublicProfile({
           ...data,
-          email: data.users?.email
+          email: email
         });
+      } else {
+        console.log('Nenhum dado encontrado para o usuário:', targetUserId);
       }
 
     } catch (error: any) {

@@ -3,14 +3,39 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { MapPin, Phone, Mail, Clock, Facebook, Instagram, Youtube } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, Facebook, Instagram, Youtube, Loader2, Edit } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useContactContent, ContactPhone, ContactEmail } from "@/hooks/useContent";
+import { useContentPrefetch } from "@/hooks/useContentPrefetch";
+import { useAuth } from "@/contexts/AuthContext";
+import ContentStatusBadge from "@/components/admin/ContentStatusBadge";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const Contato = () => {
+  const { content, isLoading, error, hasCustomContent } = useContactContent();
+  const { isAdmin } = useAuth();
+  
+  // Prefetch de conteúdo relacionado
+  useContentPrefetch('contato');
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Aqui seria implementada a lógica de envio do formulário
     console.log("Formulário enviado");
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-comademig-blue" />
+      </div>
+    );
+  }
+
+  if (error) {
+    console.error('Erro ao carregar conteúdo da página de contato:', error);
+    // Continua com conteúdo padrão em caso de erro
+  }
 
   return (
     <div className="min-h-screen">
@@ -19,10 +44,10 @@ const Contato = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <h1 className="font-montserrat font-bold text-4xl md:text-6xl leading-tight">
-              Contato
+              {content.titulo}
             </h1>
             <p className="font-inter text-xl md:text-2xl text-gray-200">
-              Entre em contato conosco. Estamos aqui para ajudar.
+              {content.descricao}
             </p>
           </div>
         </div>
@@ -52,10 +77,12 @@ const Contato = () => {
               </CardHeader>
               <CardContent>
                 <p className="font-inter text-gray-700">
-                  Rua das Assembleias, 123<br />
-                  Bairro Centro<br />
-                  Belo Horizonte - MG<br />
-                  CEP: 30000-000
+                  {content.endereco?.rua}<br />
+                  {content.endereco?.complemento && (
+                    <>{content.endereco?.complemento}<br /></>
+                  )}
+                  {content.endereco?.cidade} - {content.endereco?.estado}<br />
+                  CEP: {content.endereco?.cep}
                 </p>
               </CardContent>
             </Card>
@@ -66,15 +93,17 @@ const Contato = () => {
                   <Phone className="w-8 h-8 text-white" />
                 </div>
                 <CardTitle className="font-montserrat text-comademig-blue">
-                  Telefone
+                  Telefones
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="font-inter text-gray-700">
-                  (31) 3333-4444<br />
-                  (31) 99999-8888<br />
-                  WhatsApp disponível
-                </p>
+                <div className="font-inter text-gray-700 space-y-1">
+                  {content.telefones?.map((telefone: ContactPhone) => (
+                    <p key={telefone.id}>
+                      <span className="font-semibold">{telefone.tipo}:</span> {telefone.numero}
+                    </p>
+                  ))}
+                </div>
               </CardContent>
             </Card>
 
@@ -84,15 +113,17 @@ const Contato = () => {
                   <Mail className="w-8 h-8 text-white" />
                 </div>
                 <CardTitle className="font-montserrat text-comademig-blue">
-                  E-mail
+                  E-mails
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="font-inter text-gray-700">
-                  contato@comademig.org.br<br />
-                  secretaria@comademig.org.br<br />
-                  presidencia@comademig.org.br
-                </p>
+                <div className="font-inter text-gray-700 space-y-1">
+                  {content.emails?.map((email: ContactEmail) => (
+                    <p key={email.id}>
+                      <span className="font-semibold">{email.tipo}:</span> {email.email}
+                    </p>
+                  ))}
+                </div>
               </CardContent>
             </Card>
 
@@ -102,15 +133,19 @@ const Contato = () => {
                   <Clock className="w-8 h-8 text-white" />
                 </div>
                 <CardTitle className="font-montserrat text-comademig-blue">
-                  Funcionamento
+                  Horário
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="font-inter text-gray-700">
-                  Segunda a Sexta<br />
-                  8:00 às 17:00<br />
-                  Sábados: 8:00 às 12:00
-                </p>
+                <div className="font-inter text-gray-700">
+                  <p>{content.horario_funcionamento?.dias}</p>
+                  <p>{content.horario_funcionamento?.horario}</p>
+                  {content.horario_funcionamento?.observacoes && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      {content.horario_funcionamento?.observacoes}
+                    </p>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -255,24 +290,36 @@ const Contato = () => {
           </p>
           
           <div className="flex justify-center space-x-6 mb-8">
-            <a 
-              href="#" 
-              className="w-16 h-16 bg-comademig-gold rounded-full flex items-center justify-center hover:bg-comademig-gold/90 transition-colors"
-            >
-              <Facebook className="w-8 h-8 text-white" />
-            </a>
-            <a 
-              href="#" 
-              className="w-16 h-16 bg-comademig-gold rounded-full flex items-center justify-center hover:bg-comademig-gold/90 transition-colors"
-            >
-              <Instagram className="w-8 h-8 text-white" />
-            </a>
-            <a 
-              href="#" 
-              className="w-16 h-16 bg-comademig-gold rounded-full flex items-center justify-center hover:bg-comademig-gold/90 transition-colors"
-            >
-              <Youtube className="w-8 h-8 text-white" />
-            </a>
+            {content.redes_sociais?.facebook && (
+              <a 
+                href={content.redes_sociais?.facebook}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-16 h-16 bg-comademig-gold rounded-full flex items-center justify-center hover:bg-comademig-gold/90 transition-colors"
+              >
+                <Facebook className="w-8 h-8 text-white" />
+              </a>
+            )}
+            {content.redes_sociais?.instagram && (
+              <a 
+                href={content.redes_sociais?.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-16 h-16 bg-comademig-gold rounded-full flex items-center justify-center hover:bg-comademig-gold/90 transition-colors"
+              >
+                <Instagram className="w-8 h-8 text-white" />
+              </a>
+            )}
+            {content.redes_sociais?.youtube && (
+              <a 
+                href={content.redes_sociais?.youtube}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-16 h-16 bg-comademig-gold rounded-full flex items-center justify-center hover:bg-comademig-gold/90 transition-colors"
+              >
+                <Youtube className="w-8 h-8 text-white" />
+              </a>
+            )}
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -294,8 +341,26 @@ const Contato = () => {
           </div>
         </div>
       </section>
+
+      {/* Badge de status para administradores */}
+      <ContentStatusBadge
+        pageName="contato"
+        pageTitle="Contato"
+        hasCustomContent={hasCustomContent}
+        editorUrl="/dashboard/admin/content/contato-editor"
+        publicUrl="/contato"
+        position="bottom-right"
+        compact={false}
+        contentPreview={content.endereco?.rua ? `${content.endereco?.rua}, ${content.endereco?.cidade}` : 'Informações de contato'}
+      />
     </div>
   );
 };
 
-export default Contato;
+const ContatoWithErrorBoundary = () => (
+  <ErrorBoundary>
+    <Contato />
+  </ErrorBoundary>
+);
+
+export default ContatoWithErrorBoundary;

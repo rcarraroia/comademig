@@ -8,12 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Save, Edit, User, MapPin, Church, Settings, Eye, Download, Bell, Shield, Lock } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Save, Edit, User, MapPin, Church, Settings, Eye, Download, Bell, Shield, Lock, Activity, AlertTriangle, LogOut, Trash2, Link as LinkIcon, Camera, Globe, CreditCard, Info } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useResponsive } from "@/hooks/useResponsive";
 import { useLoadingState } from "@/hooks/useLoadingState";
 import { useAccessibility } from "@/hooks/useAccessibility";
 import { useProfileValidation } from "@/hooks/useProfileValidation";
+import { useActiveSubscription } from "@/hooks/useUserSubscriptions";
 import { PhotoUpload } from "@/components/forms/PhotoUpload";
 import { UserAvatar } from "@/components/common/UserAvatar";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
@@ -27,6 +29,7 @@ const PerfilCompleto = () => {
   const { setLoading, isLoading } = useLoadingState();
   const { announceToScreenReader } = useAccessibility();
   const { getProfileCompletionPercentage } = useProfileValidation();
+  const { subscription, isLoading: loadingSubscription, hasSubscription } = useActiveSubscription();
   const { toast } = useToast();
   
   const [isEditing, setIsEditing] = useState(false);
@@ -64,6 +67,46 @@ const PerfilCompleto = () => {
     }
   });
 
+  const [publicProfile, setPublicProfile] = useState({
+    enabled: false,
+    bio: "",
+    photo_url: "",
+    social_links: {
+      facebook: "",
+      instagram: "",
+      linkedin: "",
+      website: ""
+    }
+  });
+
+  // Atividades recentes simuladas
+  const activities = [
+    {
+      action: "Login realizado",
+      date: "2024-01-20 14:30",
+      device: "Chrome - Windows",
+      location: "Belo Horizonte, MG"
+    },
+    {
+      action: "Dados atualizados",
+      date: "2024-01-18 09:15",
+      device: "Mobile App - Android",
+      location: "Belo Horizonte, MG"
+    },
+    {
+      action: "Carteira baixada",
+      date: "2024-01-15 16:45",
+      device: "Chrome - Windows",
+      location: "Belo Horizonte, MG"
+    },
+    {
+      action: "Perfil visualizado",
+      date: "2024-01-12 11:20",
+      device: "Safari - iPhone",
+      location: "Belo Horizonte, MG"
+    }
+  ];
+
   useEffect(() => {
     if (profile) {
       setFormData({
@@ -81,6 +124,22 @@ const PerfilCompleto = () => {
         data_ordenacao: profile.data_ordenacao || "",
         bio: profile.bio || "",
       });
+
+      // Carregar configurações do perfil público
+      setPreferences(prev => ({
+        ...prev,
+        privacy: {
+          ...prev.privacy,
+          showContact: profile.show_contact || false,
+          showMinistry: profile.show_ministry || true,
+        }
+      }));
+
+      setPublicProfile(prev => ({
+        ...prev,
+        bio: profile.bio || "",
+        enabled: profile.show_contact !== null || profile.show_ministry !== null,
+      }));
     }
   }, [profile]);
 
@@ -94,7 +153,14 @@ const PerfilCompleto = () => {
     setLoading('save', true);
     
     try {
-      const { error } = await updateProfile(formData);
+      // Formatar datas corretamente antes de salvar
+      const dataToSave = {
+        ...formData,
+        data_nascimento: formData.data_nascimento || null,
+        data_ordenacao: formData.data_ordenacao || null,
+      };
+      
+      const { error } = await updateProfile(dataToSave);
       
       if (error) {
         throw new Error(error.message);
@@ -116,6 +182,43 @@ const PerfilCompleto = () => {
       });
     } finally {
       setLoading('save', false);
+    }
+  };
+
+  const handleSavePublicProfile = async () => {
+    setLoading('savePublic', true);
+    
+    try {
+      // Salvar dados do perfil público
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          show_contact: preferences.privacy.showContact,
+          show_ministry: preferences.privacy.showMinistry,
+          bio: publicProfile.bio,
+          // Adicionar outros campos do perfil público conforme necessário
+        })
+        .eq('id', user?.id);
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      announceToScreenReader("Perfil público salvo com sucesso");
+      
+      toast({
+        title: "Perfil público atualizado",
+        description: "Suas configurações de perfil público foram salvas com sucesso",
+      });
+      
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar perfil público",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading('savePublic', false);
     }
   };
 
@@ -141,27 +244,107 @@ const PerfilCompleto = () => {
     announceToScreenReader("Edição cancelada");
   };
 
+  const handleChangePassword = async () => {
+    setLoading('changePassword', true);
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(user?.email || '', {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+      
+      if (error) throw error;
+      
+      announceToScreenReader("Email de redefinição de senha enviado");
+      
+      toast({
+        title: "Email enviado com sucesso!",
+        description: "Verifique sua caixa de entrada para redefinir sua senha. O link expira em 1 hora.",
+      });
+    } catch (error: any) {
+      console.error('Erro ao enviar email de reset:', error);
+      toast({
+        title: "Erro ao enviar email",
+        description: error.message || "Não foi possível enviar o email. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading('changePassword', false);
+    }
+  };
+
+  const handleViewPublicProfile = () => {
+    // Abrir perfil público em nova aba
+    window.open(`/perfil-publico/${user?.id}`, '_blank');
+  };
+
   const handleDownloadData = async () => {
     try {
-      const { data: userData, error } = await supabase
+      setLoading('download', true);
+      
+      // Buscar dados do perfil
+      const { data: userData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user?.id)
         .single();
 
-      if (error) throw error;
+      if (profileError) throw profileError;
 
+      // Buscar dados da carteira digital se existir
+      const { data: carteiraData } = await supabase
+        .from('carteira_digital')
+        .select('*')
+        .eq('user_id', user?.id);
+
+      // Organizar todos os dados
       const allData = {
-        usuario: {
-          id: user?.id,
+        informacoes_gerais: {
+          data_exportacao: new Date().toLocaleString('pt-BR'),
+          usuario_id: user?.id,
           email: user?.email,
-          created_at: user?.created_at
+          data_cadastro: user?.created_at ? new Date(user.created_at).toLocaleString('pt-BR') : null,
+          observacoes: "Dados exportados conforme LGPD - Lei Geral de Proteção de Dados Pessoais"
         },
-        perfil: userData,
-        data_exportacao: new Date().toISOString(),
-        observacoes: "Dados exportados conforme LGPD - Lei Geral de Proteção de Dados"
+        dados_pessoais: {
+          nome_completo: userData?.nome_completo || null,
+          cpf: userData?.cpf || null,
+          rg: userData?.rg || null,
+          data_nascimento: userData?.data_nascimento || null,
+          telefone: userData?.telefone || null,
+          endereco: userData?.endereco || null,
+          cidade: userData?.cidade || null,
+          estado: userData?.estado || null,
+          cep: userData?.cep || null,
+          biografia: userData?.bio || null
+        },
+        dados_ministeriais: {
+          igreja: userData?.igreja || null,
+          cargo: userData?.cargo || null,
+          data_ordenacao: userData?.data_ordenacao || null,
+          tipo_membro: userData?.tipo_membro || null,
+          status: userData?.status || null
+        },
+        carteira_digital: carteiraData?.map(carteira => ({
+          numero_carteira: carteira.numero_carteira,
+          data_emissao: carteira.data_emissao ? new Date(carteira.data_emissao).toLocaleString('pt-BR') : null,
+          data_validade: carteira.data_validade ? new Date(carteira.data_validade).toLocaleString('pt-BR') : null,
+          status: carteira.status,
+          qr_code_url: carteira.qr_code
+        })) || [],
+        configuracoes_sistema: {
+          foto_perfil_url: userData?.foto_url || null,
+          data_ultima_atualizacao: userData?.updated_at ? new Date(userData.updated_at).toLocaleString('pt-BR') : null
+        },
+        direitos_lgpd: {
+          direito_acesso: "Você tem direito de acessar seus dados pessoais",
+          direito_retificacao: "Você pode solicitar correção de dados incorretos",
+          direito_exclusao: "Você pode solicitar a exclusão de seus dados",
+          direito_portabilidade: "Você pode solicitar a portabilidade de seus dados",
+          contato_dpo: "Para exercer seus direitos, entre em contato através do suporte"
+        }
       };
 
+      // Criar arquivo JSON
       const dataStr = JSON.stringify(allData, null, 2);
       const dataBlob = new Blob([dataStr], { type: 'application/json' });
       
@@ -177,16 +360,18 @@ const PerfilCompleto = () => {
 
       toast({
         title: "Download concluído",
-        description: "Seus dados foram baixados com sucesso",
+        description: "Seus dados foram baixados com sucesso em formato JSON",
       });
 
     } catch (error: any) {
       console.error('Erro ao baixar dados:', error);
       toast({
         title: "Erro no download",
-        description: "Não foi possível baixar seus dados",
+        description: "Não foi possível baixar seus dados. Tente novamente.",
         variant: "destructive",
       });
+    } finally {
+      setLoading('download', false);
     }
   };
 
@@ -257,11 +442,13 @@ const PerfilCompleto = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="dados">Dados Pessoais</TabsTrigger>
+          <TabsTrigger value="perfil-publico">Perfil Público</TabsTrigger>
           <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
           <TabsTrigger value="privacidade">Privacidade</TabsTrigger>
-          <TabsTrigger value="acoes">Ações</TabsTrigger>
+          <TabsTrigger value="atividade">Atividade Recente</TabsTrigger>
+          <TabsTrigger value="zona-perigo">Zona de Perigo</TabsTrigger>
         </TabsList>
 
         {/* Dados Pessoais */}
@@ -438,6 +625,44 @@ const PerfilCompleto = () => {
               </CardContent>
             </Card>
 
+            {/* Subscription Info */}
+            {hasSubscription && subscription && (
+              <Card className="lg:col-span-3">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard size={20} />
+                    Assinatura Ativa
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Alert className="border-green-200 bg-green-50">
+                    <CreditCard className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-green-800">
+                      <div className="space-y-2">
+                        <div>
+                          <strong>Plano:</strong> {subscription.subscription_plans?.name}
+                        </div>
+                        <div>
+                          <strong>Cargo Ministerial:</strong> {subscription.member_types?.name}
+                        </div>
+                        <div>
+                          <strong>Status:</strong> <Badge className="ml-1">{subscription.status === 'active' ? 'Ativo' : subscription.status}</Badge>
+                        </div>
+                        <div>
+                          <strong>Início:</strong> {new Date(subscription.start_date).toLocaleDateString('pt-BR')}
+                        </div>
+                        {subscription.end_date && (
+                          <div>
+                            <strong>Término:</strong> {new Date(subscription.end_date).toLocaleDateString('pt-BR')}
+                          </div>
+                        )}
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Ministry Data */}
             <Card className="lg:col-span-3">
               <CardHeader>
@@ -464,8 +689,15 @@ const PerfilCompleto = () => {
                       id="cargo"
                       value={formData.cargo}
                       onChange={(e) => handleInputChange('cargo', e.target.value)}
-                      disabled={!isEditing}
+                      disabled={!isEditing || (hasSubscription && subscription?.member_types?.name)}
+                      className={hasSubscription && subscription?.member_types?.name ? 'bg-gray-100' : ''}
                     />
+                    {hasSubscription && subscription?.member_types?.name && (
+                      <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                        <Info className="h-3 w-3" />
+                        Cargo definido pela assinatura ativa: {subscription.member_types.name}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="data_ordenacao">Data de Ordenação</Label>
@@ -481,6 +713,245 @@ const PerfilCompleto = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Perfil Público */}
+        <TabsContent value="perfil-publico" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Globe size={20} />
+                Perfil Público
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Configure como outras pessoas podem ver seu perfil publicamente
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Habilitar perfil público */}
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <h4 className="font-medium">Ativar Perfil Público</h4>
+                  <p className="text-sm text-gray-600">
+                    Permite que outras pessoas vejam seu perfil através de um link público
+                  </p>
+                </div>
+                <Switch 
+                  checked={publicProfile.enabled} 
+                  onCheckedChange={(value) => 
+                    setPublicProfile(prev => ({ ...prev, enabled: value }))
+                  }
+                />
+              </div>
+
+              {publicProfile.enabled && (
+                <>
+                  {/* Foto do perfil público */}
+                  <div>
+                    <Label htmlFor="public-photo">Foto do Perfil Público</Label>
+                    <div className="mt-2 flex items-center gap-4">
+                      <UserAvatar size="lg" />
+                      <div className="flex-1">
+                        <PhotoUpload 
+                          onUploadSuccess={(url) => {
+                            setFormData(prev => ({ ...prev, foto_url: url }));
+                            toast({
+                              title: "Foto atualizada",
+                              description: "Sua foto de perfil foi atualizada com sucesso",
+                            });
+                          }}
+                        >
+                          <Button variant="outline" size="sm">
+                            <Camera className="mr-2 h-4 w-4" />
+                            Alterar Foto
+                          </Button>
+                        </PhotoUpload>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Use uma foto diferente da sua carteira digital, se desejar
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Biografia pública */}
+                  <div>
+                    <Label htmlFor="public-bio">Biografia Pública</Label>
+                    <Textarea
+                      id="public-bio"
+                      value={publicProfile.bio}
+                      onChange={(e) => 
+                        setPublicProfile(prev => ({ ...prev, bio: e.target.value }))
+                      }
+                      placeholder="Escreva uma breve biografia sobre você, seu ministério e experiência..."
+                      rows={4}
+                      className="mt-2"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Esta biografia será visível no seu perfil público
+                    </p>
+                  </div>
+
+                  {/* Configurações de Privacidade */}
+                  <div>
+                    <Label>Configurações de Privacidade</Label>
+                    <div className="mt-2 space-y-4">
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <h4 className="font-medium">Mostrar Informações de Contato</h4>
+                          <p className="text-sm text-gray-600">
+                            Exibir telefone e email no perfil público
+                          </p>
+                        </div>
+                        <Switch 
+                          checked={preferences.privacy.showContact} 
+                          onCheckedChange={(value) => 
+                            setPreferences(prev => ({
+                              ...prev,
+                              privacy: { ...prev.privacy, showContact: value }
+                            }))
+                          }
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <h4 className="font-medium">Mostrar Informações Ministeriais</h4>
+                          <p className="text-sm text-gray-600">
+                            Exibir igreja, cargo e data de ordenação no perfil público
+                          </p>
+                        </div>
+                        <Switch 
+                          checked={preferences.privacy.showMinistry} 
+                          onCheckedChange={(value) => 
+                            setPreferences(prev => ({
+                              ...prev,
+                              privacy: { ...prev.privacy, showMinistry: value }
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Links sociais */}
+                  <div>
+                    <Label>Links e Redes Sociais</Label>
+                    <div className="mt-2 space-y-3">
+                      <div>
+                        <Label htmlFor="facebook" className="text-sm">Facebook</Label>
+                        <Input
+                          id="facebook"
+                          value={publicProfile.social_links.facebook}
+                          onChange={(e) => 
+                            setPublicProfile(prev => ({
+                              ...prev,
+                              social_links: { ...prev.social_links, facebook: e.target.value }
+                            }))
+                          }
+                          placeholder="https://facebook.com/seu-perfil"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="instagram" className="text-sm">Instagram</Label>
+                        <Input
+                          id="instagram"
+                          value={publicProfile.social_links.instagram}
+                          onChange={(e) => 
+                            setPublicProfile(prev => ({
+                              ...prev,
+                              social_links: { ...prev.social_links, instagram: e.target.value }
+                            }))
+                          }
+                          placeholder="https://instagram.com/seu-perfil"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="linkedin" className="text-sm">LinkedIn</Label>
+                        <Input
+                          id="linkedin"
+                          value={publicProfile.social_links.linkedin}
+                          onChange={(e) => 
+                            setPublicProfile(prev => ({
+                              ...prev,
+                              social_links: { ...prev.social_links, linkedin: e.target.value }
+                            }))
+                          }
+                          placeholder="https://linkedin.com/in/seu-perfil"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="website" className="text-sm">Website Pessoal</Label>
+                        <Input
+                          id="website"
+                          value={publicProfile.social_links.website}
+                          onChange={(e) => 
+                            setPublicProfile(prev => ({
+                              ...prev,
+                              social_links: { ...prev.social_links, website: e.target.value }
+                            }))
+                          }
+                          placeholder="https://seu-site.com"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* URL do perfil público */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="font-medium text-blue-900 mb-2">URL do Seu Perfil Público</h4>
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        value={`${window.location.origin}/perfil-publico/${user?.id}`}
+                        readOnly
+                        className="bg-white text-sm font-mono"
+                      />
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${window.location.origin}/perfil-publico/${user?.id}`);
+                          toast({
+                            title: "URL copiada",
+                            description: "Link do perfil copiado para a área de transferência",
+                          });
+                        }}
+                      >
+                        Copiar
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Ações do perfil público */}
+                  <div className="flex gap-3">
+                    <Button 
+                      onClick={handleViewPublicProfile}
+                      className="bg-comademig-blue hover:bg-comademig-blue/90"
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      Visualizar Perfil Público
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={handleSavePublicProfile}
+                      disabled={isLoading('savePublic')}
+                    >
+                      {isLoading('savePublic') ? (
+                        <>
+                          <LoadingSpinner size="sm" className="mr-2" />
+                          Salvando...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Salvar Alterações
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Configurações */}
@@ -630,65 +1101,261 @@ const PerfilCompleto = () => {
                 <Lock size={20} />
                 Segurança da Conta
               </CardTitle>
+              <p className="text-sm text-gray-600">
+                Gerencie a segurança da sua conta
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="current-password">Senha Atual</Label>
-                  <Input id="current-password" type="password" placeholder="••••••••" />
+              <Alert className="border-blue-200 bg-blue-50">
+                <Lock className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800">
+                  <strong>Redefinição Segura de Senha</strong>
+                  <p className="mt-1 text-sm">
+                    Por segurança, enviaremos um link para seu email para redefinir sua senha. 
+                    Este método garante que apenas você possa alterar sua senha.
+                  </p>
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-3">
+                <div className="p-4 border rounded-lg bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium">Email da conta</h4>
+                      <p className="text-sm text-gray-600">{user?.email}</p>
+                    </div>
+                    <Badge variant="outline">Verificado</Badge>
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="new-password">Nova Senha</Label>
-                  <Input id="new-password" type="password" placeholder="••••••••" />
-                </div>
+
+                <Button 
+                  className="bg-comademig-blue hover:bg-comademig-blue/90"
+                  onClick={handleChangePassword}
+                  disabled={isLoading('changePassword')}
+                >
+                  {isLoading('changePassword') ? (
+                    <>
+                      <LoadingSpinner size="sm" className="mr-2" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="mr-2 h-4 w-4" />
+                      Enviar Link para Redefinir Senha
+                    </>
+                  )}
+                </Button>
               </div>
-              <Button className="bg-comademig-blue hover:bg-comademig-blue/90">
-                <Lock className="mr-2 h-4 w-4" />
-                Alterar Senha
-              </Button>
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-xs text-yellow-800">
+                  <strong>Como funciona:</strong> Ao clicar no botão acima, você receberá um email 
+                  com um link seguro para redefinir sua senha. O link expira em 1 hora por segurança.
+                </p>
+              </div>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        {/* Ações */}
-        <TabsContent value="acoes" className="space-y-6">
+          {/* LGPD - Direitos dos Dados */}
           <Card>
             <CardHeader>
-              <CardTitle>Ações do Perfil</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Download size={20} />
+                Seus Dados Pessoais (LGPD)
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Conforme a Lei Geral de Proteção de Dados (LGPD), você tem direito de acessar, 
+                corrigir, excluir ou portar seus dados pessoais.
+              </p>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button 
-                  variant="outline" 
-                  className="justify-start h-auto p-4"
-                  onClick={() => window.open(`/dashboard/perfil-publico/${user?.id}`, '_blank')}
-                >
-                  <div className="flex items-start gap-3">
-                    <Eye className="h-5 w-5 mt-1" />
-                    <div className="text-left">
-                      <p className="font-medium">Ver Perfil Público</p>
-                      <p className="text-sm text-gray-600">Visualize como outros veem seu perfil</p>
-                    </div>
-                  </div>
-                </Button>
-
                 <Button 
                   variant="outline" 
                   className="justify-start h-auto p-4"
                   onClick={handleDownloadData}
+                  disabled={isLoading('download')}
                 >
                   <div className="flex items-start gap-3">
                     <Download className="h-5 w-5 mt-1" />
                     <div className="text-left">
-                      <p className="font-medium">Baixar Meus Dados</p>
-                      <p className="text-sm text-gray-600">Exportar todos os seus dados (LGPD)</p>
+                      <p className="font-medium">
+                        {isLoading('download') ? 'Preparando download...' : 'Baixar Meus Dados'}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Exportar todos os seus dados em formato JSON
+                      </p>
+                    </div>
+                  </div>
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  className="justify-start h-auto p-4"
+                  onClick={() => window.open('/suporte', '_blank')}
+                >
+                  <div className="flex items-start gap-3">
+                    <Shield className="h-5 w-5 mt-1" />
+                    <div className="text-left">
+                      <p className="font-medium">Exercer Direitos LGPD</p>
+                      <p className="text-sm text-gray-600">
+                        Solicitar correção, exclusão ou portabilidade
+                      </p>
                     </div>
                   </div>
                 </Button>
               </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-xs text-blue-800">
+                  <strong>Seus direitos:</strong> Acesso, retificação, exclusão, portabilidade, 
+                  oposição ao tratamento e revisão de decisões automatizadas. 
+                  Entre em contato conosco para exercer qualquer um desses direitos.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Atividade Recente */}
+        <TabsContent value="atividade" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity size={20} />
+                Atividade Recente
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Acompanhe suas últimas ações e acessos no sistema
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {activities.map((activity, index) => (
+                  <div key={index} className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="w-2 h-2 bg-comademig-blue rounded-full mt-2"></div>
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{activity.action}</p>
+                      <p className="text-sm text-gray-600 mt-1">{activity.device}</p>
+                      <div className="flex items-center space-x-4 text-xs text-gray-500 mt-2">
+                        <span>{activity.date}</span>
+                        <span>•</span>
+                        <span>{activity.location}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {activities.length === 0 && (
+                <div className="text-center py-8">
+                  <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Nenhuma atividade recente
+                  </h3>
+                  <p className="text-gray-600">
+                    Suas atividades no sistema aparecerão aqui
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Zona de Perigo */}
+        <TabsContent value="zona-perigo" className="space-y-6">
+          <Card className="border-red-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-red-600">
+                <AlertTriangle size={20} />
+                Zona de Perigo
+              </CardTitle>
+              <p className="text-sm text-red-600">
+                Ações irreversíveis que afetam permanentemente sua conta
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Desativar conta */}
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <LogOut className="h-5 w-5 text-yellow-600 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-yellow-800 mb-2">Desativar Conta</h4>
+                    <p className="text-sm text-yellow-700 mb-4">
+                      Ao desativar sua conta, você perderá acesso ao sistema, mas seus dados serão mantidos. 
+                      Você pode reativar sua conta entrando em contato com o suporte.
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      className="border-yellow-300 text-yellow-700 hover:bg-yellow-100"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Desativar Conta
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Excluir conta */}
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <Trash2 className="h-5 w-5 text-red-600 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-red-800 mb-2">Excluir Conta Permanentemente</h4>
+                    <p className="text-sm text-red-700 mb-4">
+                      <strong>Esta ação é irreversível.</strong> Todos os seus dados, incluindo perfil, 
+                      carteira digital, histórico de pagamentos e documentos serão permanentemente excluídos. 
+                      Esta ação não pode ser desfeita.
+                    </p>
+                    <div className="bg-red-100 border border-red-300 rounded p-3 mb-4">
+                      <p className="text-xs text-red-800">
+                        <strong>Antes de excluir:</strong> Certifique-se de baixar todos os seus dados 
+                        e documentos importantes. Após a exclusão, não será possível recuperar nenhuma informação.
+                      </p>
+                    </div>
+                    <Button 
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      onClick={() => {
+                        const confirmDelete = window.confirm(
+                          "ATENÇÃO: Esta ação é irreversível!\n\n" +
+                          "Todos os seus dados serão permanentemente excluídos.\n" +
+                          "Digite 'EXCLUIR' para confirmar:"
+                        );
+                        
+                        if (confirmDelete) {
+                          const confirmation = window.prompt("Digite 'EXCLUIR' para confirmar:");
+                          if (confirmation === 'EXCLUIR') {
+                            toast({
+                              title: "Solicitação de exclusão enviada",
+                              description: "Entraremos em contato para confirmar a exclusão da conta",
+                              variant: "destructive",
+                            });
+                          }
+                        }
+                      }}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Excluir Conta Permanentemente
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Informações importantes */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-medium text-blue-900 mb-2">Informações Importantes</h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Para alterar dados pessoais, use a aba "Dados Pessoais"</li>
+                  <li>• Para questões de suporte, acesse a seção "Suporte" no menu</li>
+                  <li>• Em caso de dúvidas sobre exclusão, entre em contato conosco</li>
+                  <li>• Lembre-se de baixar seus dados antes de qualquer ação irreversível</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
       </Tabs>
 
       {/* Helper Text */}

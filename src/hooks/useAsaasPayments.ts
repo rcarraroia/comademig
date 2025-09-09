@@ -31,12 +31,27 @@ export const useAsaasPayments = () => {
   const createPayment = async (paymentData: PaymentData) => {
     setLoading(true);
     try {
+      console.log('Iniciando criação de pagamento com dados:', paymentData);
+      
       // Verificar se há split de afiliado
       const functionName = paymentData.affiliateId ? 'asaas-create-payment-with-split' : 'asaas-create-payment';
       
-      const { data, error } = await supabase.functions.invoke(functionName, {
+      // Para filiação, permitir chamadas não autenticadas
+      // Para outros serviços, exigir autenticação
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const invokeOptions: any = {
         body: paymentData
-      });
+      };
+      
+      // Se há sessão ativa, incluir o token de autorização
+      if (session) {
+        invokeOptions.headers = {
+          Authorization: `Bearer ${session.access_token}`
+        };
+      }
+      
+      const { data, error } = await supabase.functions.invoke(functionName, invokeOptions);
 
       if (error) {
         throw error;

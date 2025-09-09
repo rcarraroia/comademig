@@ -2,9 +2,11 @@
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { Navigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const AdminDashboardPage = () => {
-  const { isAdmin, loading } = useUserRoles();
+  const { user } = useAuth();
+  const { isAdmin, loading } = useUserRoles(user);
 
   if (loading) {
     return (

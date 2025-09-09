@@ -1,7 +1,8 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { X, Home, User, CreditCard, FileText, Calendar, MessageSquare, HelpCircle, Settings, Globe, Building, Users, Bell } from "lucide-react";
+import { X, Home, User, CreditCard, FileText, HelpCircle, Settings, Globe, Building, Users, Bell, Activity, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardSidebarProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface DashboardSidebarProps {
 
 const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
   const location = useLocation();
+  const { isAdmin, loading } = useAuth();
 
   const menuItems = [
     { path: "/dashboard", label: "Dashboard", icon: Home },
@@ -18,15 +20,18 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
     { path: "/dashboard/financeiro", label: "Financeiro", icon: FileText },
     { path: "/dashboard/certidoes", label: "Certidões", icon: FileText },
     { path: "/dashboard/regularizacao", label: "Regularização", icon: Building },
-    { path: "/dashboard/eventos", label: "Eventos", icon: Calendar },
     { path: "/dashboard/afiliados", label: "Afiliados", icon: Users },
-    { path: "/dashboard/comunicacao", label: "Comunicação", icon: MessageSquare },
     { path: "/dashboard/notifications", label: "Notificações", icon: Bell },
     { path: "/dashboard/suporte", label: "Suporte", icon: HelpCircle },
   ];
 
   const adminMenuItems = [
     { path: "/dashboard/admin/usuarios", label: "Gerenciar Usuários", icon: Users },
+    { path: "/dashboard/admin/member-types", label: "Tipos de Membro", icon: Settings },
+    { path: "/dashboard/admin/subscriptions", label: "Assinaturas", icon: CreditCard },
+    { path: "/dashboard/admin/regularizacao", label: "Regularização", icon: FileText },
+    { path: "/dashboard/admin/notifications", label: "Notificações", icon: Bell },
+    { path: "/dashboard/admin/diagnostics", label: "Diagnóstico do Sistema", icon: Activity },
     { path: "/dashboard/admin/suporte", label: "Atendimento ao Membro", icon: MessageSquare },
     { path: "/dashboard/admin/content", label: "Gerenciar Conteúdo", icon: FileText },
   ];
@@ -86,48 +91,35 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
             </Link>
           ))}
 
-          {/* Admin Section */}
-          <div className="mt-6 pt-4 border-t border-blue-600">
-            <div className="text-xs font-semibold text-blue-200 mb-2 px-3">
-              ADMINISTRAÇÃO
+          {/* Admin Section - Visível apenas para administradores */}
+          {!loading && isAdmin() && (
+            <div className="mt-6 pt-4 border-t border-blue-600">
+              <div className="text-xs font-semibold text-blue-200 mb-2 px-3">
+                ADMINISTRAÇÃO
+              </div>
+              {adminMenuItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={onClose}
+                  className={`
+                    flex items-center space-x-3 p-2 lg:p-3 rounded-lg transition-colors duration-200 text-sm font-medium
+                    ${isActive(item.path) 
+                      ? 'bg-comademig-gold text-comademig-blue' 
+                      : 'text-white hover:bg-blue-600'
+                    }
+                  `}
+                >
+                  <item.icon size={18} />
+                  <span>{item.label}</span>
+                </Link>
+              ))}
             </div>
-            {adminMenuItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={onClose}
-                className={`
-                  flex items-center space-x-3 p-2 lg:p-3 rounded-lg transition-colors duration-200 text-sm font-medium
-                  ${isActive(item.path) 
-                    ? 'bg-comademig-gold text-comademig-blue' 
-                    : 'text-white hover:bg-blue-600'
-                  }
-                `}
-              >
-                <item.icon size={18} />
-                <span>{item.label}</span>
-              </Link>
-            ))}
-          </div>
+          )}
         </nav>
 
         {/* Bottom Section - Fixed at bottom */}
         <div className="p-3 lg:p-4 space-y-2 lg:space-y-3 border-t border-blue-600 flex-shrink-0">
-          <Link
-            to="/dashboard/perfil"
-            onClick={onClose}
-            className={`
-              flex items-center space-x-3 p-2 lg:p-3 rounded-lg transition-colors duration-200 text-sm font-medium
-              ${isActive("/dashboard/perfil") 
-                ? 'bg-comademig-gold text-comademig-blue' 
-                : 'text-white hover:bg-blue-600'
-              }
-            `}
-          >
-            <Settings size={18} />
-            <span>Perfil</span>
-          </Link>
-          
           <Link
             to="/"
             onClick={onClose}

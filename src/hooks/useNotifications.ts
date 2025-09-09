@@ -20,7 +20,12 @@ export const useNotifications = () => {
   const { data: notifications = [], isLoading, error, refetch } = useSupabaseQuery(
     ['notifications', user?.id],
     async (): Promise<Notification[]> => {
-      if (!user) return [];
+      if (!user?.id) {
+        console.log('useNotifications: No user ID available');
+        return [];
+      }
+      
+      console.log('Fetching notifications for user:', user.id);
       
       const { data, error } = await supabase
         .from('notifications')
@@ -28,16 +33,26 @@ export const useNotifications = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching notifications:', error);
+        throw error;
+      }
+      
+      console.log('Notifications fetched:', data?.length || 0);
       return (data || []) as Notification[];
     },
-    { enabled: !!user }
+    { enabled: !!user?.id }
   );
 
   const { data: unreadCount = 0 } = useSupabaseQuery(
     ['notifications-unread', user?.id],
     async (): Promise<number> => {
-      if (!user) return 0;
+      if (!user?.id) {
+        console.log('useNotifications: No user ID for unread count');
+        return 0;
+      }
+      
+      console.log('Fetching unread count for user:', user.id);
       
       const { count, error } = await supabase
         .from('notifications')
@@ -45,10 +60,15 @@ export const useNotifications = () => {
         .eq('user_id', user.id)
         .eq('read', false);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching unread count:', error);
+        throw error;
+      }
+      
+      console.log('Unread count:', count);
       return count || 0;
     },
-    { enabled: !!user }
+    { enabled: !!user?.id }
   );
 
   const markAsRead = useSupabaseMutation(
@@ -59,8 +79,13 @@ export const useNotifications = () => {
         .eq('id', notificationId);
       
       if (error) throw error;
+      return notificationId;
     },
     {
+      invalidateQueries: [
+        ['notifications', user?.id],
+        ['notifications-unread', user?.id]
+      ],
       onSuccess: () => {
         refetch();
       }
@@ -78,8 +103,14 @@ export const useNotifications = () => {
         .eq('read', false);
       
       if (error) throw error;
+      return true;
     },
     {
+      invalidateQueries: [
+        ['notifications', user?.id],
+        ['notifications-unread', user?.id]
+      ],
+      successMessage: 'Todas as notificações foram marcadas como lidas',
       onSuccess: () => {
         refetch();
       }

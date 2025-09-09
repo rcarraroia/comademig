@@ -1,70 +1,93 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle, Star } from "lucide-react";
+import { ArrowLeft, CheckCircle, Star, CreditCard, Info } from "lucide-react";
+import { useRegularizacaoWithPayment } from "@/hooks/useRegularizacaoWithPayment";
+import { PaymentCheckout } from "@/components/payments/PaymentCheckout";
+import { PaymentResult } from "@/components/payments/PaymentResult";
 import { useToast } from "@/hooks/use-toast";
 
-interface Servico {
-  id: string;
-  nome: string;
-  descricao: string;
-  valor: number;
-  popular?: boolean;
-}
+type ViewState = 'selection' | 'checkout' | 'payment-result';
 
 const CheckoutRegularizacao = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const servicos: Servico[] = [
+  const { 
+    servicosDisponiveis, 
+    calcularValorRegularizacao, 
+    calcularDescontoCombo,
+    solicitarRegularizacaoComPagamento 
+  } = useRegularizacaoWithPayment();
+
+  const [currentView, setCurrentView] = useState<ViewState>('selection');
+  const [servicosSelecionados, setServicosSelecionados] = useState<string[]>([]);
+  const [checkoutData, setCheckoutData] = useState<any>(null);
+  const [paymentResult, setPaymentResult] = useState<any>(null);
+
+  // Usar serviços do banco de dados ou fallback para valores hardcoded
+  const servicos = servicosDisponiveis.length > 0 ? servicosDisponiveis : [
     {
       id: "estatuto",
       nome: "Estatuto Social",
       descricao: "Elaboração completa do estatuto social personalizado para sua igreja, incluindo registro em cartório",
-      valor: 450.00
+      valor: 450.00,
+      sort_order: 1,
+      is_active: true
     },
     {
       id: "ata-fundacao",
       nome: "Ata de Fundação",
       descricao: "Documento oficial de fundação da igreja com todas as formalidades legais necessárias",
-      valor: 250.00
+      valor: 250.00,
+      sort_order: 2,
+      is_active: true
     },
     {
       id: "ata-eleicao",
       nome: "Ata de Eleição",
       descricao: "Documentação da eleição da diretoria com validade legal e registro em cartório",
-      valor: 200.00
+      valor: 200.00,
+      sort_order: 3,
+      is_active: true
     },
     {
       id: "cnpj",
       nome: "Solicitação de CNPJ",
       descricao: "Processo completo de obtenção do CNPJ incluindo formulários, documentação e acompanhamento",
       valor: 380.00,
-      popular: true
+      sort_order: 4,
+      is_active: true
     },
     {
       id: "consultoria",
       nome: "Consultoria Jurídica",
       descricao: "Consultoria especializada em direito eclesiástico para dúvidas e orientações",
-      valor: 150.00
+      valor: 150.00,
+      sort_order: 5,
+      is_active: true
     }
   ];
 
-  const [servicosSelecionados, setServicosSelecionados] = useState<string[]>([]);
-  const [processandoPedido, setProcessandoPedido] = useState(false);
-
-  const valorTotal = servicos
+  // Calcular valores usando as funções do hook
+  const servicosSelecionadosData = servicos
     .filter(servico => servicosSelecionados.includes(servico.id))
-    .reduce((total, servico) => total + servico.valor, 0);
+    .map(servico => ({
+      id: servico.id,
+      nome: servico.nome,
+      valor: servico.valor
+    }));
 
-  const valorCombo = servicos.reduce((total, servico) => total + servico.valor, 0);
-  const descontoCombo = valorCombo * 0.15; // 15% de desconto
-  const valorComboComDesconto = valorCombo - descontoCombo;
+  const valorTotal = calcularValorRegularizacao(servicosSelecionadosData);
+  const descontoCombo = calcularDescontoCombo(servicosSelecionadosData);
+  const valorFinal = valorTotal - descontoCombo;
+  const todosServicos = servicosSelecionados.length === servicos.length;
 
   const handleServicoChange = (servicoId: string, checked: boolean) => {
     if (checked) {
@@ -92,32 +115,97 @@ const CheckoutRegularizacao = () => {
       return;
     }
 
-    setProcessandoPedido(true);
-    
     try {
-      // Simular processamento do pedido
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      toast({
-        title: "Pedido realizado com sucesso!",
-        description: "Entraremos em contato em breve para dar início aos serviços solicitados.",
+      // Preparar dados para pagamento
+      const regularizacaoData = await solicitarRegularizacaoComPagamento.mutateAsync({
+        servicos_selecionados: servicosSelecionadosData,
+        observacoes: `Serviços selecionados: ${servicosSelecionadosData.map(s => s.nome).join(', ')}`
       });
+
+      // Preparar dados para checkout
+      const servicosNomes = servicosSelecionadosData.map(s => s.nome).join(', ');
+      const descricaoCompleta = descontoCombo > 0 
+        ? `Regularização Completa (Combo com 15% desconto)`
+        : `Regularização - ${servicosNomes}`;
+
+      setCheckoutData({
+        serviceType: 'regularizacao',
+        serviceData: regularizacaoData.serviceData,
+        calculatedValue: valorFinal,
+        title: descricaoCompleta,
+        description: `${servicosSelecionadosData.length} serviço(s) selecionado(s)`
+      });
+
+      setCurrentView('checkout');
       
-      navigate("/dashboard/regularizacao");
-      
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Erro ao preparar regularização:', error);
       toast({
         title: "Erro ao processar pedido",
-        description: "Ocorreu um erro ao processar seu pedido. Tente novamente.",
+        description: error.message || 'Ocorreu um erro inesperado',
         variant: "destructive"
       });
-    } finally {
-      setProcessandoPedido(false);
     }
   };
 
-  const todosServicos = servicosSelecionados.length === servicos.length;
+  const handlePaymentSuccess = (result: any) => {
+    setPaymentResult(result);
+    setCurrentView('payment-result');
+  };
 
+  const handleBackToSelection = () => {
+    setCurrentView('selection');
+    setCheckoutData(null);
+    setPaymentResult(null);
+  };
+
+  const handleBackToRegularizacao = () => {
+    navigate("/dashboard/regularizacao");
+  };
+
+  // Renderizar view de checkout
+  if (currentView === 'checkout' && checkoutData) {
+    return (
+      <PaymentCheckout
+        serviceType={checkoutData.serviceType}
+        serviceData={checkoutData.serviceData}
+        calculatedValue={checkoutData.calculatedValue}
+        title={checkoutData.title}
+        description={checkoutData.description}
+        onSuccess={handlePaymentSuccess}
+        onCancel={handleBackToSelection}
+      />
+    );
+  }
+
+  // Renderizar resultado do pagamento
+  if (currentView === 'payment-result' && paymentResult) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center space-x-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleBackToRegularizacao}
+            className="text-comademig-blue"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-comademig-blue">Pagamento Realizado</h1>
+            <p className="text-gray-600">Sua solicitação será processada após confirmação do pagamento</p>
+          </div>
+        </div>
+        
+        <PaymentResult 
+          paymentData={paymentResult}
+          onClose={handleBackToRegularizacao}
+        />
+      </div>
+    );
+  }
+
+  // View principal de seleção de serviços
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -125,7 +213,7 @@ const CheckoutRegularizacao = () => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate("/dashboard/regularizacao")}
+          onClick={handleBackToRegularizacao}
           className="text-comademig-blue"
         >
           <ArrowLeft className="h-5 w-5" />
@@ -157,7 +245,7 @@ const CheckoutRegularizacao = () => {
           </div>
 
           {/* Combo Promocional */}
-          {todosServicos && (
+          {todosServicos && descontoCombo > 0 && (
             <Card className="border-comademig-gold border-2 bg-gradient-to-r from-comademig-gold/10 to-yellow-50">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -174,6 +262,18 @@ const CheckoutRegularizacao = () => {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* Alerta sobre pagamento obrigatório */}
+          {servicosSelecionados.length > 0 && (
+            <Alert className="border-orange-200 bg-orange-50">
+              <CreditCard className="h-4 w-4 text-orange-600" />
+              <AlertDescription className="text-orange-800">
+                <strong>Pagamento Obrigatório:</strong> Os serviços selecionados requerem pagamento de R$ {valorFinal.toFixed(2)} antes do processamento.
+                <br />
+                <small>Você será direcionado para o checkout após confirmar a seleção.</small>
+              </AlertDescription>
+            </Alert>
           )}
 
           <div className="space-y-3">
@@ -193,7 +293,7 @@ const CheckoutRegularizacao = () => {
                           <h3 className="font-semibold text-comademig-blue">
                             {servico.nome}
                           </h3>
-                          {servico.popular && (
+                          {servico.id === 'cnpj' && (
                             <Badge variant="secondary" className="bg-comademig-gold text-comademig-blue text-xs">
                               Mais Popular
                             </Badge>
@@ -239,15 +339,15 @@ const CheckoutRegularizacao = () => {
 
                   <Separator />
 
-                  {todosServicos && (
+                  {descontoCombo > 0 && (
                     <>
                       <div className="space-y-1">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Subtotal</span>
-                          <span>R$ {valorCombo.toFixed(2)}</span>
+                          <span>R$ {valorTotal.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-sm text-green-600">
-                          <span>Desconto (15%)</span>
+                          <span>Desconto Combo (15%)</span>
                           <span>- R$ {descontoCombo.toFixed(2)}</span>
                         </div>
                       </div>
@@ -258,27 +358,27 @@ const CheckoutRegularizacao = () => {
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
                     <span className="text-comademig-blue">
-                      R$ {todosServicos ? valorComboComDesconto.toFixed(2) : valorTotal.toFixed(2)}
+                      R$ {valorFinal.toFixed(2)}
                     </span>
                   </div>
 
                   <Button
                     onClick={handleFinalizarPedido}
-                    disabled={processandoPedido}
+                    disabled={solicitarRegularizacaoComPagamento.isPending}
                     className="w-full bg-comademig-blue hover:bg-comademig-blue/90 text-white"
                   >
-                    {processandoPedido ? (
-                      "Processando..."
+                    {solicitarRegularizacaoComPagamento.isPending ? (
+                      "Preparando..."
                     ) : (
                       <>
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Finalizar Pedido
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        Prosseguir para Pagamento
                       </>
                     )}
                   </Button>
 
                   <p className="text-xs text-gray-500 text-center">
-                    Após a confirmação, nossa equipe entrará em contato para dar início aos serviços
+                    Você será direcionado para o checkout seguro
                   </p>
                 </>
               ) : (

@@ -22,6 +22,7 @@ export const useSupabaseMutation = (
     onError?: (error: any) => void;
     successMessage?: string;
     errorMessage?: string;
+    invalidateQueries?: string[][];
   }
 ) => {
   const { toast } = useToast();
@@ -36,8 +37,18 @@ export const useSupabaseMutation = (
           description: options.successMessage,
         });
       }
+      
+      // Invalidar queries específicas se fornecidas
+      if (options?.invalidateQueries) {
+        options.invalidateQueries.forEach(queryKey => {
+          queryClient.invalidateQueries({ queryKey });
+        });
+      } else {
+        // Invalidar todas as queries como fallback
+        queryClient.invalidateQueries();
+      }
+      
       options?.onSuccess?.(data, variables);
-      queryClient.invalidateQueries();
     },
     onError: (error: any) => {
       console.error('Mutation error:', error);

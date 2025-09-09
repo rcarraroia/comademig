@@ -25,7 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { session, user, profile, loading, setProfile, refreshProfile } = useAuthState();
   const { signIn, signUp, signOut, resetPassword, updateProfile: updateProfileImpl } = useAuthActions();
-  const { isAdmin, hasPermission } = useAuthPermissions(profile);
+  const { isAdmin, hasPermission } = useAuthPermissions(profile, user);
 
   const updateProfile = (data: Partial<Profile>) => {
     return updateProfileImpl(user, profile, setProfile, data);

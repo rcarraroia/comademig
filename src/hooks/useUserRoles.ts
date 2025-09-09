@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { User } from '@supabase/supabase-js';
 
 type AppRole = 'admin' | 'moderador' | 'tesoureiro' | 'membro';
 
@@ -12,14 +12,13 @@ interface UserRole {
   created_at: string;
 }
 
-export const useUserRoles = () => {
+export const useUserRoles = (user: User | null = null) => {
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
 
   useEffect(() => {
     const fetchRoles = async () => {
-      if (!user) {
+      if (!user || !user.id) {
         setRoles([]);
         setLoading(false);
         return;
@@ -33,12 +32,18 @@ export const useUserRoles = () => {
 
         if (error) {
           console.error('Erro ao buscar roles:', error);
+          // Se a tabela user_roles não existir ou houver erro de política,
+          // continuar sem roles (fallback para tipo_membro)
+          setRoles([]);
+          setLoading(false);
           return;
         }
 
         setRoles(data?.map(r => r.role) || []);
       } catch (error) {
         console.error('Erro ao buscar roles:', error);
+        // Fallback gracioso em caso de erro
+        setRoles([]);
       } finally {
         setLoading(false);
       }
