@@ -162,8 +162,7 @@ export const PaymentForm = ({
     }
     
     try {
-      alert('🚀 TESTE: PaymentForm foi atualizado!');
-      console.log('🚀 VERSÃO ATUALIZADA - Iniciando criação de pagamento com dados:', {
+      console.log('Iniciando criação de pagamento com dados:', {
         ...formData,
         selectedMemberType,
         selectedPlan
@@ -175,17 +174,12 @@ export const PaymentForm = ({
         throw new Error('Nenhuma cobrança foi retornada');
       }
 
-      console.log('✅ Cobrança criada com sucesso:', cobranca);
+      console.log('Cobrança criada com sucesso:', cobranca);
       
       setPaymentResult(cobranca);
       
-      // FORÇAR CHAMADA DO onSuccess
-      console.log('🔍 onSuccess existe?', !!onSuccess);
       if (onSuccess) {
-        console.log('🔍 CHAMANDO onSuccess AGORA!');
         onSuccess(cobranca, selectedMemberType, selectedPlan);
-      } else {
-        console.error('❌ CRÍTICO: onSuccess não foi passado para PaymentForm!');
       }
       
     } catch (error: any) {

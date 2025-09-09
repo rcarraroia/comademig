@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { PaymentForm } from '@/components/payments/PaymentForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 
 export default function Filiacao() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [affiliateInfo, setAffiliateInfo] = useState<any>(null);
   const { getAffiliateByReferralCode } = useAsaasPayments();
@@ -23,7 +24,7 @@ export default function Filiacao() {
     // Verificar se há código de referral na URL
     const params = new URLSearchParams(location.search);
     const referralCode = params.get('ref');
-    
+
     if (referralCode) {
       loadAffiliateInfo(referralCode);
     }
@@ -40,10 +41,10 @@ export default function Filiacao() {
     console.log('✅ Pagamento criado com sucesso:', cobranca);
     console.log('📋 Tipo de membro selecionado:', selectedMemberType);
     console.log('💰 Plano selecionado:', selectedPlan);
-    
+
     // Determinar URL de pagamento
     let paymentUrl = null;
-    
+
     // Prioridade: url_pagamento do banco > invoiceUrl do Asaas > URL padrão
     if (cobranca.url_pagamento) {
       paymentUrl = cobranca.url_pagamento;
@@ -52,17 +53,17 @@ export default function Filiacao() {
     } else if (cobranca.asaas_data?.bankSlipUrl) {
       paymentUrl = cobranca.asaas_data.bankSlipUrl;
     }
-    
+
     console.log('🎯 Redirecionando para checkout interno');
-    
+
     // Mostrar toast de sucesso
     toast.success('Cobrança criada! Redirecionando para pagamento...');
-    
+
     // Redirecionar para nossa página de checkout interna
     setTimeout(() => {
       navigate(`/checkout/${cobranca.id}`);
     }, 1500);
-    
+
     // Validações adicionais para criação de assinatura
     if (!user) {
       toast.error('Usuário não autenticado. Faça login e tente novamente.');
@@ -78,7 +79,7 @@ export default function Filiacao() {
       toast.error('Erro na cobrança gerada. Tente novamente ou entre em contato com o suporte.');
       return;
     }
-    
+
     // Criar assinatura do usuário automaticamente
     try {
       const subscriptionData = {
@@ -92,18 +93,18 @@ export default function Filiacao() {
       console.log('Criando assinatura com dados:', subscriptionData);
 
       await createUserSubscription.mutateAsync(subscriptionData);
-      
+
       toast.success('Filiação processada com sucesso! Sua assinatura será ativada após a confirmação do pagamento.');
-      
+
       // Log para auditoria
       console.log('Assinatura criada com sucesso para usuário:', user.id);
-      
+
     } catch (error: any) {
       console.error('Erro detalhado ao criar assinatura:', error);
-      
+
       // Tratamento específico de diferentes tipos de erro
       let errorMessage = 'Pagamento criado, mas houve erro ao processar a assinatura.';
-      
+
       if (error?.message?.includes('duplicate')) {
         errorMessage = 'Você já possui uma assinatura ativa. Entre em contato com o suporte se precisar de ajuda.';
       } else if (error?.message?.includes('foreign key')) {
@@ -111,9 +112,9 @@ export default function Filiacao() {
       } else if (error?.message?.includes('permission')) {
         errorMessage = 'Erro de permissão. Verifique se está logado corretamente.';
       }
-      
+
       toast.error(errorMessage + ' Entre em contato com o suporte se o problema persistir.');
-      
+
       // Tentar novamente após um delay
       setTimeout(() => {
         toast.info('Você pode tentar reprocessar a assinatura acessando seu painel de usuário.');
@@ -137,7 +138,7 @@ export default function Filiacao() {
             <Alert className="border-green-200 bg-green-50">
               <Users className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-800">
-                <strong>Você foi indicado por um afiliado!</strong> 
+                <strong>Você foi indicado por um afiliado!</strong>
                 <br />
                 Código de indicação: <Badge variant="secondary">{affiliateInfo.referralCode}</Badge>
                 <br />
@@ -225,7 +226,7 @@ export default function Filiacao() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <PaymentForm 
+                <PaymentForm
                   defaultData={{
                     value: 0, // Será definido pelo plano selecionado
                     description: "Filiação COMADEMIG",

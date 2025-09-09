@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { CreditCard, QrCode, Copy, Check } from 'lucide-react';
+import { CreditCard, QrCode, Smartphone, Loader2 } from 'lucide-react';
 
 interface CobrancaData {
   id: string;
@@ -18,6 +19,7 @@ interface CobrancaData {
   qr_code_pix?: string;
   linha_digitavel?: string;
   data_vencimento: string;
+  tipo_cobranca: string;
 }
 
 export default function Checkout() {
@@ -26,12 +28,23 @@ export default function Checkout() {
   const { toast } = useToast();
   const [cobranca, setCobranca] = useState<CobrancaData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
+  const [processing, setProcessing] = useState(false);
+
+  // Estados para o checkout
+  const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CREDIT_CARD'>('PIX');
+  
+  // Estados para dados pessoais
+  const [customerData, setCustomerData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    cpfCnpj: ''
+  });
 
   // Estados para cartão de crédito
   const [cardData, setCardData] = useState({
     number: '',
-    name: '',
+    holderName: '',
     expiryMonth: '',
     expiryYear: '',
     ccv: ''
@@ -53,6 +66,9 @@ export default function Checkout() {
 
       if (error) throw error;
       setCobranca(data);
+      
+      // Definir método de pagamento baseado na cobrança
+      setPaymentMethod(data.forma_pagamento as 'PIX' | 'CREDIT_CARD');
     } catch (error) {
       console.error('Erro ao carregar cobrança:', error);
       toast({
@@ -66,21 +82,72 @@ export default function Checkout() {
     }
   };
 
-  const copyToClipboard = async (text: string) => {
+  const processPayment = async () => {
+    setProcessing(true);
     try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
+      if (paymentMethod === 'PIX') {
+        // Para PIX, buscar QR Code
+        const { data, error } = await supabase.functions.invoke('asaas-process-pix', {
+          body: { 
+            paymentId: cobranca?.asaas_id,
+            customerData 
+          }
+        });
+        
+        if (error) throw error;
+        
+        // Mostrar QR Code PIX
+        toast({
+          title: "PIX Gerado!",
+          description: "Use o QR Code ou código copia-e-cola para pagar"
+        });
+        
+      } else {
+        // Para Cartão, processar pagamento
+        const { data, error } = await supabase.functions.invoke('asaas-process-card', {
+          body: { 
+            paymentId: cobranca?.asaas_id,
+            customerData,
+            cardData 
+          }
+        });
+        
+        if (error) throw error;
+        
+        if (data.success) {
+          toast({
+            title: "Pagamento Aprovado!",
+            description: "Sua filiação foi processada com sucesso"
+          });
+          navigate('/dashboard');
+        } else {
+          throw new Error(data.error || 'Pagamento negado');
+        }
+      }
+    } catch (error: any) {
+      console.error('Erro ao processar pagamento:', error);
       toast({
-        title: "Copiado!",
-        description: "Código copiado para área de transferência"
-      });
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível copiar",
+        title: "Erro no Pagamento",
+        description: error.message || "Erro ao processar pagamento",
         variant: "destructive"
       });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const getButtonText = () => {
+    if (processing) return 'Processando...';
+    
+    switch (cobranca?.tipo_cobranca) {
+      case 'filiacao':
+        return 'Quero me Filiar';
+      case 'certidao':
+        return 'Solicitar Certidão';
+      case 'regularizacao':
+        return 'Regularizar Igreja';
+      default:
+        return 'Pagar Agora';
     }
   };
 
@@ -88,7 +155,7 @@ export default function Checkout() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600" />
           <p className="mt-4 text-gray-600">Carregando dados do pagamento...</p>
         </div>
       </div>
@@ -112,165 +179,205 @@ export default function Checkout() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-4xl">
+      <div className="container mx-auto px-4 max-w-2xl">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Finalizar Pagamento</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {cobranca.tipo_cobranca === 'filiacao' ? 'Finalizar Filiação' : 'Finalizar Pagamento'}
+          </h1>
           <p className="text-gray-600 mt-2">{cobranca.descricao}</p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Resumo do Pedido */}
+        <div className="space-y-6">
+          {/* Valor do Pagamento */}
           <Card>
             <CardHeader>
-              <CardTitle>Resumo do Pedido</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Descrição:</span>
-                <span className="font-medium">{cobranca.descricao}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Valor:</span>
-                <span className="font-bold text-xl text-green-600">
-                  R$ {cobranca.valor.toFixed(2).replace('.', ',')}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Vencimento:</span>
-                <span>{new Date(cobranca.data_vencimento).toLocaleDateString('pt-BR')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Status:</span>
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-sm">
-                  {cobranca.status}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Formas de Pagamento */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                {cobranca.forma_pagamento === 'PIX' && <QrCode className="h-5 w-5" />}
-                {cobranca.forma_pagamento === 'CREDIT_CARD' && <CreditCard className="h-5 w-5" />}
-                Pagamento via {cobranca.forma_pagamento === 'PIX' ? 'PIX' : 'Cartão de Crédito'}
+              <CardTitle className="text-center">
+                {cobranca.tipo_cobranca === 'filiacao' ? 'Valor da Filiação' : 'Valor do Pagamento'}
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              {/* PIX */}
-              {cobranca.forma_pagamento === 'PIX' && (
-                <div className="space-y-4">
-                  {cobranca.qr_code_pix ? (
-                    <>
-                      <div className="text-center">
-                        <div className="bg-white p-4 rounded-lg border-2 border-dashed border-gray-300 inline-block">
-                          <QrCode className="h-32 w-32 mx-auto text-gray-400" />
-                          <p className="text-sm text-gray-600 mt-2">QR Code PIX</p>
-                        </div>
-                      </div>
-                      <div>
-                        <Label>Código PIX (Copia e Cola)</Label>
-                        <div className="flex gap-2 mt-1">
-                          <Input 
-                            value={cobranca.qr_code_pix} 
-                            readOnly 
-                            className="font-mono text-xs"
-                          />
-                          <Button
-                            onClick={() => copyToClipboard(cobranca.qr_code_pix!)}
-                            variant="outline"
-                            size="sm"
-                          >
-                            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-center py-8">
-                      <QrCode className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                      <p className="text-gray-600">QR Code PIX sendo gerado...</p>
-                      <Button 
-                        onClick={loadCobranca} 
-                        variant="outline" 
-                        className="mt-4"
-                      >
-                        Atualizar
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Cartão de Crédito */}
-              {cobranca.forma_pagamento === 'CREDIT_CARD' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                      <Label htmlFor="cardNumber">Número do Cartão</Label>
-                      <Input
-                        id="cardNumber"
-                        placeholder="0000 0000 0000 0000"
-                        value={cardData.number}
-                        onChange={(e) => setCardData({...cardData, number: e.target.value})}
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Label htmlFor="cardName">Nome no Cartão</Label>
-                      <Input
-                        id="cardName"
-                        placeholder="Nome como está no cartão"
-                        value={cardData.name}
-                        onChange={(e) => setCardData({...cardData, name: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="expiryMonth">Mês</Label>
-                      <Input
-                        id="expiryMonth"
-                        placeholder="MM"
-                        value={cardData.expiryMonth}
-                        onChange={(e) => setCardData({...cardData, expiryMonth: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="expiryYear">Ano</Label>
-                      <Input
-                        id="expiryYear"
-                        placeholder="AAAA"
-                        value={cardData.expiryYear}
-                        onChange={(e) => setCardData({...cardData, expiryYear: e.target.value})}
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Label htmlFor="ccv">CCV</Label>
-                      <Input
-                        id="ccv"
-                        placeholder="000"
-                        value={cardData.ccv}
-                        onChange={(e) => setCardData({...cardData, ccv: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                  <Button className="w-full" size="lg">
-                    Pagar R$ {cobranca.valor.toFixed(2).replace('.', ',')}
-                  </Button>
-                </div>
-              )}
-
-
+            <CardContent className="text-center">
+              <div className="text-4xl font-bold text-green-600 mb-2">
+                R$ {cobranca.valor.toFixed(2).replace('.', ',')}
+              </div>
+              <p className="text-gray-600">{cobranca.descricao}</p>
             </CardContent>
           </Card>
-        </div>
 
-        <div className="mt-8 text-center">
+          {/* Forma de Pagamento */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Forma de Pagamento</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RadioGroup 
+                value={paymentMethod} 
+                onValueChange={(value: 'PIX' | 'CREDIT_CARD') => setPaymentMethod(value)}
+                className="space-y-3"
+              >
+                <div className={`flex items-center space-x-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer ${paymentMethod === 'PIX' ? 'border-blue-500 bg-blue-50' : ''}`}>
+                  <RadioGroupItem value="PIX" id="pix" />
+                  <Label htmlFor="pix" className="flex items-center space-x-3 cursor-pointer flex-1">
+                    <Smartphone className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <div className="font-medium">PIX</div>
+                      <div className="text-sm text-gray-500">Instantâneo</div>
+                    </div>
+                  </Label>
+                </div>
+                
+                <div className={`flex items-center space-x-3 p-4 border rounded-lg hover:bg-gray-50 cursor-pointer ${paymentMethod === 'CREDIT_CARD' ? 'border-green-500 bg-green-50' : ''}`}>
+                  <RadioGroupItem value="CREDIT_CARD" id="card" />
+                  <Label htmlFor="card" className="flex items-center space-x-3 cursor-pointer flex-1">
+                    <CreditCard className="h-5 w-5 text-green-600" />
+                    <div>
+                      <div className="font-medium">Cartão de Crédito</div>
+                      <div className="text-sm text-gray-500">À vista</div>
+                    </div>
+                  </Label>
+                </div>
+              </RadioGroup>
+            </CardContent>
+          </Card>
+
+          {/* Dados Pessoais */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Seus Dados</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="name">Nome Completo *</Label>
+                <Input
+                  id="name"
+                  placeholder="Seu nome completo"
+                  value={customerData.name}
+                  onChange={(e) => setCustomerData({...customerData, name: e.target.value})}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="email">E-mail *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={customerData.email}
+                  onChange={(e) => setCustomerData({...customerData, email: e.target.value})}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="phone">Telefone</Label>
+                  <Input
+                    id="phone"
+                    placeholder="(11) 99999-9999"
+                    value={customerData.phone}
+                    onChange={(e) => setCustomerData({...customerData, phone: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cpf">CPF</Label>
+                  <Input
+                    id="cpf"
+                    placeholder="000.000.000-00"
+                    value={customerData.cpfCnpj}
+                    onChange={(e) => setCustomerData({...customerData, cpfCnpj: e.target.value})}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Dados do Cartão (apenas se cartão selecionado) */}
+          {paymentMethod === 'CREDIT_CARD' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Dados do Cartão de Crédito
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="cardHolderName">Nome do Portador *</Label>
+                  <Input
+                    id="cardHolderName"
+                    placeholder="Nome como está no cartão"
+                    value={cardData.holderName}
+                    onChange={(e) => setCardData({...cardData, holderName: e.target.value})}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="cardNumber">Número do Cartão *</Label>
+                  <Input
+                    id="cardNumber"
+                    placeholder="0000 0000 0000 0000"
+                    value={cardData.number}
+                    onChange={(e) => setCardData({...cardData, number: e.target.value})}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="month">Mês *</Label>
+                    <Input
+                      id="month"
+                      placeholder="MM"
+                      maxLength={2}
+                      value={cardData.expiryMonth}
+                      onChange={(e) => setCardData({...cardData, expiryMonth: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="year">Ano *</Label>
+                    <Input
+                      id="year"
+                      placeholder="AAAA"
+                      maxLength={4}
+                      value={cardData.expiryYear}
+                      onChange={(e) => setCardData({...cardData, expiryYear: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="cvv">CCV *</Label>
+                    <Input
+                      id="cvv"
+                      placeholder="000"
+                      maxLength={3}
+                      value={cardData.ccv}
+                      onChange={(e) => setCardData({...cardData, ccv: e.target.value})}
+                    />
+                  </div>
+                </div>
+                
+                <div className="text-xs text-gray-500 flex items-center gap-1">
+                  <span>🔒</span>
+                  Seus dados são protegidos com criptografia SSL. Não armazenamos informações do cartão.
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Botão de Pagamento */}
           <Button 
-            variant="outline" 
-            onClick={() => navigate('/dashboard/financeiro')}
+            onClick={processPayment}
+            disabled={processing}
+            className="w-full h-12 text-lg font-semibold bg-red-500 hover:bg-red-600"
           >
-            Voltar ao Painel Financeiro
+            {processing && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            {getButtonText()}
           </Button>
+
+          <div className="text-center">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/dashboard/financeiro')}
+            >
+              Voltar ao Painel Financeiro
+            </Button>
+          </div>
         </div>
       </div>
     </div>
