@@ -537,10 +537,10 @@ export const PaymentForm = ({
               {loading ? (
                 <>
                   <LoadingSpinner />
-                  Gerando Cobrança...
+                  Processando...
                 </>
               ) : (
-                'Gerar Cobrança'
+                formData.tipoCobranca === 'filiacao' ? 'Quero me Filiar' : 'Gerar Cobrança'
               )}
             </Button>
           </div>

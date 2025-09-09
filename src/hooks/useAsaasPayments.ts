@@ -33,15 +33,31 @@ export const useAsaasPayments = () => {
     try {
       console.log('Iniciando criação de pagamento com dados:', paymentData);
       
-      // Verificar se há split de afiliado
-      const functionName = paymentData.affiliateId ? 'asaas-create-payment-with-split' : 'asaas-create-payment';
+      // Para filiação, usar assinatura; para outros, usar cobrança única
+      let functionName;
+      if (paymentData.tipoCobranca === 'filiacao') {
+        functionName = 'asaas-create-subscription';
+      } else {
+        functionName = paymentData.affiliateId ? 'asaas-create-payment-with-split' : 'asaas-create-payment';
+      }
       
       // Para filiação, permitir chamadas não autenticadas
       // Para outros serviços, exigir autenticação
       const { data: { session } } = await supabase.auth.getSession();
       
+      let requestBody = paymentData;
+      
+      // Para filiação, adicionar dados de assinatura
+      if (paymentData.tipoCobranca === 'filiacao') {
+        requestBody = {
+          ...paymentData,
+          cycle: 'MONTHLY',
+          nextDueDate: paymentData.dueDate
+        };
+      }
+
       const invokeOptions: any = {
-        body: paymentData
+        body: requestBody
       };
       
       // Se há sessão ativa, incluir o token de autorização
@@ -66,7 +82,8 @@ export const useAsaasPayments = () => {
         description: `${paymentData.billingType === 'PIX' ? 'PIX' : 'Cartão de Crédito'} processado com sucesso${data.split_configured ? ' (com comissão de afiliado)' : ''}`,
       });
 
-      return data.cobranca;
+      // Para filiação, retornar cobrança da assinatura; para outros, cobrança normal
+      return data.cobranca || data.subscription;
     } catch (error: any) {
       console.error('Erro ao criar pagamento:', error);
       toast({
