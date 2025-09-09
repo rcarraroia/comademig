@@ -33,12 +33,14 @@ export const useAsaasPayments = () => {
     try {
       console.log('Iniciando criação de pagamento com dados:', paymentData);
       
-      // Para filiação, usar assinatura; para outros, usar cobrança única
-      let functionName;
+      // Usar servidor Node.js ao invés de Edge Functions
+      const serverUrl = 'https://comademig-payment-server.vercel.app'; // Será configurado após deploy
+      let endpoint;
+      
       if (paymentData.tipoCobranca === 'filiacao') {
-        functionName = 'asaas-create-subscription';
+        endpoint = `${serverUrl}/api/create-subscription`;
       } else {
-        functionName = paymentData.affiliateId ? 'asaas-create-payment-with-split' : 'asaas-create-payment';
+        endpoint = `${serverUrl}/api/create-payment`;
       }
       
       // Para filiação, permitir chamadas não autenticadas
@@ -67,14 +69,23 @@ export const useAsaasPayments = () => {
         };
       }
       
-      const { data, error } = await supabase.functions.invoke(functionName, invokeOptions);
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
 
-      if (error) {
-        throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao processar pagamento');
       }
 
+      const data = await response.json();
+
       if (!data.success) {
-        throw new Error(data.error?.message || 'Erro ao criar cobrança');
+        throw new Error(data.error || 'Erro ao criar cobrança');
       }
 
       toast({
