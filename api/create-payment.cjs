@@ -12,10 +12,11 @@ try {
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY;
 const ASAAS_BASE_URL = 'https://www.asaas.com/api/v3';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
+// Configurações do Supabase (hardcoded para garantir funcionamento)
+const SUPABASE_URL = process.env.SUPABASE_URL || "https://amkelczfwazutrciqtlk.supabase.co";
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFta2VsY3pmd2F6dXRyY2lxdGxrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxODQxMjYsImV4cCI6MjA2ODc2MDEyNn0.7-M7DCqMzfZtXvcg6Zlf24zNv-XqvDT_oAznQGiqFHY";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Função auxiliar para criar/buscar cliente
 async function createOrFindCustomer(customerData) {
