@@ -41,7 +41,40 @@ export default function Filiacao() {
     console.log('Tipo de membro selecionado:', selectedMemberType);
     console.log('Plano selecionado:', selectedPlan);
     
-    // Validações adicionais
+    // Redirecionar para URL de pagamento do Asaas PRIMEIRO
+    let paymentUrl = null;
+    
+    // Verificar diferentes possíveis campos de URL de pagamento
+    if (cobranca.url_pagamento) {
+      paymentUrl = cobranca.url_pagamento;
+    } else if (cobranca.asaas_data?.invoiceUrl) {
+      paymentUrl = cobranca.asaas_data.invoiceUrl;
+    } else if (cobranca.asaas_data?.bankSlipUrl) {
+      paymentUrl = cobranca.asaas_data.bankSlipUrl;
+    }
+    
+    if (paymentUrl) {
+      // Abrir URL de pagamento em nova aba
+      window.open(paymentUrl, '_blank');
+      toast.success('Cobrança criada com sucesso! A página de pagamento foi aberta em uma nova aba.');
+    } else {
+      // Fallback: mostrar dados de pagamento se não houver URL
+      let message = 'Cobrança criada com sucesso!\n\n';
+      
+      if (cobranca.qr_code_pix) {
+        message += 'Código PIX: ' + cobranca.qr_code_pix + '\n\n';
+      }
+      
+      if (cobranca.linha_digitavel) {
+        message += 'Linha digitável do boleto: ' + cobranca.linha_digitavel + '\n\n';
+      }
+      
+      message += 'ID da cobrança: ' + (cobranca.asaas_id || cobrança.id);
+      
+      alert(message);
+    }
+    
+    // Validações adicionais para criação de assinatura
     if (!user) {
       toast.error('Usuário não autenticado. Faça login e tente novamente.');
       return;
