@@ -1,5 +1,12 @@
-const axios = require('axios');
-const { createClient } = require('@supabase/supabase-js');
+// Importações com try/catch para debug
+let axios, createClient;
+try {
+  axios = require('axios');
+  const supabaseLib = require('@supabase/supabase-js');
+  createClient = supabaseLib.createClient;
+} catch (error) {
+  console.error('Erro ao importar dependências:', error);
+}
 
 // Configurações
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY;
@@ -65,7 +72,18 @@ module.exports = async (req, res) => {
   }
 
   try {
-    console.log('🔄 Criando assinatura...');
+    console.log('🔄 Iniciando função create-subscription');
+    console.log('📋 Variáveis de ambiente:', {
+      ASAAS_API_KEY: process.env.ASAAS_API_KEY ? 'Configurada' : 'NÃO CONFIGURADA',
+      SUPABASE_URL: process.env.SUPABASE_URL ? 'Configurada' : 'NÃO CONFIGURADA',
+      SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY ? 'Configurada' : 'NÃO CONFIGURADA'
+    });
+    
+    if (!axios || !createClient) {
+      throw new Error('Dependências não carregadas corretamente');
+    }
+    
+    console.log('📦 Body recebido:', JSON.stringify(req.body, null, 2));
     const { customer, billingType, value, description, selectedMemberType, selectedPlan } = req.body;
     
     if (!ASAAS_API_KEY) {
@@ -134,11 +152,17 @@ module.exports = async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ Erro ao criar assinatura:', error);
+    console.error('❌ Erro detalhado:', {
+      message: error.message,
+      stack: error.stack,
+      response: error.response?.data
+    });
+    
     res.status(500).json({
       success: false,
       error: error.message,
-      details: error.response?.data || error
+      details: error.response?.data || error.toString(),
+      timestamp: new Date().toISOString()
     });
   }
 };

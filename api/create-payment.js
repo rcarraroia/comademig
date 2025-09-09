@@ -1,5 +1,12 @@
-const axios = require('axios');
-const { createClient } = require('@supabase/supabase-js');
+// Importações com try/catch para debug
+let axios, createClient;
+try {
+  axios = require('axios');
+  const supabaseLib = require('@supabase/supabase-js');
+  createClient = supabaseLib.createClient;
+} catch (error) {
+  console.error('Erro ao importar dependências:', error);
+}
 
 // Configurações
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY;
