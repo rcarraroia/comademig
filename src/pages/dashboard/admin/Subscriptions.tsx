@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, Users, DollarSign, Calendar } from 'lucide-react';
 import { useMemberTypes } from '@/hooks/useMemberTypes';
-import { useSubscriptionPlans, useSubscriptionStats, SubscriptionPlan } from '@/hooks/useSubscriptions';
+// import { useSubscriptionPlans, useSubscriptionStats, SubscriptionPlan } from '@/hooks/useSubscriptions'; // Removido - sistema em reconstrução
 import SubscriptionPlanModal from '@/components/admin/subscriptions/SubscriptionPlanModal';
 import DeletePlanModal from '@/components/admin/subscriptions/DeletePlanModal';
 

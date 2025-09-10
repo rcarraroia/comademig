@@ -3,10 +3,11 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, MapPin, Users, DollarSign, Award } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Calendar, MapPin, Users, DollarSign, Award, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { PaymentForm } from '@/components/payments/PaymentForm';
+// import { PaymentForm } from '@/components/payments/PaymentForm'; // Removido - sistema em reconstrução
 
 interface Evento {
   id: string;
@@ -159,15 +160,18 @@ export const EventRegistrationModal = ({
             ) : (
               <div>
                 <h4 className="text-lg font-medium mb-4">Finalizar Inscrição</h4>
-                <PaymentForm
-                  defaultData={{
-                    value: evento.preco || 0,
-                    description: `Inscrição - ${evento.titulo}`,
-                    tipoCobranca: "evento",
-                    referenciaId: evento.id
-                  }}
-                  onSuccess={handlePaymentSuccess}
-                />
+                <div className="text-center py-8">
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      Sistema de pagamentos em manutenção. Para se inscrever neste evento, entre em contato conosco.
+                    </AlertDescription>
+                  </Alert>
+                  <div className="mt-4 space-y-2">
+                    <p><strong>Telefone:</strong> (31) 3333-4444</p>
+                    <p><strong>Email:</strong> eventos@comademig.org.br</p>
+                  </div>
+                </div>
               </div>
             )}
           </div>

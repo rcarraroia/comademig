@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { X, Plus } from 'lucide-react';
-import { useSubscriptionPlans, SubscriptionPlan } from '@/hooks/useSubscriptions';
+// import { useSubscriptionPlans, SubscriptionPlan } from '@/hooks/useSubscriptions'; // Removido - sistema em reconstrução
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
 interface SubscriptionPlanModalProps {

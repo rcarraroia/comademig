@@ -1,0 +1,56 @@
+# Multi-stage build para produção
+FROM node:18-alpine AS builder
+
+# Instalar dependências de build
+RUN apk add --no-cache python3 make g++
+
+# Definir diretório de trabalho
+WORKDIR /app
+
+# Copiar arquivos de dependências
+COPY package*.json ./
+
+# Instalar dependências
+RUN npm ci --only=production && npm cache clean --force
+
+# Estágio de produção
+FROM node:18-alpine AS production
+
+# Instalar dependências do sistema
+RUN apk add --no-cache \
+    curl \
+    dumb-init \
+    && addgroup -g 1001 -S nodejs \
+    && adduser -S nodejs -u 1001
+
+# Definir diretório de trabalho
+WORKDIR /app
+
+# Copiar node_modules do estágio builder
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+
+# Copiar código da aplicação
+COPY --chown=nodejs:nodejs . .
+
+# Criar diretórios necessários
+RUN mkdir -p logs backups temp \
+    && chown -R nodejs:nodejs logs backups temp
+
+# Definir variáveis de ambiente
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV LOG_LEVEL=info
+
+# Expor porta
+EXPOSE 3000
+
+# Mudar para usuário não-root
+USER nodejs
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:3000/health || exit 1
+
+# Comando de inicialização
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "index.js"]

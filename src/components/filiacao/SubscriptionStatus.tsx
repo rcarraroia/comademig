@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, Clock, AlertCircle, RefreshCw, User, CreditCard } from 'lucide-react';
 import { useSubscriptionRetry } from '@/hooks/useSubscriptionRetry';
-import { useUserSubscriptions } from '@/hooks/useUserSubscriptions';
+// import { useUserSubscriptions } from '@/hooks/useUserSubscriptions'; // Removido - sistema em reconstrução
 
 interface SubscriptionStatusProps {
   paymentId?: string;
@@ -30,7 +30,10 @@ export const SubscriptionStatus = ({
     loading: retryLoading 
   } = useSubscriptionRetry();
   
-  const { activeSubscription, userSubscriptions, refetch } = useUserSubscriptions();
+  // const { activeSubscription, userSubscriptions, refetch } = useUserSubscriptions(); // Removido - sistema em reconstrução
+  const activeSubscription = null;
+  const userSubscriptions = [];
+  const refetch = () => {};
 
   // Carregar status da assinatura
   useEffect(() => {

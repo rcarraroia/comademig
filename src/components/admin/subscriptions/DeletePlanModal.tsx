@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, Users, DollarSign } from 'lucide-react';
-import { useSubscriptionPlans, SubscriptionPlan } from '@/hooks/useSubscriptions';
+// import { useSubscriptionPlans, SubscriptionPlan } from '@/hooks/useSubscriptions'; // Removido - sistema em reconstrução
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
 interface DeletePlanModalProps {

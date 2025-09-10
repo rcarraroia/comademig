@@ -2,13 +2,10 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
-import { PaymentForm } from '@/components/payments/PaymentForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, Users, Info } from 'lucide-react';
-import { useAsaasPayments } from '@/hooks/useAsaasPayments';
-import { useUserSubscriptions } from '@/hooks/useUserSubscriptions';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -17,8 +14,6 @@ export default function Filiacao() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [affiliateInfo, setAffiliateInfo] = useState<any>(null);
-  const { getAffiliateByReferralCode } = useAsaasPayments();
-  const { createUserSubscription } = useUserSubscriptions();
 
   useEffect(() => {
     // Verificar se há código de referral na URL
@@ -31,96 +26,11 @@ export default function Filiacao() {
   }, [location]);
 
   const loadAffiliateInfo = async (referralCode: string) => {
-    const affiliate = await getAffiliateByReferralCode(referralCode);
-    if (affiliate) {
-      setAffiliateInfo({ id: affiliate.id, referralCode });
-    }
+    // TODO: Implementar busca de afiliado quando sistema de pagamentos for reconstruído
+    console.log('Código de referral:', referralCode);
   };
 
-  const handlePaymentSuccess = async (cobranca: any, selectedMemberType?: string, selectedPlan?: string) => {
-    console.log('✅ Pagamento criado com sucesso:', cobranca);
-    console.log('📋 Tipo de membro selecionado:', selectedMemberType);
-    console.log('💰 Plano selecionado:', selectedPlan);
 
-    // Determinar URL de pagamento
-    let paymentUrl = null;
-
-    // Prioridade: url_pagamento do banco > invoiceUrl do Asaas > URL padrão
-    if (cobranca.url_pagamento) {
-      paymentUrl = cobranca.url_pagamento;
-    } else if (cobranca.asaas_data?.invoiceUrl) {
-      paymentUrl = cobranca.asaas_data.invoiceUrl;
-    } else if (cobranca.asaas_data?.bankSlipUrl) {
-      paymentUrl = cobranca.asaas_data.bankSlipUrl;
-    }
-
-    console.log('🎯 Redirecionando para checkout interno');
-
-    // Mostrar toast de sucesso
-    toast.success('Cobrança criada! Redirecionando para pagamento...');
-
-    // Redirecionar para nossa página de checkout interna
-    setTimeout(() => {
-      navigate(`/checkout/${cobranca.id}`);
-    }, 1500);
-
-    // Validações adicionais para criação de assinatura
-    if (!user) {
-      toast.error('Usuário não autenticado. Faça login e tente novamente.');
-      return;
-    }
-
-    if (!selectedMemberType || !selectedPlan) {
-      toast.error('Dados de filiação incompletos. Verifique se selecionou o cargo ministerial e o plano.');
-      return;
-    }
-
-    if (!cobranca?.id) {
-      toast.error('Erro na cobrança gerada. Tente novamente ou entre em contato com o suporte.');
-      return;
-    }
-
-    // Criar assinatura do usuário automaticamente
-    try {
-      const subscriptionData = {
-        user_id: user.id,
-        subscription_plan_id: selectedPlan,
-        member_type_id: selectedMemberType,
-        status: 'pending' as const, // Será ativada quando o pagamento for confirmado
-        payment_reference: cobranca.id
-      };
-
-      console.log('Criando assinatura com dados:', subscriptionData);
-
-      await createUserSubscription.mutateAsync(subscriptionData);
-
-      toast.success('Filiação processada com sucesso! Sua assinatura será ativada após a confirmação do pagamento.');
-
-      // Log para auditoria
-      console.log('Assinatura criada com sucesso para usuário:', user.id);
-
-    } catch (error: any) {
-      console.error('Erro detalhado ao criar assinatura:', error);
-
-      // Tratamento específico de diferentes tipos de erro
-      let errorMessage = 'Pagamento criado, mas houve erro ao processar a assinatura.';
-
-      if (error?.message?.includes('duplicate')) {
-        errorMessage = 'Você já possui uma assinatura ativa. Entre em contato com o suporte se precisar de ajuda.';
-      } else if (error?.message?.includes('foreign key')) {
-        errorMessage = 'Dados de plano ou cargo ministerial inválidos. Tente novamente.';
-      } else if (error?.message?.includes('permission')) {
-        errorMessage = 'Erro de permissão. Verifique se está logado corretamente.';
-      }
-
-      toast.error(errorMessage + ' Entre em contato com o suporte se o problema persistir.');
-
-      // Tentar novamente após um delay
-      setTimeout(() => {
-        toast.info('Você pode tentar reprocessar a assinatura acessando seu painel de usuário.');
-      }, 3000);
-    }
-  };
 
   return (
     <Layout>
@@ -226,17 +136,24 @@ export default function Filiacao() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <PaymentForm
-                  defaultData={{
-                    value: 0, // Será definido pelo plano selecionado
-                    description: "Filiação COMADEMIG",
-                    tipoCobranca: "filiacao",
-                    affiliateId: affiliateInfo?.id
-                  }}
-                  onSuccess={handlePaymentSuccess}
-                  showTitle={false}
-                  showMemberTypeSelection={true}
-                />
+                <div className="text-center py-8">
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      Sistema de pagamentos em manutenção. Em breve você poderá realizar sua filiação online.
+                    </AlertDescription>
+                  </Alert>
+                  <div className="mt-6">
+                    <p className="text-gray-600 mb-4">
+                      Para se filiar agora, entre em contato conosco:
+                    </p>
+                    <div className="space-y-2">
+                      <p><strong>Telefone:</strong> (31) 3333-4444</p>
+                      <p><strong>Email:</strong> contato@comademig.org.br</p>
+                      <p><strong>WhatsApp:</strong> (31) 99999-8888</p>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>

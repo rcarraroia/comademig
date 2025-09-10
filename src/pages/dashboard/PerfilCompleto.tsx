@@ -15,7 +15,7 @@ import { useResponsive } from "@/hooks/useResponsive";
 import { useLoadingState } from "@/hooks/useLoadingState";
 import { useAccessibility } from "@/hooks/useAccessibility";
 import { useProfileValidation } from "@/hooks/useProfileValidation";
-import { useActiveSubscription } from "@/hooks/useUserSubscriptions";
+// import { useActiveSubscription } from "@/hooks/useUserSubscriptions"; // Removido - sistema em reconstrução
 import { PhotoUpload } from "@/components/forms/PhotoUpload";
 import { UserAvatar } from "@/components/common/UserAvatar";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";

@@ -1,0 +1,187 @@
+version: '3.8'
+
+services:
+  # API Principal
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    container_name: comademig-payments-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env.production
+    volumes:
+      - ./logs:/app/logs
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - comademig-network
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Redis para cache e sessões
+  redis:
+    image: redis:7-alpine
+    container_name: comademig-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - comademig-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx como proxy reverso
+  nginx:
+    image: nginx:alpine
+    container_name: comademig-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/sites-available:/etc/nginx/sites-available
+      - ./ssl:/etc/nginx/ssl
+      - ./logs/nginx:/var/log/nginx
+    networks:
+      - comademig-network
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Prometheus para métricas
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: comademig-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - comademig-network
+
+  # Grafana para dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: comademig-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - comademig-network
+    depends_on:
+      - prometheus
+
+  # Node Exporter para métricas do sistema
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: comademig-node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - comademig-network
+
+  # Cron jobs para tarefas automáticas
+  cron-jobs:
+    build:
+      context: .
+      dockerfile: Dockerfile.cron
+    container_name: comademig-cron
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    volumes:
+      - ./logs:/app/logs
+      - ./crontab:/etc/cron.d/comademig-cron
+    networks:
+      - comademig-network
+    depends_on:
+      - api
+      - redis
+
+  # Backup automático
+  backup:
+    build:
+      context: .
+      dockerfile: Dockerfile.backup
+    container_name: comademig-backup
+    restart: unless-stopped
+    environment:
+      - BACKUP_SCHEDULE=0 2 * * *  # Todo dia às 2h
+    volumes:
+      - ./backups:/app/backups
+      - ./logs:/app/logs
+    env_file:
+      - .env.production
+    networks:
+      - comademig-network
+
+networks:
+  comademig-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
