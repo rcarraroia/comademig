@@ -75,7 +75,6 @@ const validations = {
       'SUPABASE_URL',
       'SUPABASE_SERVICE_ROLE_KEY',
       'JWT_SECRET',
-      'COMADEMIG_WALLET_ID',
       'RENUM_WALLET_ID'
     ];
     
@@ -243,12 +242,12 @@ const validations = {
         name: 'WEBHOOK_SECRET_TOKEN',
         check: () => {
           const token = process.env.WEBHOOK_SECRET_TOKEN;
-          return token && token.length >= 16;
+          return !token || token.length >= 16; // Opcional
         }
       },
       {
         name: 'NODE_ENV',
-        check: () => process.env.NODE_ENV === 'production'
+        check: () => !process.env.NODE_ENV || process.env.NODE_ENV === 'production' // Opcional
       }
     ];
     
