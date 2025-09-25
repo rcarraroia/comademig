@@ -35,7 +35,6 @@ function checkRequiredEnvVars() {
     'ASAAS_API_KEY',
     'SUPABASE_URL',
     'SUPABASE_SERVICE_ROLE_KEY',
-    'COMADEMIG_WALLET_ID',
     'RENUM_WALLET_ID',
     'JWT_SECRET'
   ];
@@ -154,7 +153,7 @@ function generateConfigReport() {
     'Asaas Environment': process.env.ASAAS_ENVIRONMENT || 'sandbox',
     'Supabase URL': process.env.SUPABASE_URL ? '✅ Configurado' : '❌ Não configurado',
     'JWT Secret': process.env.JWT_SECRET ? '✅ Configurado' : '❌ Não configurado',
-    'Wallet COMADEMIG': process.env.COMADEMIG_WALLET_ID ? '✅ Configurado' : '❌ Não configurado',
+    'Conta Principal COMADEMIG': process.env.ASAAS_API_KEY ? '✅ Via API_KEY' : '❌ API_KEY não configurada',
     'Wallet RENUM': process.env.RENUM_WALLET_ID ? '✅ Configurado' : '❌ Não configurado',
     'Slack Webhook': process.env.SLACK_WEBHOOK_URL ? '✅ Configurado' : '⚠️  Opcional',
     'CORS Origins': process.env.ALLOWED_ORIGINS || 'Padrão'

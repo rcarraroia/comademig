@@ -73,7 +73,7 @@ SUPABASE_URL=https://amkelczfwazutrciqtlk.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=sua_service_role_key_aqui
 
 # Carteiras para split (PREENCHER COM SUAS INFORMAÇÕES)
-COMADEMIG_WALLET_ID=sua_carteira_comademig
+# COMADEMIG_WALLET_ID não é necessário - usa conta principal via API_KEY
 RENUM_WALLET_ID=sua_carteira_renum
 
 # CORS

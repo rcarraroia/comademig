@@ -63,7 +63,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 JWT_SECRET=your_jwt_secret
 
 # Wallets para Split
-COMADEMIG_WALLET_ID=wallet_comademig_id
+# COMADEMIG_WALLET_ID não necessário - usa conta principal
 RENUM_WALLET_ID=wallet_renum_id
 ```
 
