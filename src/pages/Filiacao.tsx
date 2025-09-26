@@ -67,9 +67,9 @@ export default function Filiacao() {
       <div className="container mx-auto py-8 px-4">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold">Filiação COMADEMIG</h1>
+            <h1 className="text-4xl font-bold">🆕 Filiação COMADEMIG - Sistema Unificado</h1>
             <p className="text-xl text-muted-foreground">
-              Faça parte da Convenção dos Ministros das Assembléias de Deus do Estado de Minas Gerais
+              Novo processo simplificado: Escolha seu cargo e veja automaticamente o plano associado
             </p>
           </div>
 

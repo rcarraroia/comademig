@@ -77,18 +77,18 @@ const MemberTypesManagement = () => {
         </div>
         <div className="flex gap-2">
           <Button 
+            className="bg-green-600 hover:bg-green-700 text-white"
+            onClick={handleCreateNewUnified}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            🆕 NOVO: Tipo + Plano Unificado
+          </Button>
+          <Button 
             variant="outline"
             onClick={handleCreateLegacy}
           >
             <Settings className="h-4 w-4 mr-2" />
-            Tipo Simples
-          </Button>
-          <Button 
-            className="bg-comademig-blue hover:bg-comademig-blue/90"
-            onClick={handleCreateNewUnified}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Tipo + Plano
+            Tipo Simples (Legacy)
           </Button>
         </div>
       </div>
