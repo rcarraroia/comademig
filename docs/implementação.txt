@@ -1,0 +1,92 @@
+Documento Técnico: Unificação de Tipos de Membro e Assinaturas
+1. Visão Geral e Objetivo
+Objetivo: Eliminar a redundância e a inconsistência de dados unificando a definição de Cargo/Tipo de Membro e seu Plano Financeiro/Assinatura em um único fluxo de cadastro.
+
+Antigo	Novo (Unificado)
+Admin: 2 Formulários separados.	Admin: 1 Formulário único.
+Público: 2 Escolhas (Cargo + Plano).	Público: 1 Escolha (Cargo) + Feedback Automático.
+Backend: Risco de desvinculação.	Backend: Processo transacional atômico (3 inserções em 1).
+
+Exportar para as Planilhas
+2. Ajuste Arquitetural: Backend (Supabase Edge Function)
+A chave da implementação reside na criação de uma Supabase Edge Function que será a única responsável por orquestrar a criação do Tipo de Membro e seu Plano Financeiro associado.
+
+2.1. Edge Function: create_unified_member_type
+Esta função, preferencialmente escrita em TypeScript (padrão para Edge Functions), deve ser acionada pela submissão do formulário administrativo e deve ser transacional para garantir a integridade dos dados (falhar todas as inserções se uma delas falhar).
+
+Etapa	Ação Técnica no Backend	Ferramenta/Recurso
+1. Validação	Receber e validar todos os dados de entrada (incluindo valores e IDs de autenticação do Admin).	TS/Zod (Validação de Schema)
+2. Criar Plano (Gateway)	Chamar a API externa (Stripe/Mercado Pago) para registrar o novo plano.	fetch ou SDK do Gateway dentro da Edge Function.
+3. Inserções Atômicas	Iniciar a Transação no PostgreSQL.	supabase.rpc() ou Transação com pg-promise.
+a. Inserir na tabela subscription_plans (usando o ID do Gateway).	Supabase Client.
+b. Inserir na tabela member_types (dados do cargo).	Supabase Client.
+c. Inserir na tabela member_type_subscriptions (relacionando a e b).	Supabase Client.
+4. Finalização	Commit da Transação ou Rollback em caso de erro.	PostgreSQL Transação.
+
+Exportar para as Planilhas
+2.2. Modelo de Dados (Ajustes Conforme Discussão)
+Embora não mudemos a estrutura das 3 tabelas (subscription_plans, member_types, member_type_subscriptions), a Edge Function garantirá a relação 1:1 na criação.
+
+Tabela	Campos Chave (Dados a serem preenchidos na transação)
+subscription_plans	plan_title (Ex: Anuidade 2025), price, recurrence, plan_id_gateway (retornado pelo Stripe/MP)
+member_types	name (Ex: Pastor), description, order_of_exhibition, is_active
+member_type_subscriptions	member_type_id (FK), subscription_plan_id (FK)
+
+Exportar para as Planilhas
+3. Implementação da Interface Administrativa (Admin UX)
+O menu de administração e o formulário de cadastro devem ser reestruturados para refletir a unificação.
+
+3.1. Reestruturação do Menu (DashboardSidebar.tsx)
+O objetivo é eliminar a redundância visual.
+
+Menu Antigo	Ação	Menu Novo (Proposto)
+Tipos de Membro (/dashboard/admin/member-types)	Manter e Atualizar: Tela principal para a criação unificada.	Tipos de Membro
+Assinaturas (/dashboard/admin/subscriptions)	Renomear e Mudar Foco: Focado em monitoramento e configuração técnica do Gateway.	Gateway de Pagamento (ou "Config. Financeira")
+
+Exportar para as Planilhas
+3.2. Formulário de Cadastro Unificado
+O modal "Criar Novo Tipo de Membro" (image_87d425.png) deve ser expandido para incluir uma seção dedicada à configuração financeira.
+
+Componente: Atualizar ou substituir o modal/formulário em /dashboard/admin/member-types.
+
+Seção do Formulário	Campo	Tipo de Entrada	Vinculação no Backend
+Dados do Cargo	Nome	Texto (Obrigatório)	member_types.name
+Descrição	Área de Texto	member_types.description
+Ordem de Exibição	Número	member_types.order_of_exhibition
+Configuração Financeira (Novo)	Título do Plano	Texto (Obrigatório)	subscription_plans.plan_title
+Valor da Contribuição	Numérico (Moeda, Obrigatório)	subscription_plans.price
+Frequência de Cobrança	Dropdown (Anual/Mensal/Única)	subscription_plans.recurrence
+Permissões (Opcional)	Checkboxes	(Ex: can_manage_events)
+
+Exportar para as Planilhas
+4. Implementação da Interface Pública (Público UX)
+O formulário de registro (src/pages/Filiacao.tsx) deve ser reestruturado para um fluxo de 1 Escolha.
+
+4.1. Custom Hook de Busca (useMemberTypeWithPlan.ts)
+O Kiro deverá criar um custom hook utilizando o React Query para:
+
+Fazer o fetch de todos os Tipos de Membro ativos.
+
+Desnormalizar o dado, juntando o member_type com os dados de subscription_plans (via member_type_subscriptions) em uma única estrutura de dados para o frontend.
+
+Objeto Retornado (Exemplo):
+
+TypeScript
+
+interface UnifiedMemberType {
+    id: string;
+    name: string;
+    description: string;
+    // Dados Financeiros
+    plan_title: string;
+    plan_value: number;
+    plan_id_gateway: string;
+}
+4.2. Fluxo Otimizado no Filiacao.tsx
+Seleção: O formulário de filiação exibe um dropdown de Cargos (Tipos de Membro), populado pelo useMemberTypeWithPlan.ts.
+
+Ação do Usuário: Ao selecionar o Cargo (selectedMemberType), o estado da aplicação armazena imediatamente todos os dados unificados (incluindo o plan_value e o plan_id_gateway).
+
+Feedback: O sistema renderiza um componente de Resumo de Cobrança abaixo do seletor, exibindo o plan_title e o plan_value para o usuário, confirmando o valor a ser pago.
+
+Checkout: A submissão do formulário envia os dados pessoais junto com o plan_value e o plan_id_gateway para o componente PaymentCheckout.tsx. O PaymentCheckout não deve mais permitir a escolha de um plano, apenas a confirmação do pagamento do plano já associado.

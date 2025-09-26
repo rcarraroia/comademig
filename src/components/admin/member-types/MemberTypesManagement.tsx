@@ -3,19 +3,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Users, Settings } from "lucide-react";
-import { useMemberTypes } from "@/hooks/useMemberTypes";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Search, Plus, Users, Settings, DollarSign, Calendar } from "lucide-react";
+import { useMemberTypeWithPlan } from "@/hooks/useMemberTypeWithPlan";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import { UnifiedMemberTypeForm } from "@/components/admin/UnifiedMemberTypeForm";
 import { MemberTypeForm } from "./MemberTypeForm";
 import { MemberTypeDeleteModal } from "./MemberTypeDeleteModal";
 import { MemberTypeStats } from "./MemberTypeStats";
 import type { MemberType } from "@/hooks/useMemberTypes";
 
 const MemberTypesManagement = () => {
-  const { memberTypes, isLoading, refetch } = useMemberTypes();
+  const { memberTypes, isLoading, refetch } = useMemberTypeWithPlan();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<MemberType | null>(null);
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isUnifiedFormOpen, setIsUnifiedFormOpen] = useState(false);
+  const [isLegacyFormOpen, setIsLegacyFormOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
 
@@ -28,16 +31,22 @@ const MemberTypesManagement = () => {
     type.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleCreateNew = () => {
+  const handleCreateNewUnified = () => {
     setSelectedType(null);
     setFormMode('create');
-    setIsFormOpen(true);
+    setIsUnifiedFormOpen(true);
+  };
+
+  const handleCreateLegacy = () => {
+    setSelectedType(null);
+    setFormMode('create');
+    setIsLegacyFormOpen(true);
   };
 
   const handleEdit = (type: MemberType) => {
     setSelectedType(type);
     setFormMode('edit');
-    setIsFormOpen(true);
+    setIsLegacyFormOpen(true);
   };
 
   const handleDelete = (type: MemberType) => {
@@ -45,8 +54,14 @@ const MemberTypesManagement = () => {
     setIsDeleteModalOpen(true);
   };
 
-  const handleSuccess = () => {
-    setIsFormOpen(false);
+  const handleUnifiedSuccess = () => {
+    setIsUnifiedFormOpen(false);
+    setSelectedType(null);
+    refetch();
+  };
+
+  const handleLegacySuccess = () => {
+    setIsLegacyFormOpen(false);
     setIsDeleteModalOpen(false);
     setSelectedType(null);
     refetch();
@@ -58,19 +73,82 @@ const MemberTypesManagement = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Tipos de Membro</h1>
-          <p className="text-gray-600">Gerencie os tipos de membro disponíveis no sistema</p>
+          <p className="text-gray-600">Gerencie os tipos de membro e seus planos financeiros</p>
         </div>
-        <Button 
-          className="bg-comademig-blue hover:bg-comademig-blue/90"
-          onClick={handleCreateNew}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Tipo
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={handleCreateLegacy}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Tipo Simples
+          </Button>
+          <Button 
+            className="bg-comademig-blue hover:bg-comademig-blue/90"
+            onClick={handleCreateNewUnified}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Tipo + Plano
+          </Button>
+        </div>
       </div>
 
       {/* Estatísticas */}
-      <MemberTypeStats memberTypes={memberTypes} />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Users className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total de Tipos</p>
+                <p className="text-2xl font-bold text-gray-900">{memberTypes.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Settings className="h-8 w-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Ativos</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {memberTypes.filter(t => t.is_active).length}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <DollarSign className="h-8 w-8 text-yellow-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Com Planos</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {memberTypes.filter(t => t.plan_title).length}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Calendar className="h-8 w-8 text-purple-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Sem Planos</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {memberTypes.filter(t => !t.plan_title).length}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Filtros */}
       <Card>
@@ -107,10 +185,33 @@ const MemberTypesManagement = () => {
                     <Badge variant={type.is_active ? "default" : "secondary"}>
                       {type.is_active ? "Ativo" : "Inativo"}
                     </Badge>
+                    {type.plan_title && (
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        Com Plano
+                      </Badge>
+                    )}
                   </div>
                   {type.description && (
                     <p className="text-gray-600 mt-1">{type.description}</p>
                   )}
+                  
+                  {/* Informações do Plano Financeiro */}
+                  {type.plan_title && (
+                    <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center gap-2 text-sm font-medium text-green-800">
+                        <DollarSign className="h-4 w-4" />
+                        {type.plan_title}
+                      </div>
+                      <div className="flex items-center gap-4 mt-1 text-sm text-green-700">
+                        <span>R$ {type.plan_value?.toFixed(2)}</span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {type.plan_recurrence}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                     <span className="flex items-center gap-1">
                       <Users className="h-4 w-4" />
@@ -150,10 +251,25 @@ const MemberTypesManagement = () => {
       </Card>
 
       {/* Modais */}
+      
+      {/* Formulário Unificado */}
+      <Dialog open={isUnifiedFormOpen} onOpenChange={setIsUnifiedFormOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Criar Tipo de Membro com Plano</DialogTitle>
+          </DialogHeader>
+          <UnifiedMemberTypeForm
+            onSuccess={handleUnifiedSuccess}
+            onCancel={() => setIsUnifiedFormOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Formulário Legacy */}
       <MemberTypeForm
-        isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        onSuccess={handleSuccess}
+        isOpen={isLegacyFormOpen}
+        onClose={() => setIsLegacyFormOpen(false)}
+        onSuccess={handleLegacySuccess}
         memberType={selectedType}
         mode={formMode}
       />
@@ -161,7 +277,7 @@ const MemberTypesManagement = () => {
       <MemberTypeDeleteModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        onSuccess={handleSuccess}
+        onSuccess={handleLegacySuccess}
         memberType={selectedType}
       />
     </div>

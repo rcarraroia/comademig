@@ -5,15 +5,20 @@ import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle, Users, Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { CheckCircle, Users, Info, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import MemberTypeSelector from '@/components/public/MemberTypeSelector';
+import type { UnifiedMemberType } from '@/hooks/useMemberTypeWithPlan';
 
 export default function Filiacao() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [affiliateInfo, setAffiliateInfo] = useState<any>(null);
+  const [selectedMemberType, setSelectedMemberType] = useState<UnifiedMemberType | null>(null);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
 
   useEffect(() => {
     // Verificar se há código de referral na URL
@@ -28,6 +33,31 @@ export default function Filiacao() {
   const loadAffiliateInfo = async (referralCode: string) => {
     // TODO: Implementar busca de afiliado quando sistema de pagamentos for reconstruído
     console.log('Código de referral:', referralCode);
+  };
+
+  const handleMemberTypeSelect = (memberType: UnifiedMemberType | null) => {
+    setSelectedMemberType(memberType);
+    setShowPaymentForm(false); // Reset payment form when changing type
+  };
+
+  const handleProceedToPayment = () => {
+    if (!selectedMemberType) {
+      toast.error('Por favor, selecione um tipo de membro antes de prosseguir');
+      return;
+    }
+
+    if (!user) {
+      toast.info('Você precisa estar logado para prosseguir com a filiação');
+      navigate('/login', { 
+        state: { 
+          returnTo: '/filiacao',
+          memberType: selectedMemberType 
+        }
+      });
+      return;
+    }
+
+    setShowPaymentForm(true);
   };
 
 
@@ -115,9 +145,9 @@ export default function Filiacao() {
                 <Alert className="border-blue-200 bg-blue-50">
                   <Info className="h-4 w-4 text-blue-600" />
                   <AlertDescription className="text-blue-800">
-                    <strong>Novo Sistema de Filiação!</strong><br />
-                    Agora você pode escolher seu cargo ministerial e o plano de assinatura mais adequado.
-                    Os valores variam conforme o plano selecionado.
+                    <strong>Sistema Unificado de Filiação!</strong><br />
+                    Escolha seu cargo ministerial e veja automaticamente o plano de contribuição associado.
+                    Processo simplificado em uma única etapa.
                     <br /><br />
                     <strong>Desconto PIX:</strong> 5% de desconto em todos os planos pagos via PIX.
                   </AlertDescription>
@@ -126,37 +156,77 @@ export default function Filiacao() {
             </CardContent>
           </Card>
 
+          {/* Seleção de Tipo de Membro */}
+          <div className="max-w-4xl mx-auto">
+            <MemberTypeSelector
+              selectedMemberType={selectedMemberType}
+              onMemberTypeSelect={handleMemberTypeSelect}
+              className="mb-6"
+            />
+
+            {/* Botão para Prosseguir */}
+            {selectedMemberType && (
+              <div className="text-center">
+                <Button
+                  onClick={handleProceedToPayment}
+                  size="lg"
+                  className="bg-comademig-blue hover:bg-comademig-blue/90"
+                >
+                  Prosseguir com a Filiação
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+
           {/* Formulário de Pagamento */}
-          <div className="max-w-2xl mx-auto">
-            <Card>
-              <CardHeader>
-                <CardTitle>Dados para Filiação</CardTitle>
-                <CardDescription>
-                  Preencha seus dados e escolha a forma de pagamento para concluir sua filiação
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription>
-                      Sistema de pagamentos em manutenção. Em breve você poderá realizar sua filiação online.
-                    </AlertDescription>
-                  </Alert>
-                  <div className="mt-6">
-                    <p className="text-gray-600 mb-4">
-                      Para se filiar agora, entre em contato conosco:
-                    </p>
-                    <div className="space-y-2">
-                      <p><strong>Telefone:</strong> (31) 3333-4444</p>
-                      <p><strong>Email:</strong> contato@comademig.org.br</p>
-                      <p><strong>WhatsApp:</strong> (31) 99999-8888</p>
+          {showPaymentForm && selectedMemberType && (
+            <div className="max-w-2xl mx-auto">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Finalizar Filiação</CardTitle>
+                  <CardDescription>
+                    Complete seus dados e escolha a forma de pagamento
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8">
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>
+                        Sistema de pagamentos em desenvolvimento. Em breve você poderá finalizar sua filiação online.
+                      </AlertDescription>
+                    </Alert>
+                    
+                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                      <h4 className="font-semibold mb-2">Resumo da Filiação:</h4>
+                      <div className="text-left space-y-2">
+                        <p><strong>Tipo de Membro:</strong> {selectedMemberType.name}</p>
+                        {selectedMemberType.plan_title && (
+                          <>
+                            <p><strong>Plano:</strong> {selectedMemberType.plan_title}</p>
+                            <p><strong>Valor:</strong> R$ {selectedMemberType.plan_value?.toFixed(2)}</p>
+                            <p><strong>Frequência:</strong> {selectedMemberType.plan_recurrence}</p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="mt-6">
+                      <p className="text-gray-600 mb-4">
+                        Para finalizar sua filiação agora, entre em contato conosco:
+                      </p>
+                      <div className="space-y-2">
+                        <p><strong>Telefone:</strong> (31) 3333-4444</p>
+                        <p><strong>Email:</strong> contato@comademig.org.br</p>
+                        <p><strong>WhatsApp:</strong> (31) 99999-8888</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
     </Layout>
