@@ -11,12 +11,12 @@ import { UnifiedMemberTypeForm } from "@/components/admin/UnifiedMemberTypeForm"
 import { MemberTypeForm } from "./MemberTypeForm";
 import { MemberTypeDeleteModal } from "./MemberTypeDeleteModal";
 import { MemberTypeStats } from "./MemberTypeStats";
-import type { MemberType } from "@/hooks/useMemberTypes";
+import type { UnifiedMemberType } from "@/hooks/useMemberTypeWithPlan";
 
 const MemberTypesManagement = () => {
   const { memberTypes, isLoading, refetch } = useMemberTypeWithPlan();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedType, setSelectedType] = useState<MemberType | null>(null);
+  const [selectedType, setSelectedType] = useState<UnifiedMemberType | null>(null);
   const [isUnifiedFormOpen, setIsUnifiedFormOpen] = useState(false);
   const [isLegacyFormOpen, setIsLegacyFormOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -43,13 +43,13 @@ const MemberTypesManagement = () => {
     setIsLegacyFormOpen(true);
   };
 
-  const handleEdit = (type: MemberType) => {
+  const handleEdit = (type: UnifiedMemberType) => {
     setSelectedType(type);
     setFormMode('edit');
     setIsLegacyFormOpen(true);
   };
 
-  const handleDelete = (type: MemberType) => {
+  const handleDelete = (type: UnifiedMemberType) => {
     setSelectedType(type);
     setIsDeleteModalOpen(true);
   };
