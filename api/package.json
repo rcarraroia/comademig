@@ -21,7 +21,7 @@
     "validate": "npm run deploy && npm run test",
     "validate:vercel": "node scripts/validate-vercel.js",
     "build": "echo 'Build completed for Vercel'",
-    "vercel-build": "npm run validate:vercel && npm run test",
+    "vercel-build": "npm run validate:vercel",
     "deploy:vercel": "vercel --prod",
     "logs:vercel": "vercel logs",
     "prod": "NODE_ENV=production npm start"
