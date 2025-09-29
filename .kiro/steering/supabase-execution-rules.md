@@ -4,8 +4,11 @@
 
 ### CONTEXTO CRÍTICO
 - **Kiro AI NÃO TEM ACESSO ao projeto real do Supabase**
+- **Kiro AI NÃO PODE EXECUTAR, CRIAR, ALTERAR ou MODIFICAR nada no banco de dados**
+- **Kiro AI APENAS TEM CAPACIDADE DE LEITURA/VERIFICAÇÃO via Python para análise**
 - **Todas as migrações e scripts SQL devem ser executados MANUALMENTE pelo usuário**
 - **Scripts criados pelo Kiro são apenas preparação - não são executados automaticamente**
+- **NUNCA tentar executar operações de INSERT, UPDATE, DELETE, CREATE, ALTER via Python**
 
 ### PROTOCOLO OBRIGATÓRIO
 
@@ -125,7 +128,7 @@ Esta regra se aplica a:
 ### MÉTODO CORRETO PARA ACESSAR BANCO REAL
 **NUNCA confiar apenas no arquivo `src/integrations/supabase/types.ts`** - ele pode estar desatualizado!
 
-**SEMPRE usar Python com supabase-py para verificação real:**
+**SEMPRE usar Python com supabase-py APENAS para LEITURA/VERIFICAÇÃO:**
 
 ```python
 from supabase import create_client, Client
@@ -134,18 +137,27 @@ from supabase import create_client, Client
 SUPABASE_URL = "https://amkelczfwazutrciqtlk.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
-# Conectar e testar
+# Conectar e APENAS LER dados
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-response = supabase.table('nome_tabela').select('*').limit(1).execute()
+response = supabase.table('nome_tabela').select('*').limit(1).execute()  # APENAS SELECT
 ```
+
+**⚠️ OPERAÇÕES PROIBIDAS VIA PYTHON:**
+- `supabase.table().insert()` - PROIBIDO
+- `supabase.table().update()` - PROIBIDO  
+- `supabase.table().delete()` - PROIBIDO
+- `supabase.rpc()` com operações de escrita - PROIBIDO
 
 **Exemplo de script completo:** `test_supabase_connection.py`
 
 ### REGRAS FUNDAMENTAIS
 - **NUNCA assumir que scripts foram executados automaticamente**
+- **NUNCA tentar executar operações de escrita via Python**
+- **SEMPRE usar Python APENAS para leitura e análise**
 - **SEMPRE verificar estado atual ANTES de implementar**
 - **SEMPRE solicitar execução manual e confirmação**
 - **SEMPRE avaliar impacto em funcionalidades existentes**
+- **ECONOMIZAR créditos não tentando operações impossíveis**
 ## 🔗 M
 ÉTODO VALIDADO DE CONEXÃO COM SUPABASE
 

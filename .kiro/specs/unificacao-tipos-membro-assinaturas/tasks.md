@@ -22,28 +22,24 @@
 
 
 
-- [x] 3. Implement custom hook for data fetching
+- [ ] 3. Implement custom hook for data fetching
 
   - Create useMemberTypeWithPlan custom hook using TanStack Query
   - Implement denormalized query joining member_types, subscription_plans, and member_type_subscriptions
   - Add proper TypeScript interfaces for UnifiedMemberType
-
-
   - Implement loading states, error handling, and cache management
   - _Requirements: 3.5, 6.1, 6.2, 6.3_
 
-- [x] 4. Create unified admin form component
-
+- [ ] 4. Create unified admin form component
 
   - Build UnifiedMemberTypeForm component with separate sections for cargo and financial data
   - Implement real-time validation using React Hook Form and Zod
-
   - Add uniqueness validation feedback for names and titles
   - Create currency input formatting for contribution values
   - Add dropdown for billing frequency with only 'Mensal' and 'Anual' options
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 4.5, 4.6_
 
-- [x] 5. Update admin dashboard integration
+- [ ] 5. Update admin dashboard integration
 
   - Integrate UnifiedMemberTypeForm into existing member types management page
   - Update member types listing to display both cargo and financial information
@@ -53,15 +49,13 @@
 
 - [x] 6. Restructure admin menu navigation
 
-
   - Update DashboardSidebar.tsx to rename "Assinaturas" to "Gateway de Pagamento"
   - Maintain "Tipos de Membro" as primary unified creation interface
   - Update routing and navigation logic
   - Ensure backward compatibility with existing admin workflows
   - _Requirements: 5.1, 5.2, 6.4_
 
-- [x] 7. Create public member type selector component
-
+- [ ] 7. Create public member type selector component
 
   - Build MemberTypeSelector component using useMemberTypeWithPlan hook
   - Implement dropdown interface showing only active member types
@@ -69,8 +63,7 @@
   - Add state management for selected member type with unified data
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [x] 8. Update public filiacao page integration
-
+- [ ] 8. Update public filiacao page integration
 
   - Integrate MemberTypeSelector into existing Filiacao.tsx page
   - Update form state management to store unified member type data
@@ -78,9 +71,7 @@
   - Remove plan selection from PaymentCheckout component
   - _Requirements: 3.4, 3.5_
 
-- [x] 9. Implement comprehensive error handling
-
-
+- [ ] 9. Implement comprehensive error handling
 
   - Add client-side validation with specific error messages for each constraint
   - Implement server-side error response handling in components

@@ -8,6 +8,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { useMemberTypes } from '@/hooks/useMemberTypes';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
 
 interface CreateUserModalProps {
   isOpen: boolean;
@@ -17,8 +19,7 @@ interface CreateUserModalProps {
 
 export const CreateUserModal = ({ isOpen, onClose, onSuccess }: CreateUserModalProps) => {
   const { toast } = useToast();
-  const { getTypesWithFallback } = useMemberTypes();
-  const memberTypes = getTypesWithFallback();
+  const { data: memberTypes, isLoading: memberTypesLoading, error: memberTypesError } = useMemberTypes();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -28,6 +29,7 @@ export const CreateUserModal = ({ isOpen, onClose, onSuccess }: CreateUserModalP
     telefone: '',
     igreja: '',
     cargo: '',
+    member_type_id: '',
     tipo_membro: 'membro',
     status: 'ativo'
   });
@@ -70,18 +72,30 @@ export const CreateUserModal = ({ isOpen, onClose, onSuccess }: CreateUserModalP
       }
 
       // 2. Atualizar o perfil com dados adicionais
+      const profileUpdateData: any = {
+        nome_completo: formData.nome_completo,
+        cpf: formData.cpf,
+        telefone: formData.telefone,
+        igreja: formData.igreja,
+        tipo_membro: formData.tipo_membro,
+        status: formData.status,
+        updated_at: new Date().toISOString()
+      };
+
+      // Se um tipo de membro foi selecionado, usar o sistema dinâmico
+      if (formData.member_type_id) {
+        const selectedType = memberTypes?.find(type => type.id === formData.member_type_id);
+        profileUpdateData.member_type_id = formData.member_type_id;
+        profileUpdateData.cargo = selectedType?.name || formData.cargo;
+        profileUpdateData.subscription_source = 'manual'; // Indica que foi definido manualmente pelo admin
+      } else {
+        // Fallback para campo cargo manual
+        profileUpdateData.cargo = formData.cargo;
+      }
+
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({
-          nome_completo: formData.nome_completo,
-          cpf: formData.cpf,
-          telefone: formData.telefone,
-          igreja: formData.igreja,
-          cargo: formData.cargo,
-          tipo_membro: formData.tipo_membro,
-          status: formData.status,
-          updated_at: new Date().toISOString()
-        })
+        .update(profileUpdateData)
         .eq('id', authData.user.id);
 
       if (profileError) {
@@ -118,6 +132,7 @@ export const CreateUserModal = ({ isOpen, onClose, onSuccess }: CreateUserModalP
         telefone: '',
         igreja: '',
         cargo: '',
+        member_type_id: '',
         tipo_membro: 'membro',
         status: 'ativo'
       });
@@ -218,13 +233,82 @@ export const CreateUserModal = ({ isOpen, onClose, onSuccess }: CreateUserModalP
               </div>
               
               <div>
-                <Label htmlFor="cargo">Cargo</Label>
-                <Input
-                  id="cargo"
-                  value={formData.cargo}
-                  onChange={(e) => handleInputChange('cargo', e.target.value)}
-                  placeholder="Ex: Pastor, Evangelista, Diácono"
-                />
+                <Label htmlFor="member_type_id">Tipo de Membro</Label>
+                {memberTypesLoading ? (
+                  <div className="flex items-center space-x-2 p-2 border rounded">
+                    <LoadingSpinner />
+                    <span className="text-sm text-muted-foreground">Carregando tipos...</span>
+                  </div>
+                ) : memberTypesError ? (
+                  <div className="space-y-2">
+                    <Alert variant="destructive">
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>
+                        Erro ao carregar tipos de membro. Usando campo manual.
+                      </AlertDescription>
+                    </Alert>
+                    <Input
+                      id="cargo"
+                      value={formData.cargo}
+                      onChange={(e) => handleInputChange('cargo', e.target.value)}
+                      placeholder="Ex: Pastor, Evangelista, Diácono"
+                    />
+                  </div>
+                ) : memberTypes && memberTypes.length > 0 ? (
+                  <div className="space-y-2">
+                    <Select 
+                      value={formData.member_type_id} 
+                      onValueChange={(value) => handleInputChange('member_type_id', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um tipo de membro" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Nenhum (usar campo manual)</SelectItem>
+                        {memberTypes.map((type) => (
+                          <SelectItem key={type.id} value={type.id!}>
+                            {type.name}
+                            {type.description && (
+                              <span className="text-xs text-muted-foreground ml-2">
+                                - {type.description}
+                              </span>
+                            )}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    {/* Campo manual como fallback */}
+                    {!formData.member_type_id && (
+                      <div>
+                        <Label htmlFor="cargo" className="text-sm text-muted-foreground">
+                          Ou digite manualmente:
+                        </Label>
+                        <Input
+                          id="cargo"
+                          value={formData.cargo}
+                          onChange={(e) => handleInputChange('cargo', e.target.value)}
+                          placeholder="Ex: Pastor, Evangelista, Diácono"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>
+                        Nenhum tipo de membro cadastrado. Configure tipos no menu "Tipos de Membro" ou use o campo manual abaixo.
+                      </AlertDescription>
+                    </Alert>
+                    <Input
+                      id="cargo"
+                      value={formData.cargo}
+                      onChange={(e) => handleInputChange('cargo', e.target.value)}
+                      placeholder="Ex: Pastor, Evangelista, Diácono"
+                    />
+                  </div>
+                )}
               </div>
             </div>
             
@@ -245,19 +329,21 @@ export const CreateUserModal = ({ isOpen, onClose, onSuccess }: CreateUserModalP
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="tipo_membro">Tipo de Membro</Label>
+                <Label htmlFor="tipo_membro">Nível de Acesso</Label>
                 <Select value={formData.tipo_membro} onValueChange={(value) => handleInputChange('tipo_membro', value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {memberTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.name.toLowerCase()}>
-                        {type.name}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="membro">Membro</SelectItem>
+                    <SelectItem value="moderador">Moderador</SelectItem>
+                    <SelectItem value="tesoureiro">Tesoureiro</SelectItem>
+                    <SelectItem value="admin">Administrador</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Define as permissões de acesso ao sistema (diferente do cargo ministerial)
+                </p>
               </div>
               
               <div>

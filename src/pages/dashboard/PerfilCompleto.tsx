@@ -15,7 +15,7 @@ import { useResponsive } from "@/hooks/useResponsive";
 import { useLoadingState } from "@/hooks/useLoadingState";
 import { useAccessibility } from "@/hooks/useAccessibility";
 import { useProfileValidation } from "@/hooks/useProfileValidation";
-// import { useActiveSubscription } from "@/hooks/useUserSubscriptions"; // Removido - sistema em reconstrução
+import { useUserSubscriptions } from "@/hooks/useUserPermissions";
 import { PhotoUpload } from "@/components/forms/PhotoUpload";
 import { UserAvatar } from "@/components/common/UserAvatar";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
@@ -29,7 +29,11 @@ const PerfilCompleto = () => {
   const { setLoading, isLoading } = useLoadingState();
   const { announceToScreenReader } = useAccessibility();
   const { getProfileCompletionPercentage } = useProfileValidation();
-  const { subscription, isLoading: loadingSubscription, hasSubscription } = useActiveSubscription();
+  const { data: userSubscriptions, isLoading: loadingSubscription } = useUserSubscriptions();
+  
+  // Encontrar assinatura ativa
+  const activeSubscription = userSubscriptions?.find(sub => sub.status === 'active');
+  const hasSubscription = !!activeSubscription;
   const { toast } = useToast();
   
   const [isEditing, setIsEditing] = useState(false);
@@ -626,7 +630,7 @@ const PerfilCompleto = () => {
             </Card>
 
             {/* Subscription Info */}
-            {hasSubscription && subscription && (
+            {hasSubscription && activeSubscription && (
               <Card className="lg:col-span-3">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -640,25 +644,79 @@ const PerfilCompleto = () => {
                     <AlertDescription className="text-green-800">
                       <div className="space-y-2">
                         <div>
-                          <strong>Plano:</strong> {subscription.subscription_plans?.name}
+                          <strong>Plano:</strong> {activeSubscription.subscription_plans?.name}
                         </div>
                         <div>
-                          <strong>Cargo Ministerial:</strong> {subscription.member_types?.name}
+                          <strong>Cargo Ministerial:</strong> {activeSubscription.member_types?.name}
                         </div>
                         <div>
-                          <strong>Status:</strong> <Badge className="ml-1">{subscription.status === 'active' ? 'Ativo' : subscription.status}</Badge>
+                          <strong>Status:</strong> <Badge className="ml-1">{activeSubscription.status === 'active' ? 'Ativo' : activeSubscription.status}</Badge>
                         </div>
                         <div>
-                          <strong>Início:</strong> {new Date(subscription.start_date).toLocaleDateString('pt-BR')}
+                          <strong>Início:</strong> {new Date(activeSubscription.started_at).toLocaleDateString('pt-BR')}
                         </div>
-                        {subscription.end_date && (
+                        {activeSubscription.expires_at && (
                           <div>
-                            <strong>Término:</strong> {new Date(subscription.end_date).toLocaleDateString('pt-BR')}
+                            <strong>Término:</strong> {new Date(activeSubscription.expires_at).toLocaleDateString('pt-BR')}
                           </div>
                         )}
                       </div>
                     </AlertDescription>
                   </Alert>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Member Type Info */}
+            {hasSubscription && activeSubscription && (
+              <Card className="lg:col-span-3">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield size={20} />
+                    Tipo de Membro Ativo
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <h4 className="font-semibold text-blue-800 mb-2">Tipo de Membro</h4>
+                      <p className="text-lg font-bold text-blue-900">{activeSubscription.member_types?.name}</p>
+                      <p className="text-sm text-blue-700 mt-1">
+                        Definido através da sua assinatura ativa
+                      </p>
+                    </div>
+                    
+                    <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                      <h4 className="font-semibold text-green-800 mb-2">Plano de Assinatura</h4>
+                      <p className="text-lg font-bold text-green-900">{activeSubscription.subscription_plans?.name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className="text-green-700">
+                          R$ {activeSubscription.subscription_plans?.price?.toFixed(2)}
+                        </Badge>
+                        <Badge variant="outline" className="text-green-700">
+                          {activeSubscription.subscription_plans?.recurrence === 'monthly' ? 'Mensal' : 
+                           activeSubscription.subscription_plans?.recurrence === 'semestral' ? 'Semestral' : 'Anual'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Permissões da assinatura */}
+                  {activeSubscription.subscription_plans?.permissions && 
+                   Object.entries(activeSubscription.subscription_plans.permissions).filter(([_, value]) => value).length > 0 && (
+                    <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                      <h4 className="font-semibold text-purple-800 mb-2">Permissões Incluídas</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(activeSubscription.subscription_plans.permissions)
+                          .filter(([_, value]) => value === true)
+                          .map(([key]) => (
+                            <Badge key={key} variant="secondary" className="text-purple-700">
+                              {key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </Badge>
+                          ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -689,13 +747,24 @@ const PerfilCompleto = () => {
                       id="cargo"
                       value={formData.cargo}
                       onChange={(e) => handleInputChange('cargo', e.target.value)}
-                      disabled={!isEditing || (hasSubscription && subscription?.member_types?.name)}
-                      className={hasSubscription && subscription?.member_types?.name ? 'bg-gray-100' : ''}
+                      disabled={!isEditing || (profile?.subscription_source === 'filiacao')}
+                      className={profile?.subscription_source === 'filiacao' ? 'bg-gray-100' : ''}
                     />
-                    {hasSubscription && subscription?.member_types?.name && (
+                    {profile?.subscription_source === 'filiacao' && activeSubscription?.member_types?.name && (
                       <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
                         <Info className="h-3 w-3" />
-                        Cargo definido pela assinatura ativa: {subscription.member_types.name}
+                        Cargo definido durante a filiação: {activeSubscription.member_types.name}
+                      </p>
+                    )}
+                    {profile?.subscription_source === 'manual' && (
+                      <p className="text-xs text-gray-600 mt-1 flex items-center gap-1">
+                        <Info className="h-3 w-3" />
+                        Cargo definido manualmente pelo administrador
+                      </p>
+                    )}
+                    {!profile?.subscription_source && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Campo editável - você pode alterar seu cargo/ministério
                       </p>
                     )}
                   </div>

@@ -3,8 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, DollarSign, Calendar, Info, CheckCircle2 } from 'lucide-react';
+import { Loader2, DollarSign, Calendar, Info, CheckCircle2, Filter } from 'lucide-react';
 import { useMemberTypeWithPlan, type UnifiedMemberType } from '@/hooks/useMemberTypeWithPlan';
+import { useSubscriptionsByMemberType } from '@/hooks/useSubscriptionsByMemberType';
 
 interface MemberTypeSelectorProps {
   selectedMemberType?: UnifiedMemberType | null;
@@ -21,6 +22,11 @@ export const MemberTypeSelector: React.FC<MemberTypeSelectorProps> = ({
 }) => {
   const { memberTypes, isLoading, error } = useMemberTypeWithPlan();
   const [internalSelected, setInternalSelected] = useState<string>('');
+  
+  // Hook para buscar planos filtrados pelo tipo selecionado
+  const { data: filteredSubscriptions, isLoading: subscriptionsLoading } = useSubscriptionsByMemberType(
+    internalSelected || undefined
+  );
 
   // Sincronizar com prop externa
   useEffect(() => {
@@ -148,68 +154,112 @@ export const MemberTypeSelector: React.FC<MemberTypeSelectorProps> = ({
               </div>
             )}
 
-            {/* Informações Financeiras */}
-            {selectedTypeData.plan_title ? (
-              <div className="bg-white rounded-lg p-4 border border-green-200">
-                <h4 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Plano Financeiro Associado
-                </h4>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">Plano</p>
-                    <p className="text-lg font-semibold text-green-800">
-                      {selectedTypeData.plan_title}
-                    </p>
-                    {selectedTypeData.plan_description && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        {selectedTypeData.plan_description}
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">Valor:</span>
-                      <span className="text-xl font-bold text-green-800">
-                        R$ {selectedTypeData.plan_value?.toFixed(2)}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">Frequência:</span>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3 text-gray-500" />
-                        <span className="text-sm font-medium text-green-800">
-                          {selectedTypeData.plan_recurrence}
-                        </span>
+            {/* Planos Disponíveis */}
+            <div className="bg-white rounded-lg p-4 border border-green-200">
+              <h4 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                Planos Disponíveis para este Tipo
+              </h4>
+              
+              {subscriptionsLoading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm text-gray-600">Carregando planos...</span>
+                </div>
+              ) : filteredSubscriptions && filteredSubscriptions.length > 0 ? (
+                <div className="space-y-3">
+                  {filteredSubscriptions.map((plan) => (
+                    <div key={plan.id} className="p-3 bg-gray-50 rounded border">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h5 className="font-medium text-gray-900">{plan.name}</h5>
+                          {plan.description && (
+                            <p className="text-sm text-gray-600 mt-1">{plan.description}</p>
+                          )}
+                          
+                          {/* Permissões do plano */}
+                          {Object.entries(plan.permissions || {}).filter(([_, value]) => value).length > 0 && (
+                            <div className="mt-2">
+                              <p className="text-xs font-medium text-gray-700 mb-1">Permissões incluídas:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {Object.entries(plan.permissions || {})
+                                  .filter(([_, value]) => value === true)
+                                  .slice(0, 3)
+                                  .map(([key]) => (
+                                    <Badge key={key} variant="outline" className="text-xs">
+                                      {key.replace('_', ' ')}
+                                    </Badge>
+                                  ))}
+                                {Object.values(plan.permissions || {}).filter(Boolean).length > 3 && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    +{Object.values(plan.permissions || {}).filter(Boolean).length - 3} mais
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="text-right ml-4">
+                          <div className="flex items-center gap-1">
+                            <DollarSign className="h-4 w-4 text-green-600" />
+                            <span className="text-lg font-bold text-green-800">
+                              R$ {plan.price.toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 mt-1">
+                            <Calendar className="h-3 w-3 text-gray-500" />
+                            <span className="text-xs text-gray-600">
+                              {plan.recurrence === 'monthly' ? 'Mensal' : 
+                               plan.recurrence === 'semestral' ? 'Semestral' : 'Anual'}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
+                  ))}
+                  
+                  <div className="mt-3 p-3 bg-green-100 rounded border border-green-200">
+                    <p className="text-sm text-green-800 flex items-start gap-2">
+                      <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                      <span>
+                        {filteredSubscriptions.length === 1 
+                          ? 'Este é o plano disponível para o tipo de membro selecionado.'
+                          : `${filteredSubscriptions.length} planos estão disponíveis para este tipo de membro. Você poderá escolher durante a filiação.`
+                        }
+                      </span>
+                    </p>
                   </div>
                 </div>
-
-                <div className="mt-3 p-3 bg-green-100 rounded border border-green-200">
-                  <p className="text-sm text-green-800 flex items-start gap-2">
-                    <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                    <span>
-                      Este valor será cobrado automaticamente de acordo com a frequência selecionada. 
-                      Você receberá todas as informações de pagamento após confirmar sua filiação.
-                    </span>
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg p-4 border border-green-200">
+              ) : (
                 <div className="flex items-center gap-2 text-amber-600">
                   <Info className="h-4 w-4" />
-                  <p className="text-sm font-medium">
-                    Este tipo de membro não possui plano financeiro associado.
-                  </p>
+                  <div>
+                    <p className="text-sm font-medium">
+                      Nenhum plano específico configurado para este tipo.
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Planos universais ou configuração manual podem estar disponíveis.
+                    </p>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-600 mt-2">
-                  As informações sobre contribuições serão definidas posteriormente pela administração.
+              )}
+            </div>
+
+            {/* Informação sobre o plano principal (se existir) */}
+            {selectedTypeData.plan_title && (
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Plano Principal Associado
+                </h4>
+                <p className="text-sm text-blue-700">
+                  <strong>{selectedTypeData.plan_title}</strong> - R$ {selectedTypeData.plan_value?.toFixed(2)} 
+                  ({selectedTypeData.plan_recurrence})
                 </p>
+                {selectedTypeData.plan_description && (
+                  <p className="text-sm text-blue-600 mt-1">{selectedTypeData.plan_description}</p>
+                )}
               </div>
             )}
           </CardContent>

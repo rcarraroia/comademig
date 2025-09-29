@@ -10,6 +10,7 @@ import { CheckCircle, Users, Info, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import MemberTypeSelector from '@/components/public/MemberTypeSelector';
+import PaymentFormEnhanced from '@/components/payments/PaymentFormEnhanced';
 import type { UnifiedMemberType } from '@/hooks/useMemberTypeWithPlan';
 
 export default function Filiacao() {
@@ -181,51 +182,15 @@ export default function Filiacao() {
 
           {/* Formulário de Pagamento */}
           {showPaymentForm && selectedMemberType && (
-            <div className="max-w-2xl mx-auto">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Finalizar Filiação</CardTitle>
-                  <CardDescription>
-                    Complete seus dados e escolha a forma de pagamento
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8">
-                    <Alert>
-                      <Info className="h-4 w-4" />
-                      <AlertDescription>
-                        Sistema de pagamentos em desenvolvimento. Em breve você poderá finalizar sua filiação online.
-                      </AlertDescription>
-                    </Alert>
-                    
-                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                      <h4 className="font-semibold mb-2">Resumo da Filiação:</h4>
-                      <div className="text-left space-y-2">
-                        <p><strong>Tipo de Membro:</strong> {selectedMemberType.name}</p>
-                        {selectedMemberType.plan_title && (
-                          <>
-                            <p><strong>Plano:</strong> {selectedMemberType.plan_title}</p>
-                            <p><strong>Valor:</strong> R$ {selectedMemberType.plan_value?.toFixed(2)}</p>
-                            <p><strong>Frequência:</strong> {selectedMemberType.plan_recurrence}</p>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="mt-6">
-                      <p className="text-gray-600 mb-4">
-                        Para finalizar sua filiação agora, entre em contato conosco:
-                      </p>
-                      <div className="space-y-2">
-                        <p><strong>Telefone:</strong> (31) 3333-4444</p>
-                        <p><strong>Email:</strong> contato@comademig.org.br</p>
-                        <p><strong>WhatsApp:</strong> (31) 99999-8888</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <PaymentFormEnhanced 
+              selectedMemberType={selectedMemberType}
+              affiliateInfo={affiliateInfo}
+              onSuccess={() => {
+                toast.success('Filiação realizada com sucesso!');
+                navigate('/dashboard');
+              }}
+              onCancel={() => setShowPaymentForm(false)}
+            />
           )}
         </div>
       </div>

@@ -10,7 +10,8 @@ import { AdminProfile } from "@/hooks/useAdminData";
 import { useSupabaseMutation } from "@/hooks/useSupabaseQuery";
 import { supabase } from "@/integrations/supabase/client";
 import { useMemberTypes } from "@/hooks/useMemberTypes";
-import { Trash2, AlertTriangle } from "lucide-react";
+import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import { Trash2, AlertTriangle, Info } from "lucide-react";
 
 interface EditUserModalProps {
   user: AdminProfile | null;
@@ -22,8 +23,7 @@ interface EditUserModalProps {
 type UserRole = "membro" | "admin" | "moderador" | "tesoureiro";
 
 export const EditUserModal = ({ user, isOpen, onClose, onSuccess }: EditUserModalProps) => {
-  const { getTypesWithFallback } = useMemberTypes();
-  const memberTypes = getTypesWithFallback();
+  const { data: memberTypes, isLoading: memberTypesLoading, error: memberTypesError } = useMemberTypes();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -32,6 +32,7 @@ export const EditUserModal = ({ user, isOpen, onClose, onSuccess }: EditUserModa
     telefone: "",
     igreja: "",
     cargo: "",
+    member_type_id: "",
     status: "pendente",
     tipo_membro: "membro",
   });
@@ -45,6 +46,7 @@ export const EditUserModal = ({ user, isOpen, onClose, onSuccess }: EditUserModa
         telefone: user.telefone || "",
         igreja: user.igreja || "",
         cargo: user.cargo || "",
+        member_type_id: (user as any).member_type_id || "",
         status: user.status || "pendente",
         tipo_membro: user.tipo_membro || "membro",
       });
@@ -53,13 +55,25 @@ export const EditUserModal = ({ user, isOpen, onClose, onSuccess }: EditUserModa
 
   const updateUserMutation = useSupabaseMutation(
     async (data: any) => {
+      const updateData: any = { ...data };
+      
+      // Se um tipo de membro foi selecionado, usar o sistema dinâmico
+      if (data.member_type_id) {
+        const selectedType = memberTypes?.find(type => type.id === data.member_type_id);
+        updateData.cargo = selectedType?.name || data.cargo;
+        // Manter subscription_source se já existir, senão definir como manual
+        if (!(user as any).subscription_source) {
+          updateData.subscription_source = 'manual';
+        }
+      }
+      
       const { error } = await supabase
         .from('profiles')
-        .update(data)
+        .update(updateData)
         .eq('id', user?.id);
       
       if (error) throw error;
-      return data;
+      return updateData;
     },
     {
       onSuccess: () => {
@@ -210,12 +224,92 @@ export const EditUserModal = ({ user, isOpen, onClose, onSuccess }: EditUserModa
           </div>
 
           <div>
-            <Label htmlFor="cargo">Cargo</Label>
-            <Input
-              id="cargo"
-              value={formData.cargo}
-              onChange={(e) => handleInputChange('cargo', e.target.value)}
-            />
+            <Label htmlFor="member_type_id">Tipo de Membro</Label>
+            {memberTypesLoading ? (
+              <div className="flex items-center space-x-2 p-2 border rounded">
+                <LoadingSpinner />
+                <span className="text-sm text-muted-foreground">Carregando tipos...</span>
+              </div>
+            ) : memberTypesError ? (
+              <div className="space-y-2">
+                <Alert variant="destructive">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Erro ao carregar tipos de membro. Usando campo manual.
+                  </AlertDescription>
+                </Alert>
+                <Input
+                  id="cargo"
+                  value={formData.cargo}
+                  onChange={(e) => handleInputChange('cargo', e.target.value)}
+                  placeholder="Ex: Pastor, Evangelista, Diácono"
+                />
+              </div>
+            ) : memberTypes && memberTypes.length > 0 ? (
+              <div className="space-y-2">
+                <Select 
+                  value={formData.member_type_id} 
+                  onValueChange={(value) => handleInputChange('member_type_id', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um tipo de membro" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nenhum (usar campo manual)</SelectItem>
+                    {memberTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.id!}>
+                        {type.name}
+                        {type.description && (
+                          <span className="text-xs text-muted-foreground ml-2">
+                            - {type.description}
+                          </span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {/* Mostrar cargo atual se definido via filiação */}
+                {(user as any)?.subscription_source === 'filiacao' && (
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      Este cargo foi definido durante a filiação. Alterar aqui substituirá a configuração original.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {/* Campo manual como fallback */}
+                {!formData.member_type_id && (
+                  <div>
+                    <Label htmlFor="cargo" className="text-sm text-muted-foreground">
+                      Ou digite manualmente:
+                    </Label>
+                    <Input
+                      id="cargo"
+                      value={formData.cargo}
+                      onChange={(e) => handleInputChange('cargo', e.target.value)}
+                      placeholder="Ex: Pastor, Evangelista, Diácono"
+                    />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Nenhum tipo de membro cadastrado. Configure tipos no menu "Tipos de Membro" ou use o campo manual abaixo.
+                  </AlertDescription>
+                </Alert>
+                <Input
+                  id="cargo"
+                  value={formData.cargo}
+                  onChange={(e) => handleInputChange('cargo', e.target.value)}
+                  placeholder="Ex: Pastor, Evangelista, Diácono"
+                />
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -235,19 +329,21 @@ export const EditUserModal = ({ user, isOpen, onClose, onSuccess }: EditUserModa
             </div>
             
             <div>
-              <Label htmlFor="tipo_membro">Tipo de Membro</Label>
+              <Label htmlFor="tipo_membro">Nível de Acesso</Label>
               <Select value={formData.tipo_membro} onValueChange={(value) => handleInputChange('tipo_membro', value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {memberTypes.map((type) => (
-                    <SelectItem key={type.id} value={type.name.toLowerCase()}>
-                      {type.name}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="membro">Membro</SelectItem>
+                  <SelectItem value="moderador">Moderador</SelectItem>
+                  <SelectItem value="tesoureiro">Tesoureiro</SelectItem>
+                  <SelectItem value="admin">Administrador</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Define as permissões de acesso ao sistema (diferente do cargo ministerial)
+              </p>
             </div>
           </div>
 
