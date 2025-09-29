@@ -401,7 +401,7 @@ export function useSubscriptionStats() {
 
       // Agrupar por plano
       subscriptions.forEach(sub => {
-        const planName = sub.subscription_plans?.name || 'Desconhecido';
+        const planName = sub.subscription_plans?.plan_title || 'Desconhecido';
         stats.byPlan[planName] = (stats.byPlan[planName] || 0) + 1;
       });
 

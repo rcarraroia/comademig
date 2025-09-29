@@ -229,7 +229,7 @@ export function useUserSubscriptionsStats() {
 
       subscriptions.forEach(sub => {
         const status = sub.status;
-        const planName = sub.subscription_plans?.name || 'Desconhecido';
+        const planName = sub.subscription_plans?.plan_title || 'Desconhecido';
         const planPrice = sub.subscription_plans?.price || 0;
         const createdAt = new Date(sub.created_at);
         const expiresAt = sub.expires_at ? new Date(sub.expires_at) : null;
