@@ -50,8 +50,8 @@ export const useMemberTypeWithPlan = (): UseMemberTypeWithPlanReturn => {
           is_active,
           created_at,
           updated_at,
-          member_type_subscriptions!inner(
-            subscription_plans!inner(
+          member_type_subscriptions(
+            subscription_plans(
               id,
               plan_title,
               price,
