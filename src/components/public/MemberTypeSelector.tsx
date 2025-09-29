@@ -4,12 +4,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, DollarSign, Calendar, Info, CheckCircle2, Filter } from 'lucide-react';
-import { useMemberTypes } from '@/hooks/useMemberTypes';
+import { useMemberTypeWithPlan, type UnifiedMemberType } from '@/hooks/useMemberTypeWithPlan';
 import { useSubscriptionsByMemberType } from '@/hooks/useSubscriptionsByMemberType';
 
 interface MemberTypeSelectorProps {
-  selectedMemberType?: any | null;
-  onMemberTypeSelect: (memberType: any | null) => void;
+  selectedMemberType?: UnifiedMemberType | null;
+  onMemberTypeSelect: (memberType: UnifiedMemberType | null) => void;
   disabled?: boolean;
   className?: string;
 }
@@ -20,7 +20,7 @@ export const MemberTypeSelector: React.FC<MemberTypeSelectorProps> = ({
   disabled = false,
   className = '',
 }) => {
-  const { memberTypes, isLoading, error } = useMemberTypes();
+  const { memberTypes, isLoading, error } = useMemberTypeWithPlan();
   const [internalSelected, setInternalSelected] = useState<string>('');
   
   // Hook para buscar planos filtrados pelo tipo selecionado
