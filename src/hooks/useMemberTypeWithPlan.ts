@@ -71,7 +71,12 @@ export const useMemberTypeWithPlan = (): UseMemberTypeWithPlanReturn => {
 
       // Transformar dados para formato unificado
       const unifiedData: UnifiedMemberType[] = data.map(memberType => {
-        const subscription = memberType.member_type_subscriptions?.[0]?.subscription_plans;
+        // Filtrar relacionamentos válidos (com subscription_plans não null)
+        const validSubscriptions = memberType.member_type_subscriptions?.filter(
+          sub => sub.subscription_plans !== null
+        ) || [];
+        
+        const subscription = validSubscriptions[0]?.subscription_plans;
         
         return {
           id: memberType.id,
