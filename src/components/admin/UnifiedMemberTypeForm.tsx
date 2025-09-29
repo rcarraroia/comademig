@@ -465,3 +465,5 @@ export const UnifiedMemberTypeForm: React.FC<UnifiedMemberTypeFormProps> = ({
     </div>
   );
 };
+
+export default UnifiedMemberTypeForm;
