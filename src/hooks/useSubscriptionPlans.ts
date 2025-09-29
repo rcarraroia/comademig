@@ -6,15 +6,15 @@ import { toast } from 'sonner';
 // Zod schema for validation
 const SubscriptionPlanSchema = z.object({
   id: z.string().uuid().optional(),
-  name: z.string().min(1, 'Nome é obrigatório').max(100, 'Nome muito longo'),
+  plan_title: z.string().min(1, 'Título é obrigatório').max(100, 'Título muito longo'),
   description: z.string().optional(),
   price: z.number().min(0, 'Preço deve ser positivo'),
-  recurrence: z.enum(['monthly', 'semestral', 'annual'], {
-    errorMap: () => ({ message: 'Recorrência deve ser mensal, semestral ou anual' })
+  recurrence: z.enum(['Mensal', 'Anual'], {
+    errorMap: () => ({ message: 'Recorrência deve ser Mensal ou Anual' })
   }),
   permissions: z.record(z.boolean()).default({}),
   is_active: z.boolean().default(true),
-  sort_order: z.number().int().min(0).optional(),
+  // sort_order removido - não existe na tabela
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
   created_by: z.string().uuid().optional(),
@@ -57,7 +57,7 @@ export function useSubscriptionPlans(options?: {
             )
           )
         `)
-        .order('sort_order', { ascending: true });
+        .order('plan_title', { ascending: true });
 
       if (!options?.includeInactive) {
         query = query.eq('is_active', true);
@@ -169,7 +169,7 @@ export function useSubscriptionPlansByMemberType(memberTypeId: string) {
         `)
         .eq('member_type_subscriptions.member_type_id', memberTypeId)
         .eq('is_active', true)
-        .order('sort_order', { ascending: true });
+        .order('plan_title', { ascending: true });
 
       if (error) {
         console.error('Erro ao buscar planos por tipo de membro:', error);
