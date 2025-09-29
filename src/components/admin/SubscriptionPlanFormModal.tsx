@@ -36,7 +36,7 @@ const SubscriptionPlanFormSchema = z.object({
   }),
   permissions: z.record(z.boolean()).default({}),
   is_active: z.boolean().default(true),
-  sort_order: z.number().int().min(0).optional(),
+  sort_order: z.number().default(0),
 });
 
 type SubscriptionPlanFormData = z.infer<typeof SubscriptionPlanFormSchema>;
@@ -110,6 +110,7 @@ export default function SubscriptionPlanFormModal({
       recurrence: 'monthly',
       permissions: {},
       is_active: true,
+      sort_order: 0,
       sort_order: 0,
     }
   });

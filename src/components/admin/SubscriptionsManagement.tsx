@@ -83,7 +83,7 @@ export default function SubscriptionsManagement() {
   const formatRecurrence = (recurrence: string) => {
     const recurrenceMap = {
       'monthly': 'Mensal',
-      'semestral': 'Semestral',
+      'semestral': 'Semestral', 
       'annual': 'Anual'
     };
     return recurrenceMap[recurrence as keyof typeof recurrenceMap] || recurrence;

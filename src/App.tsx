@@ -44,7 +44,7 @@ import AdminUsersPage from '@/pages/dashboard/AdminUsers';
 import AdminSupportPage from '@/pages/dashboard/AdminSupportPage';
 import AdminRegularizacaoPage from '@/pages/dashboard/admin/Regularizacao';
 import MemberTypes from '@/pages/dashboard/admin/MemberTypes';
-// import Subscriptions from '@/pages/dashboard/admin/Subscriptions'; // Removido - funcionalidade integrada em member-types
+import Subscriptions from '@/pages/dashboard/admin/Subscriptions';
 import NotificationManagement from '@/pages/dashboard/admin/NotificationManagement';
 import AdminNotificationsPage from '@/pages/dashboard/admin/AdminNotifications';
 import ContentManagement from '@/pages/dashboard/ContentManagement';
@@ -125,7 +125,7 @@ function App() {
               {/* Admin routes */}
               <Route path="/dashboard/admin/usuarios" element={<AdminUsersPage />} />
               <Route path="/dashboard/admin/member-types" element={<MemberTypes />} />
-              {/* <Route path="/dashboard/admin/subscriptions" element={<Subscriptions />} /> */}
+              <Route path="/dashboard/admin/subscriptions" element={<Subscriptions />} />
               <Route path="/dashboard/admin/regularizacao" element={<AdminRegularizacaoPage />} />
               <Route path="/dashboard/admin/notifications" element={<AdminNotificationsPage />} />
               <Route path="/dashboard/admin/diagnostics" element={<SystemDiagnosticsPage />} />
