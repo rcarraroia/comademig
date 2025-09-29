@@ -45,7 +45,7 @@ def test_unified_query():
               description
             )
           )
-        ''').eq('is_active', True).order('sort_order', ascending=True).execute()
+        ''').eq('is_active', True).order('sort_order').execute()
         
         if response.data:
             print(f"✅ Query funcionou! Retornou {len(response.data)} registros")
@@ -92,6 +92,9 @@ def test_unified_query():
     try:
         response = supabase.table('subscription_plans').select('*').eq('is_active', True).execute()
         print(f"✅ subscription_plans ativos: {len(response.data) if response.data else 0}")
+        if response.data:
+            for plan in response.data:
+                print(f"   • {plan.get('plan_title', 'N/A')} - R$ {plan.get('price', 'N/A')}")
     except Exception as e:
         print(f"❌ Erro em subscription_plans: {str(e)}")
     
