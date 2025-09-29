@@ -9,8 +9,8 @@ const SubscriptionPlanSchema = z.object({
   plan_title: z.string().min(1, 'Título é obrigatório').max(100, 'Título muito longo'),
   description: z.string().optional(),
   price: z.number().min(0, 'Preço deve ser positivo'),
-  recurrence: z.enum(['monthly', 'semestral', 'annual'], {
-    errorMap: () => ({ message: 'Recorrência deve ser monthly, semestral ou annual' })
+  recurrence: z.enum(['Mensal', 'Anual'], {
+    errorMap: () => ({ message: 'Recorrência deve ser Mensal ou Anual' })
   }),
   is_active: z.boolean().default(true),
   plan_id_gateway: z.string().optional(),

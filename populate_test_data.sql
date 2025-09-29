@@ -1,15 +1,15 @@
 -- Script para popular o sistema com dados de teste
 -- Execute este script no Editor SQL do Supabase
 
--- ESTRUTURA REAL DESCOBERTA:
--- Campos: id, plan_title, description, price, recurrence, is_active, created_at, updated_at, created_by, plan_id_gateway
--- NÃO TEM: permissions, sort_order, name
+-- DESCOBERTA CRÍTICA via análise do banco real:
+-- Função validate_subscription_plan_data() espera valores em PORTUGUÊS
+-- Valores válidos: 'Mensal', 'Anual' (não 'monthly', 'annual')
 
 -- 1. Criar planos de assinatura de exemplo
 INSERT INTO subscription_plans (plan_title, description, price, recurrence, is_active) VALUES
-('Anuidade Pastor 2025', 'Plano anual para pastores com acesso completo', 120.00, 'annual', true),
-('Anuidade Membro Regular', 'Plano básico anual para membros', 60.00, 'annual', true),
-('Contribuição Mensal Básica', 'Plano mensal para membros regulares', 35.00, 'monthly', true);
+('Anuidade Pastor 2025', 'Plano anual para pastores com acesso completo', 120.00, 'Anual', true),
+('Anuidade Membro Regular', 'Plano básico anual para membros', 60.00, 'Anual', true),
+('Contribuição Mensal Básica', 'Plano mensal para membros regulares', 35.00, 'Mensal', true);
 
 -- 2. Criar relacionamentos entre tipos de membro existentes e planos
 -- Associar Pastor ao plano Pastor

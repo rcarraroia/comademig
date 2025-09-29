@@ -81,12 +81,8 @@ export default function SubscriptionsManagement() {
   };
 
   const formatRecurrence = (recurrence: string) => {
-    const recurrenceMap = {
-      'monthly': 'Mensal',
-      'semestral': 'Semestral', 
-      'annual': 'Anual'
-    };
-    return recurrenceMap[recurrence as keyof typeof recurrenceMap] || recurrence;
+    // Valores já estão em português no banco
+    return recurrence;
   };
 
   if (error) {

@@ -31,7 +31,7 @@ const SubscriptionPlanFormSchema = z.object({
   plan_title: z.string().min(1, 'Título é obrigatório').max(100, 'Título muito longo'),
   description: z.string().optional(),
   price: z.number().min(0, 'Preço deve ser positivo'),
-  recurrence: z.enum(['monthly', 'semestral', 'annual'], {
+  recurrence: z.enum(['Mensal', 'Anual'], {
     errorMap: () => ({ message: 'Selecione uma recorrência válida' })
   }),
   is_active: z.boolean().default(true),
@@ -73,7 +73,7 @@ export default function SubscriptionPlanFormModal({
       plan_title: '',
       description: '',
       price: 0,
-      recurrence: 'monthly',
+      recurrence: 'Mensal',
       is_active: true,
       sort_order: 0,
     }
@@ -102,7 +102,7 @@ export default function SubscriptionPlanFormModal({
           plan_title: '',
           description: '',
           price: 0,
-          recurrence: 'monthly',
+          recurrence: 'Mensal',
           is_active: true,
         });
         setSelectedMemberTypes([]);
@@ -220,9 +220,8 @@ export default function SubscriptionPlanFormModal({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="monthly">Mensal</SelectItem>
-                      <SelectItem value="semestral">Semestral</SelectItem>
-                      <SelectItem value="annual">Anual</SelectItem>
+                      <SelectItem value="Mensal">Mensal</SelectItem>
+                      <SelectItem value="Anual">Anual</SelectItem>
                     </SelectContent>
                   </Select>
                   {errors.recurrence && (
