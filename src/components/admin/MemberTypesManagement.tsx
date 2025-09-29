@@ -24,11 +24,13 @@ import { useMemberTypes, useToggleMemberTypeStatus, useDeleteMemberType } from '
 import MemberTypeFormModal from './MemberTypeFormModal';
 import MemberTypeDeleteModal from './MemberTypeDeleteModal';
 import MemberTypeStats from './MemberTypeStats';
+import UnifiedMemberTypeForm from './UnifiedMemberTypeForm';
 
 export default function MemberTypesManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isUnifiedFormOpen, setIsUnifiedFormOpen] = useState(false);
   const [editingMemberType, setEditingMemberType] = useState<any>(null);
   const [deletingMemberType, setDeletingMemberType] = useState<any>(null);
 
@@ -88,10 +90,22 @@ export default function MemberTypesManagement() {
             Gerencie os tipos de membro e cargos ministeriais
           </p>
         </div>
-        <Button onClick={() => setIsCreateModalOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Tipo
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => setIsUnifiedFormOpen(true)}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Criar Tipo + Plano
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Apenas Tipo
+          </Button>
+        </div>
       </div>
 
       {/* Estatísticas */}
@@ -284,6 +298,33 @@ export default function MemberTypesManagement() {
         onClose={handleCloseModals}
         memberType={deletingMemberType}
       />
+
+      {/* Modal Unificado */}
+      {isUnifiedFormOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Criar Tipo de Membro + Plano de Assinatura</h2>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setIsUnifiedFormOpen(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </Button>
+              </div>
+              <UnifiedMemberTypeForm 
+                onSuccess={() => {
+                  setIsUnifiedFormOpen(false);
+                  // Recarregar dados se necessário
+                }}
+                onCancel={() => setIsUnifiedFormOpen(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
