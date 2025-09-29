@@ -28,15 +28,13 @@ import {
 import { useMemberTypes } from '@/hooks/useMemberTypes';
 
 const SubscriptionPlanFormSchema = z.object({
-  name: z.string().min(1, 'Nome é obrigatório').max(100, 'Nome muito longo'),
+  plan_title: z.string().min(1, 'Título é obrigatório').max(100, 'Título muito longo'),
   description: z.string().optional(),
   price: z.number().min(0, 'Preço deve ser positivo'),
   recurrence: z.enum(['monthly', 'semestral', 'annual'], {
     errorMap: () => ({ message: 'Selecione uma recorrência válida' })
   }),
-  permissions: z.record(z.boolean()).default({}),
   is_active: z.boolean().default(true),
-  sort_order: z.number().default(0),
 });
 
 type SubscriptionPlanFormData = z.infer<typeof SubscriptionPlanFormSchema>;
@@ -48,39 +46,7 @@ interface SubscriptionPlanFormModalProps {
   mode: 'create' | 'edit';
 }
 
-// Permissões disponíveis no sistema
-const AVAILABLE_PERMISSIONS = [
-  {
-    key: 'manage_events',
-    label: 'Gerenciar Eventos',
-    description: 'Criar, editar e publicar eventos'
-  },
-  {
-    key: 'manage_news',
-    label: 'Gerenciar Notícias',
-    description: 'Criar, editar e publicar notícias'
-  },
-  {
-    key: 'manage_media',
-    label: 'Gerenciar Mídia',
-    description: 'Criar, editar e publicar vídeos e fotos'
-  },
-  {
-    key: 'manage_certificates',
-    label: 'Gerenciar Certificados',
-    description: 'Emitir e validar certificados'
-  },
-  {
-    key: 'manage_members',
-    label: 'Gerenciar Membros',
-    description: 'Visualizar e editar dados de membros'
-  },
-  {
-    key: 'financial_reports',
-    label: 'Relatórios Financeiros',
-    description: 'Acessar relatórios financeiros'
-  }
-];
+// Formulário simplificado - sem permissões (campo não existe na tabela)
 
 export default function SubscriptionPlanFormModal({
   isOpen,
@@ -104,30 +70,26 @@ export default function SubscriptionPlanFormModal({
   } = useForm<SubscriptionPlanFormData>({
     resolver: zodResolver(SubscriptionPlanFormSchema),
     defaultValues: {
-      name: '',
+      plan_title: '',
       description: '',
       price: 0,
       recurrence: 'monthly',
-      permissions: {},
       is_active: true,
-      sort_order: 0,
       sort_order: 0,
     }
   });
 
   const isActive = watch('is_active');
-  const permissions = watch('permissions');
 
   // Reset form when modal opens/closes or plan changes
   useEffect(() => {
     if (isOpen) {
       if (mode === 'edit' && plan) {
         reset({
-          name: plan.name,
+          plan_title: plan.plan_title,
           description: plan.description || '',
           price: plan.price,
           recurrence: plan.recurrence,
-          permissions: plan.permissions || {},
           is_active: plan.is_active,
           sort_order: plan.sort_order || 0,
         });
@@ -137,13 +99,11 @@ export default function SubscriptionPlanFormModal({
         setSelectedMemberTypes(associatedTypes);
       } else {
         reset({
-          name: '',
+          plan_title: '',
           description: '',
           price: 0,
           recurrence: 'monthly',
-          permissions: {},
           is_active: true,
-          sort_order: 0,
         });
         setSelectedMemberTypes([]);
       }
@@ -172,13 +132,7 @@ export default function SubscriptionPlanFormModal({
     }
   };
 
-  const handlePermissionChange = (permissionKey: string, checked: boolean) => {
-    const currentPermissions = permissions || {};
-    setValue('permissions', {
-      ...currentPermissions,
-      [permissionKey]: checked
-    });
-  };
+  // Função removida - permissões não existem na tabela
 
   const handleMemberTypeToggle = (memberTypeId: string) => {
     setSelectedMemberTypes(prev => 
@@ -214,15 +168,15 @@ export default function SubscriptionPlanFormModal({
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="name">Nome do Plano *</Label>
+                  <Label htmlFor="plan_title">Título do Plano *</Label>
                   <Input
-                    id="name"
-                    {...register('name')}
+                    id="plan_title"
+                    {...register('plan_title')}
                     placeholder="Ex: Plano Básico, Plano Premium..."
                     disabled={isPending}
                   />
-                  {errors.name && (
-                    <p className="text-sm text-destructive">{errors.name.message}</p>
+                  {errors.plan_title && (
+                    <p className="text-sm text-destructive">{errors.plan_title.message}</p>
                   )}
                 </div>
 
@@ -306,42 +260,7 @@ export default function SubscriptionPlanFormModal({
             </CardContent>
           </Card>
 
-          {/* Permissões */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Permissões</CardTitle>
-              <CardDescription>
-                Selecione as funcionalidades que este plano permite acessar
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {AVAILABLE_PERMISSIONS.map((permission) => (
-                  <div key={permission.key} className="flex items-start space-x-3">
-                    <Checkbox
-                      id={permission.key}
-                      checked={permissions?.[permission.key] || false}
-                      onCheckedChange={(checked) => 
-                        handlePermissionChange(permission.key, checked as boolean)
-                      }
-                      disabled={isPending}
-                    />
-                    <div className="grid gap-1.5 leading-none">
-                      <Label 
-                        htmlFor={permission.key}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {permission.label}
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        {permission.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          {/* Seção de Permissões removida - campo não existe na tabela */}
 
           {/* Tipos de Membro Associados */}
           <Card>

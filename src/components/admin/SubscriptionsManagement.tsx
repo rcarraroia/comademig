@@ -48,7 +48,7 @@ export default function SubscriptionsManagement() {
 
   // Filtrar planos por busca
   const filteredPlans = subscriptionPlans?.filter(plan =>
-    plan.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    plan.plan_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     plan.description?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
@@ -221,7 +221,7 @@ export default function SubscriptionsManagement() {
                     <TableRow key={plan.id}>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{plan.name}</div>
+                          <div className="font-medium">{plan.plan_title}</div>
                           {plan.description && (
                             <div className="text-sm text-muted-foreground">
                               {plan.description}

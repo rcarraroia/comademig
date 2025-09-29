@@ -6,15 +6,14 @@ import { toast } from 'sonner';
 // Zod schema for validation
 const SubscriptionPlanSchema = z.object({
   id: z.string().uuid().optional(),
-  name: z.string().min(1, 'Nome é obrigatório').max(100, 'Nome muito longo'),
+  plan_title: z.string().min(1, 'Título é obrigatório').max(100, 'Título muito longo'),
   description: z.string().optional(),
   price: z.number().min(0, 'Preço deve ser positivo'),
   recurrence: z.enum(['monthly', 'semestral', 'annual'], {
     errorMap: () => ({ message: 'Recorrência deve ser monthly, semestral ou annual' })
   }),
-  permissions: z.record(z.boolean()).default({}),
   is_active: z.boolean().default(true),
-  sort_order: z.number().default(0),
+  plan_id_gateway: z.string().optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
   created_by: z.string().uuid().optional(),
