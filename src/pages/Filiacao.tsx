@@ -11,14 +11,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import MemberTypeSelector from '@/components/public/MemberTypeSelector';
 import PaymentFormEnhanced from '@/components/payments/PaymentFormEnhanced';
-import type { UnifiedMemberType } from '@/hooks/useMemberTypeWithPlan';
+// Removido import desnecessário
 
 export default function Filiacao() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [affiliateInfo, setAffiliateInfo] = useState<any>(null);
-  const [selectedMemberType, setSelectedMemberType] = useState<UnifiedMemberType | null>(null);
+  const [selectedMemberType, setSelectedMemberType] = useState<any | null>(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
 
   useEffect(() => {
@@ -36,7 +36,7 @@ export default function Filiacao() {
     console.log('Código de referral:', referralCode);
   };
 
-  const handleMemberTypeSelect = (memberType: UnifiedMemberType | null) => {
+  const handleMemberTypeSelect = (memberType: any | null) => {
     setSelectedMemberType(memberType);
     setShowPaymentForm(false); // Reset payment form when changing type
   };

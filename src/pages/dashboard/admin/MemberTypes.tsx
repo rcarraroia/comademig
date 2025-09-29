@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
-import MemberTypesManagement from "@/components/admin/member-types/MemberTypesManagement";
+import MemberTypesManagement from "@/components/admin/MemberTypesManagement";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 
 const MemberTypes = () => {
