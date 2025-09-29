@@ -1,15 +1,62 @@
 -- Script para popular o sistema com dados de teste
 -- Execute este script no Editor SQL do Supabase
 
--- DESCOBERTA CRÍTICA via análise do banco real:
--- Função validate_subscription_plan_data() espera valores em PORTUGUÊS
--- Valores válidos: 'Mensal', 'Anual' (não 'monthly', 'annual')
+-- PROBLEMA IDENTIFICADO: Planos existem mas não estão ativos e sem relacionamentos
+-- SOLUÇÃO: Ativar planos existentes e criar relacionamentos
 
--- 1. Criar planos de assinatura de exemplo
-INSERT INTO subscription_plans (plan_title, description, price, recurrence, is_active) VALUES
-('Anuidade Pastor 2025', 'Plano anual para pastores com acesso completo', 120.00, 'Anual', true),
-('Anuidade Membro Regular', 'Plano básico anual para membros', 60.00, 'Anual', true),
-('Contribuição Mensal Básica', 'Plano mensal para membros regulares', 35.00, 'Mensal', true);
+-- 1. Ativar todos os planos de assinatura
+UPDATE subscription_plans SET is_active = true WHERE is_active = false;
+
+-- 2. Criar relacionamentos entre tipos de membro e planos
+-- Primeiro, vamos ver os IDs disponíveis e criar os relacionamentos
+
+-- Relacionar Pastor com Anuidade Pastor 2025
+INSERT INTO member_type_subscriptions (member_type_id, subscription_plan_id)
+SELECT 
+    mt.id as member_type_id,
+    sp.id as subscription_plan_id
+FROM member_types mt, subscription_plans sp 
+WHERE mt.name = 'Pastor' AND sp.plan_title = 'Anuidade Pastor 2025'
+ON CONFLICT DO NOTHING;
+
+-- Relacionar Administrador com Anuidade Pastor 2025
+INSERT INTO member_type_subscriptions (member_type_id, subscription_plan_id)
+SELECT 
+    mt.id as member_type_id,
+    sp.id as subscription_plan_id
+FROM member_types mt, subscription_plans sp 
+WHERE mt.name = 'Administrador' AND sp.plan_title = 'Anuidade Pastor 2025'
+ON CONFLICT DO NOTHING;
+
+-- Relacionar Membro com Anuidade Membro Regular
+INSERT INTO member_type_subscriptions (member_type_id, subscription_plan_id)
+SELECT 
+    mt.id as member_type_id,
+    sp.id as subscription_plan_id
+FROM member_types mt, subscription_plans sp 
+WHERE mt.name = 'Membro' AND sp.plan_title = 'Anuidade Membro Regular'
+ON CONFLICT DO NOTHING;
+
+-- Relacionar Evangelista com Anuidade Pastor 2025
+INSERT INTO member_type_subscriptions (member_type_id, subscription_plan_id)
+SELECT 
+    mt.id as member_type_id,
+    sp.id as subscription_plan_id
+FROM member_types mt, subscription_plans sp 
+WHERE mt.name = 'Evangelista' AND sp.plan_title = 'Anuidade Pastor 2025'
+ON CONFLICT DO NOTHING;
+
+-- 3. Verificar se os relacionamentos foram criados
+SELECT 
+    mt.name as tipo_membro,
+    sp.plan_title as plano,
+    sp.price as valor,
+    sp.recurrence as recorrencia,
+    sp.is_active as plano_ativo
+FROM member_types mt
+JOIN member_type_subscriptions mts ON mt.id = mts.member_type_id
+JOIN subscription_plans sp ON mts.subscription_plan_id = sp.id
+ORDER BY mt.sort_order;
 
 -- 2. Criar relacionamentos entre tipos de membro existentes e planos
 -- Associar Pastor ao plano Pastor

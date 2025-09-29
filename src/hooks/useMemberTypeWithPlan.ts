@@ -62,7 +62,7 @@ export const useMemberTypeWithPlan = (): UseMemberTypeWithPlanReturn => {
           )
         `)
         .eq('is_active', true)
-        .order('sort_order', { ascending: true });
+        .order('sort_order');
 
       if (error) {
         console.error('Erro ao buscar tipos de membro com planos:', error);
