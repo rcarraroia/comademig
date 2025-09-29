@@ -15,5 +15,6 @@ const Subscriptions = () => {
   }
 
   return <SubscriptionsManagement />;
+};
 
 export default Subscriptions;
