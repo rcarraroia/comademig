@@ -137,25 +137,24 @@ export const UnifiedMemberTypeForm: React.FC<UnifiedMemberTypeFormProps> = ({
         throw new Error('Usuário não autenticado');
       }
 
-      const response = await supabase.functions.invoke('create-unified-member-type', {
-        body: {
-          memberType: {
-            name: data.memberName,
-            description: data.memberDescription || '',
-            sort_order: data.sortOrder,
-            is_active: true,
-          },
-          subscriptionPlan: {
-            plan_title: data.planTitle,
-            description: data.planDescription || '',
-            price: data.contributionValue,
-            recurrence: data.billingFrequency,
-          },
+      // Usar RPC function em vez de Edge Function
+      const { data: response, error: rpcError } = await supabase.rpc('rpc_create_unified_member_type', {
+        member_type: {
+          name: data.memberName,
+          description: data.memberDescription || '',
+          sort_order: data.sortOrder,
         },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
+        subscription_plan: {
+          plan_title: data.planTitle,
+          description: data.planDescription || '',
+          price: data.contributionValue,
+          recurrence: data.billingFrequency,
         },
       });
+
+      if (rpcError) {
+        throw rpcError;
+      }
 
       if (response.error) {
         const processedError = processEdgeFunctionError(response.error);

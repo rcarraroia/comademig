@@ -72,6 +72,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 
 // Components
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { AsaasInitializer } from '@/components/AsaasInitializer';
 
 const queryClient = new QueryClient();
 
@@ -79,7 +80,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router>
+        <AsaasInitializer>
+          <Router>
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Layout><Index /></Layout>} />
@@ -143,8 +145,9 @@ function App() {
 
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </Router>
-        <Toaster />
+          </Router>
+          <Toaster />
+        </AsaasInitializer>
       </AuthProvider>
     </QueryClientProvider>
   );

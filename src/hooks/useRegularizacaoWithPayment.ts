@@ -2,8 +2,11 @@ import { useState } from 'react';
 import { useSupabaseQuery, useSupabaseMutation } from '@/hooks/useSupabaseQuery';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAsaasPayments } from '@/hooks/useAsaasPayments';
-import { useToast } from '@/hooks/use-toast';
+import { useAsaasCustomers } from '@/hooks/useAsaasCustomers';
+import { useAsaasPixPayments } from '@/hooks/useAsaasPixPayments';
+import { useAsaasCardPayments } from '@/hooks/useAsaasCardPayments';
+import { useAsaasBoletoPayments } from '@/hooks/useAsaasBoletoPayments';
+import { toast } from 'sonner';
 
 interface ServicoRegularizacao {
   id: string;
@@ -61,8 +64,10 @@ interface SolicitacaoRegularizacao {
 
 export const useRegularizacaoWithPayment = () => {
   const { user } = useAuth();
-  const { createPayment } = useAsaasPayments();
-  const { toast } = useToast();
+  const { createCustomer } = useAsaasCustomers();
+  const { createPixPayment } = useAsaasPixPayments();
+  const { processCardPayment } = useAsaasCardPayments();
+  const { createBoletoPayment } = useAsaasBoletoPayments();
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // Buscar serviços de regularização disponíveis
@@ -174,7 +179,10 @@ export const useRegularizacaoWithPayment = () => {
   // Função para processar pagamento da regularização
   const processarPagamentoRegularizacao = async (
     regularizacaoData: RegularizacaoRequest,
-    customerData: any
+    customerData: any,
+    paymentMethod: 'pix' | 'credit_card' | 'boleto',
+    cardData?: any,
+    dueDate?: string
   ) => {
     if (!user) throw new Error('Usuário não autenticado');
     
@@ -182,50 +190,172 @@ export const useRegularizacaoWithPayment = () => {
     
     try {
       const valorBruto = calcularValorRegularizacao(regularizacaoData.servicos_selecionados);
-      const desconto = calcularDescontoCombo(regularizacaoData.servicos_selecionados);
-      const valorTotal = valorBruto - desconto;
+      const descontoCombo = calcularDescontoCombo(regularizacaoData.servicos_selecionados);
+      const valorAposCombo = valorBruto - descontoCombo;
       
-      // Preparar descrição dos serviços
+      // Aplicar desconto adicional de 5% para PIX
+      const isPixPayment = paymentMethod === 'pix';
+      const descontoPix = isPixPayment ? valorAposCombo * 0.05 : 0;
+      const valorFinal = valorAposCombo - descontoPix;
+      
+      // 1. Criar/verificar cliente no Asaas
+      const customer = await createCustomer.mutateAsync(customerData);
+      
+      // 2. Preparar descrição dos serviços
       const servicosNomes = regularizacaoData.servicos_selecionados.map(s => s.nome).join(', ');
-      const descricaoCompleta = desconto > 0 
-        ? `Regularização Completa (Combo com 15% desconto) - ${servicosNomes}`
-        : `Regularização - ${servicosNomes}`;
+      let descricaoCompleta = `Regularização COMADEMIG - ${servicosNomes}`;
       
-      // Preparar dados para pagamento
-      const paymentData = {
-        customer: customerData,
-        billingType: 'PIX' as const,
-        value: valorTotal,
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      if (descontoCombo > 0) {
+        descricaoCompleta += ' (Combo Completo - 15% desconto)';
+      }
+      
+      // 3. Preparar dados base do pagamento
+      const basePaymentData = {
+        customer: customer.id,
+        value: valorFinal,
         description: descricaoCompleta,
-        tipoCobranca: 'regularizacao',
+        externalReference: `regularizacao_${user.id}_${Date.now()}`,
         serviceType: 'regularizacao',
         serviceData: {
           servicos_selecionados: regularizacaoData.servicos_selecionados,
           observacoes: regularizacaoData.observacoes,
           valor_bruto: valorBruto,
-          desconto: desconto,
-          valor_total: valorTotal
+          desconto_combo: descontoCombo,
+          desconto_pix: descontoPix,
+          valor_final: valorFinal
         }
       };
+
+      let paymentResult;
+
+      // 4. Processar pagamento baseado no método escolhido
+      switch (paymentMethod) {
+        case 'pix':
+          paymentResult = await createPixPayment.mutateAsync({
+            ...basePaymentData,
+            billingType: 'PIX',
+            dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 24h
+            discount: {
+              value: descontoPix,
+              dueDateLimitDays: 0
+            }
+          });
+          break;
+
+        case 'credit_card':
+          if (!cardData) {
+            throw new Error('Dados do cartão são obrigatórios');
+          }
+          paymentResult = await processCardPayment.mutateAsync({
+            ...basePaymentData,
+            billingType: 'CREDIT_CARD',
+            dueDate: new Date().toISOString().split('T')[0],
+            creditCard: {
+              holderName: cardData.holderName,
+              number: cardData.number,
+              expiryMonth: cardData.expiryMonth,
+              expiryYear: cardData.expiryYear,
+              ccv: cardData.ccv
+            },
+            creditCardHolderInfo: {
+              name: customerData.name,
+              email: customerData.email,
+              cpfCnpj: customerData.cpfCnpj,
+              postalCode: customerData.postalCode,
+              addressNumber: customerData.addressNumber,
+              phone: customerData.phone
+            },
+            installmentCount: cardData.installmentCount || 1
+          });
+          break;
+
+        case 'boleto':
+          const boletoDate = dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          paymentResult = await createBoletoPayment.mutateAsync({
+            ...basePaymentData,
+            billingType: 'BOLETO',
+            dueDate: boletoDate,
+            fine: {
+              value: 2.0 // 2% de multa
+            },
+            interest: {
+              value: 1.0 // 1% de juros ao mês
+            }
+          });
+          break;
+
+        default:
+          throw new Error('Método de pagamento não suportado');
+      }
+
+      // 5. Salvar dados localmente na tabela asaas_cobrancas
+      const { error: saveError } = await supabase
+        .from('asaas_cobrancas')
+        .insert({
+          asaas_id: paymentResult.id,
+          user_id: user.id,
+          customer_id: customer.id,
+          service_type: 'regularizacao',
+          service_data: {
+            servicos_selecionados: regularizacaoData.servicos_selecionados,
+            observacoes: regularizacaoData.observacoes,
+            valor_bruto: valorBruto,
+            desconto_combo: descontoCombo,
+            desconto_pix: descontoPix,
+            valor_final: valorFinal
+          },
+          billing_type: paymentMethod.toUpperCase(),
+          status: paymentResult.status,
+          value: valorFinal,
+          original_value: valorBruto,
+          due_date: paymentResult.dueDate,
+          description: paymentResult.description,
+          external_reference: paymentResult.externalReference,
+          created_at: new Date().toISOString()
+        });
+
+      if (saveError) {
+        console.error('Erro ao salvar cobrança localmente:', saveError);
+        // Não falha o processo, apenas loga o erro
+      }
+
+      // 6. Preparar mensagem de sucesso
+      let mensagemDesconto = '';
+      if (descontoCombo > 0 && descontoPix > 0) {
+        mensagemDesconto = ` (Combo: -${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(descontoCombo)} + PIX: -${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(descontoPix)})`;
+      } else if (descontoCombo > 0) {
+        mensagemDesconto = ` (Combo: -${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(descontoCombo)})`;
+      } else if (descontoPix > 0) {
+        mensagemDesconto = ` (PIX: -${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(descontoPix)})`;
+      }
+
+      toast.success(
+        'Cobrança gerada com sucesso!',
+        {
+          description: `Regularização - ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorFinal)}${mensagemDesconto}`,
+        }
+      );
       
-      // Criar cobrança
-      const cobranca = await createPayment(paymentData);
-      
-      toast({
-        title: "Cobrança gerada com sucesso!",
-        description: `Regularização - R$ ${valorTotal.toFixed(2)}${desconto > 0 ? ` (Desconto: R$ ${desconto.toFixed(2)})` : ''}`,
-      });
-      
-      return cobranca;
+      return {
+        ...paymentResult,
+        valorBruto,
+        descontoCombo,
+        descontoPix,
+        valorFinal,
+        paymentMethod,
+        customer,
+        servicosCount: regularizacaoData.servicos_selecionados.length,
+        isComboCompleto: descontoCombo > 0
+      };
       
     } catch (error: any) {
       console.error('Erro ao processar pagamento da regularização:', error);
-      toast({
-        title: "Erro ao gerar cobrança",
-        description: error.message || 'Ocorreu um erro inesperado',
-        variant: "destructive",
-      });
+      toast.error(
+        'Erro ao gerar cobrança',
+        {
+          description: error.message || 'Ocorreu um erro inesperado',
+        }
+      );
       throw error;
     } finally {
       setIsProcessingPayment(false);

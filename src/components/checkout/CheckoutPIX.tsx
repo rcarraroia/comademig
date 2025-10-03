@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Copy, CheckCircle, Clock, RefreshCw } from 'lucide-react';
+import { Copy, CheckCircle, Clock, RefreshCw, Percent } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { useAsaasPixPayments } from '@/hooks/useAsaasPixPayments';
 
 interface CheckoutPIXProps {
   paymentData: {
@@ -14,6 +15,10 @@ interface CheckoutPIXProps {
     pix_payload?: string;
     checkout_url?: string;
     due_date: string;
+    // Novos campos para integração Asaas
+    original_value?: number;
+    discounted_value?: number;
+    discount_percentage?: number;
   };
   onPaymentConfirmed?: (paymentId: string) => void;
   onPaymentFailed?: (paymentId: string) => void;
@@ -27,41 +32,34 @@ export default function CheckoutPIX({
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'confirmed' | 'failed'>('pending');
   const [isPolling, setIsPolling] = useState(true);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
+  const { checkPixPaymentStatus } = useAsaasPixPayments();
 
-  // Polling para verificar status do pagamento
+  // Polling para verificar status do pagamento via Asaas
   useEffect(() => {
     if (!isPolling || paymentStatus !== 'pending') return;
 
     const pollInterval = setInterval(async () => {
       try {
-        const response = await fetch(`/api/payments/${paymentData.payment_id}/status`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          
-          if (data.status === 'confirmed' || data.status === 'received') {
-            setPaymentStatus('confirmed');
-            setIsPolling(false);
-            onPaymentConfirmed?.(paymentData.payment_id);
-            toast.success('Pagamento confirmado!');
-          } else if (data.status === 'failed' || data.status === 'expired') {
-            setPaymentStatus('failed');
-            setIsPolling(false);
-            onPaymentFailed?.(paymentData.payment_id);
-            toast.error('Pagamento não foi confirmado');
-          }
+        const status = await checkPixPaymentStatus(paymentData.payment_id);
+        
+        if (status === 'RECEIVED' || status === 'CONFIRMED') {
+          setPaymentStatus('confirmed');
+          setIsPolling(false);
+          onPaymentConfirmed?.(paymentData.payment_id);
+          toast.success('Pagamento PIX confirmado!');
+        } else if (status === 'OVERDUE' || status === 'REFUNDED') {
+          setPaymentStatus('failed');
+          setIsPolling(false);
+          onPaymentFailed?.(paymentData.payment_id);
+          toast.error('Pagamento PIX não foi confirmado');
         }
       } catch (error) {
-        console.error('Erro ao verificar status:', error);
+        console.error('Erro ao verificar status PIX:', error);
       }
     }, 5000); // Verificar a cada 5 segundos
 
     return () => clearInterval(pollInterval);
-  }, [isPolling, paymentStatus, paymentData.payment_id, onPaymentConfirmed, onPaymentFailed]);
+  }, [isPolling, paymentStatus, paymentData.payment_id, onPaymentConfirmed, onPaymentFailed, checkPixPaymentStatus]);
 
   // Calcular tempo restante
   useEffect(() => {
@@ -135,9 +133,32 @@ export default function CheckoutPIX({
             Pagamento PIX
             {getStatusBadge()}
           </CardTitle>
-          <div className="text-2xl font-bold text-blue-600">
-            R$ {paymentData.amount.toFixed(2).replace('.', ',')}
-          </div>
+          
+          {/* Mostrar desconto PIX se disponível */}
+          {paymentData.original_value && paymentData.discounted_value && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                <span className="line-through">R$ {paymentData.original_value.toFixed(2).replace('.', ',')}</span>
+                <Badge variant="secondary" className="bg-green-100 text-green-700">
+                  <Percent className="w-3 h-3 mr-1" />
+                  5% OFF
+                </Badge>
+              </div>
+              <div className="text-2xl font-bold text-green-600">
+                R$ {paymentData.discounted_value.toFixed(2).replace('.', ',')}
+              </div>
+              <p className="text-xs text-green-600">
+                Desconto PIX aplicado automaticamente
+              </p>
+            </div>
+          )}
+          
+          {/* Valor normal se não houver desconto */}
+          {!paymentData.discounted_value && (
+            <div className="text-2xl font-bold text-blue-600">
+              R$ {paymentData.amount.toFixed(2).replace('.', ',')}
+            </div>
+          )}
         </CardHeader>
       </Card>
 

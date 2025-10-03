@@ -2,8 +2,11 @@ import { useState } from 'react';
 import { useSupabaseQuery, useSupabaseMutation } from '@/hooks/useSupabaseQuery';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAsaasPayments } from '@/hooks/useAsaasPayments';
-import { useToast } from '@/hooks/use-toast';
+import { useAsaasCustomers } from '@/hooks/useAsaasCustomers';
+import { useAsaasPixPayments } from '@/hooks/useAsaasPixPayments';
+import { useAsaasCardPayments } from '@/hooks/useAsaasCardPayments';
+import { useAsaasBoletoPayments } from '@/hooks/useAsaasBoletoPayments';
+import { toast } from 'sonner';
 
 interface CertidaoRequest {
   tipo_certidao: string;
@@ -45,8 +48,10 @@ interface SolicitacaoCertidao {
 
 export const useCertidoesWithPayment = () => {
   const { user } = useAuth();
-  const { createPayment } = useAsaasPayments();
-  const { toast } = useToast();
+  const { createCustomer } = useAsaasCustomers();
+  const { createPixPayment } = useAsaasPixPayments();
+  const { processCardPayment } = useAsaasCardPayments();
+  const { createBoletoPayment } = useAsaasBoletoPayments();
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // Buscar valores das certidões
@@ -146,47 +151,152 @@ export const useCertidoesWithPayment = () => {
   // Função para processar pagamento da certidão
   const processarPagamentoCertidao = async (
     certidaoData: CertidaoRequest,
-    customerData: any
+    customerData: any,
+    paymentMethod: 'pix' | 'credit_card' | 'boleto',
+    cardData?: any,
+    dueDate?: string
   ) => {
     if (!user) throw new Error('Usuário não autenticado');
     
     setIsProcessingPayment(true);
     
     try {
-      const valor = await calcularValorCertidao(certidaoData.tipo_certidao);
+      const originalValue = await calcularValorCertidao(certidaoData.tipo_certidao);
+      const isPixPayment = paymentMethod === 'pix';
       
-      // Preparar dados para pagamento
-      const paymentData = {
-        customer: customerData,
-        billingType: 'PIX' as const,
-        value: valor,
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        description: `Certidão de ${getCertidaoDisplayName(certidaoData.tipo_certidao)}`,
-        tipoCobranca: 'certidao',
+      // Aplicar desconto de 5% para PIX
+      const pixDiscount = isPixPayment ? originalValue * 0.05 : 0;
+      const finalValue = originalValue - pixDiscount;
+      
+      // 1. Criar/verificar cliente no Asaas
+      const customer = await createCustomer.mutateAsync(customerData);
+      
+      // 2. Preparar dados base do pagamento
+      const basePaymentData = {
+        customer: customer.id,
+        value: finalValue,
+        description: `Certidão de ${getCertidaoDisplayName(certidaoData.tipo_certidao)} - COMADEMIG`,
+        externalReference: `certidao_${user.id}_${Date.now()}`,
         serviceType: 'certidao',
         serviceData: {
           tipo_certidao: certidaoData.tipo_certidao,
           justificativa: certidaoData.justificativa
         }
       };
+
+      let paymentResult;
+
+      // 3. Processar pagamento baseado no método escolhido
+      switch (paymentMethod) {
+        case 'pix':
+          paymentResult = await createPixPayment.mutateAsync({
+            ...basePaymentData,
+            billingType: 'PIX',
+            dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 24h
+            discount: {
+              value: pixDiscount,
+              dueDateLimitDays: 0
+            }
+          });
+          break;
+
+        case 'credit_card':
+          if (!cardData) {
+            throw new Error('Dados do cartão são obrigatórios');
+          }
+          paymentResult = await processCardPayment.mutateAsync({
+            ...basePaymentData,
+            billingType: 'CREDIT_CARD',
+            dueDate: new Date().toISOString().split('T')[0],
+            creditCard: {
+              holderName: cardData.holderName,
+              number: cardData.number,
+              expiryMonth: cardData.expiryMonth,
+              expiryYear: cardData.expiryYear,
+              ccv: cardData.ccv
+            },
+            creditCardHolderInfo: {
+              name: customerData.name,
+              email: customerData.email,
+              cpfCnpj: customerData.cpfCnpj,
+              postalCode: customerData.postalCode,
+              addressNumber: customerData.addressNumber,
+              phone: customerData.phone
+            },
+            installmentCount: cardData.installmentCount || 1
+          });
+          break;
+
+        case 'boleto':
+          const boletoDate = dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          paymentResult = await createBoletoPayment.mutateAsync({
+            ...basePaymentData,
+            billingType: 'BOLETO',
+            dueDate: boletoDate,
+            fine: {
+              value: 2.0 // 2% de multa
+            },
+            interest: {
+              value: 1.0 // 1% de juros ao mês
+            }
+          });
+          break;
+
+        default:
+          throw new Error('Método de pagamento não suportado');
+      }
+
+      // 4. Salvar dados localmente na tabela asaas_cobrancas
+      const { error: saveError } = await supabase
+        .from('asaas_cobrancas')
+        .insert({
+          asaas_id: paymentResult.id,
+          user_id: user.id,
+          customer_id: customer.id,
+          service_type: 'certidao',
+          service_data: {
+            tipo_certidao: certidaoData.tipo_certidao,
+            justificativa: certidaoData.justificativa
+          },
+          billing_type: paymentMethod.toUpperCase(),
+          status: paymentResult.status,
+          value: finalValue,
+          original_value: originalValue,
+          due_date: paymentResult.dueDate,
+          description: paymentResult.description,
+          external_reference: paymentResult.externalReference,
+          created_at: new Date().toISOString()
+        });
+
+      if (saveError) {
+        console.error('Erro ao salvar cobrança localmente:', saveError);
+        // Não falha o processo, apenas loga o erro
+      }
+
+      toast.success(
+        `Cobrança gerada com sucesso!`,
+        {
+          description: `Certidão de ${getCertidaoDisplayName(certidaoData.tipo_certidao)} - ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(finalValue)}${isPixPayment ? ' (5% desconto PIX aplicado)' : ''}`,
+        }
+      );
       
-      // Criar cobrança
-      const cobranca = await createPayment(paymentData);
-      
-      toast({
-        title: "Cobrança gerada com sucesso!",
-        description: `Certidão de ${getCertidaoDisplayName(certidaoData.tipo_certidao)} - R$ ${valor.toFixed(2)}`,
-      });
-      
-      return cobranca;
+      return {
+        ...paymentResult,
+        originalValue,
+        finalValue,
+        pixDiscount,
+        paymentMethod,
+        customer
+      };
       
     } catch (error: any) {
       console.error('Erro ao processar pagamento da certidão:', error);
-      toast({
-        title: "Erro ao gerar cobrança",
-        description: error.message || 'Ocorreu um erro inesperado',
-        variant: "destructive",
-      });
+      toast.error(
+        'Erro ao gerar cobrança',
+        {
+          description: error.message || 'Ocorreu um erro inesperado',
+        }
+      );
       throw error;
     } finally {
       setIsProcessingPayment(false);

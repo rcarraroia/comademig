@@ -27,7 +27,8 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useFiliacaoFlow, calculatePixDiscount, formatCurrency, type FiliacaoData } from '@/hooks/useFiliacaoFlow';
+import { useFiliacaoPayment, type FiliacaoPaymentData } from '@/hooks/useFiliacaoPayment';
+import { formatCurrency } from '@/hooks/useFiliacaoFlow';
 import { toast } from 'sonner';
 import type { UnifiedMemberType } from '@/hooks/useMemberTypeWithPlan';
 
@@ -58,6 +59,17 @@ const PaymentFormSchema = z.object({
     errorMap: () => ({ message: 'Selecione um método de pagamento' })
   }),
   
+  // Dados do cartão (condicionais)
+  card_holder_name: z.string().optional(),
+  card_number: z.string().optional(),
+  card_expiry_month: z.string().optional(),
+  card_expiry_year: z.string().optional(),
+  card_ccv: z.string().optional(),
+  card_installments: z.string().optional(),
+  
+  // Data de vencimento para boleto
+  boleto_due_date: z.string().optional(),
+  
   // Termos
   accept_terms: z.boolean().refine(val => val === true, {
     message: 'Você deve aceitar os termos e condições'
@@ -65,6 +77,19 @@ const PaymentFormSchema = z.object({
   accept_privacy: z.boolean().refine(val => val === true, {
     message: 'Você deve aceitar a política de privacidade'
   }),
+}).refine((data) => {
+  // Validação condicional para cartão de crédito
+  if (data.payment_method === 'credit_card') {
+    return data.card_holder_name && 
+           data.card_number && 
+           data.card_expiry_month && 
+           data.card_expiry_year && 
+           data.card_ccv;
+  }
+  return true;
+}, {
+  message: 'Todos os dados do cartão são obrigatórios',
+  path: ['card_number']
 });
 
 type PaymentFormData = z.infer<typeof PaymentFormSchema>;
@@ -83,7 +108,12 @@ export default function PaymentFormEnhanced({
   onCancel
 }: PaymentFormEnhancedProps) {
   const { user } = useAuth();
-  const { processarFiliacao, isProcessing, error } = useFiliacaoFlow({
+  const { 
+    processarFiliacaoComPagamento, 
+    isProcessing, 
+    paymentStatus,
+    error 
+  } = useFiliacaoPayment({
     selectedMemberType,
     affiliateInfo
   });
@@ -100,6 +130,7 @@ export default function PaymentFormEnhanced({
       nome_completo: user?.user_metadata?.nome_completo || '',
       email: user?.email || '',
       payment_method: 'pix',
+      card_installments: '1',
       accept_terms: false,
       accept_privacy: false,
     }
@@ -111,6 +142,13 @@ export default function PaymentFormEnhanced({
 
   // Calcular desconto PIX
   const originalPrice = selectedMemberType.plan_value || 0;
+  const calculatePixDiscount = (price: number) => {
+    const discountPercentage = 0.05; // 5%
+    const discount = price * discountPercentage;
+    const finalPrice = price - discount;
+    return { discount, finalPrice, discountPercentage };
+  };
+  
   const { discount: pixDiscount, finalPrice } = paymentMethod === 'pix' 
     ? calculatePixDiscount(originalPrice)
     : { discount: 0, finalPrice: originalPrice };
@@ -122,7 +160,7 @@ export default function PaymentFormEnhanced({
     }
 
     try {
-      const filiacaoData: FiliacaoData = {
+      const filiacaoData: FiliacaoPaymentData = {
         nome_completo: data.nome_completo,
         cpf: data.cpf,
         telefone: data.telefone,
@@ -140,9 +178,33 @@ export default function PaymentFormEnhanced({
         payment_method: data.payment_method,
       };
 
-      const result = await processarFiliacao(filiacaoData);
+      // Adicionar dados específicos do método de pagamento
+      if (data.payment_method === 'credit_card' && data.card_holder_name) {
+        filiacaoData.cardData = {
+          holderName: data.card_holder_name,
+          number: data.card_number!.replace(/\s/g, ''),
+          expiryMonth: data.card_expiry_month!,
+          expiryYear: data.card_expiry_year!,
+          ccv: data.card_ccv!,
+          installmentCount: parseInt(data.card_installments || '1')
+        };
+      }
+
+      if (data.payment_method === 'boleto' && data.boleto_due_date) {
+        filiacaoData.dueDate = data.boleto_due_date;
+      }
+
+      const result = await processarFiliacaoComPagamento(filiacaoData);
       
       if (result) {
+        // Mostrar informações específicas do pagamento
+        if (result.payment.pixQrCode) {
+          toast.success('PIX gerado! Use o QR Code para pagamento.');
+        } else if (result.payment.bankSlipUrl) {
+          toast.success('Boleto gerado! Você pode baixá-lo para pagamento.');
+        } else {
+          toast.success('Pagamento processado com sucesso!');
+        }
         onSuccess();
       }
     } catch (error: any) {
@@ -477,6 +539,145 @@ export default function PaymentFormEnhanced({
               </div>
             </div>
 
+            {/* Campos específicos por método de pagamento */}
+            {paymentMethod === 'credit_card' && (
+              <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+                <h4 className="font-medium">Dados do Cartão de Crédito</h4>
+                
+                <div>
+                  <Label htmlFor="card_holder_name">Nome no Cartão *</Label>
+                  <Input
+                    id="card_holder_name"
+                    {...register('card_holder_name')}
+                    placeholder="Nome como está no cartão"
+                  />
+                  {errors.card_holder_name && (
+                    <p className="text-sm text-destructive">{errors.card_holder_name.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="card_number">Número do Cartão *</Label>
+                  <Input
+                    id="card_number"
+                    {...register('card_number')}
+                    placeholder="0000 0000 0000 0000"
+                    maxLength={19}
+                  />
+                  {errors.card_number && (
+                    <p className="text-sm text-destructive">{errors.card_number.message}</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="card_expiry_month">Mês *</Label>
+                    <Select onValueChange={(value) => setValue('card_expiry_month', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Mês" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 12 }, (_, i) => (
+                          <SelectItem key={i + 1} value={String(i + 1).padStart(2, '0')}>
+                            {String(i + 1).padStart(2, '0')}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.card_expiry_month && (
+                      <p className="text-sm text-destructive">{errors.card_expiry_month.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="card_expiry_year">Ano *</Label>
+                    <Select onValueChange={(value) => setValue('card_expiry_year', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Ano" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 10 }, (_, i) => {
+                          const year = new Date().getFullYear() + i;
+                          return (
+                            <SelectItem key={year} value={String(year)}>
+                              {year}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                    {errors.card_expiry_year && (
+                      <p className="text-sm text-destructive">{errors.card_expiry_year.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="card_ccv">CVV *</Label>
+                    <Input
+                      id="card_ccv"
+                      {...register('card_ccv')}
+                      placeholder="123"
+                      maxLength={4}
+                    />
+                    {errors.card_ccv && (
+                      <p className="text-sm text-destructive">{errors.card_ccv.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="card_installments">Parcelas</Label>
+                  <Select 
+                    value={watch('card_installments')} 
+                    onValueChange={(value) => setValue('card_installments', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 12 }, (_, i) => {
+                        const installments = i + 1;
+                        const installmentValue = finalPrice / installments;
+                        return (
+                          <SelectItem key={installments} value={String(installments)}>
+                            {installments}x de {formatCurrency(installmentValue)}
+                            {installments === 1 ? ' à vista' : ''}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            {paymentMethod === 'boleto' && (
+              <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+                <h4 className="font-medium">Configurações do Boleto</h4>
+                
+                <div>
+                  <Label htmlFor="boleto_due_date">Data de Vencimento</Label>
+                  <Input
+                    id="boleto_due_date"
+                    type="date"
+                    {...register('boleto_due_date')}
+                    min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Se não informado, será gerado com vencimento em 7 dias
+                  </p>
+                </div>
+
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Após a confirmação, você receberá o boleto por email e poderá baixá-lo.
+                    Multa de 2% e juros de 1% ao mês após o vencimento.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+
             {paymentMethod === 'pix' && (
               <Alert>
                 <Info className="h-4 w-4" />
@@ -535,6 +736,29 @@ export default function PaymentFormEnhanced({
           </CardContent>
         </Card>
 
+        {/* Status do Processamento */}
+        {isProcessing && (
+          <Card className="border-blue-200 bg-blue-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                <div>
+                  <p className="font-medium text-blue-800">
+                    {paymentStatus === 'creating_customer' && 'Criando cliente...'}
+                    {paymentStatus === 'processing_payment' && 'Processando pagamento...'}
+                    {paymentStatus === 'updating_profile' && 'Atualizando perfil...'}
+                    {paymentStatus === 'completed' && 'Finalizando...'}
+                    {paymentStatus === 'idle' && 'Processando...'}
+                  </p>
+                  <p className="text-sm text-blue-600">
+                    Por favor, aguarde. Não feche esta página.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Botões de Ação */}
         <div className="flex flex-col sm:flex-row gap-4 justify-end">
           <Button
@@ -554,7 +778,11 @@ export default function PaymentFormEnhanced({
             {isProcessing ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Processando...
+                {paymentStatus === 'creating_customer' && 'Criando cliente...'}
+                {paymentStatus === 'processing_payment' && 'Processando pagamento...'}
+                {paymentStatus === 'updating_profile' && 'Atualizando perfil...'}
+                {paymentStatus === 'completed' && 'Finalizando...'}
+                {paymentStatus === 'idle' && 'Processando...'}
               </>
             ) : (
               <>
@@ -565,12 +793,15 @@ export default function PaymentFormEnhanced({
           </Button>
         </div>
 
-        {/* Aviso de Desenvolvimento */}
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
+        {/* Informações sobre Pagamento */}
+        <Alert>
+          <CheckCircle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Sistema em Desenvolvimento:</strong> Este formulário está funcional mas o processamento 
-            de pagamentos ainda está sendo implementado. Os dados serão salvos mas o pagamento será processado manualmente.
+            <strong>Sistema de Pagamentos Integrado:</strong> Processamento automático via gateway Asaas.
+            Seus dados estão protegidos e o pagamento é processado de forma segura.
+            {paymentMethod === 'pix' && ' PIX disponível 24h com desconto de 5%.'}
+            {paymentMethod === 'credit_card' && ' Cartão processado instantaneamente.'}
+            {paymentMethod === 'boleto' && ' Boleto com confirmação automática em até 3 dias úteis.'}
           </AlertDescription>
         </Alert>
       </form>
