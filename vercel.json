@@ -30,7 +30,16 @@
   ],
   "headers": [
     {
-      "source": "/assets/(.*\\.js)",
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*\\.js)",
       "headers": [
         {
           "key": "Content-Type",
@@ -39,20 +48,11 @@
       ]
     },
     {
-      "source": "/assets/(.*\\.mjs)",
+      "source": "/(.*\\.mjs)",
       "headers": [
         {
-          "key": "Content-Type", 
+          "key": "Content-Type",
           "value": "application/javascript; charset=utf-8"
-        }
-      ]
-    },
-    {
-      "source": "/(.*\\.(js|jsx|ts|tsx|css|json|ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot))",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
         }
       ]
     }
