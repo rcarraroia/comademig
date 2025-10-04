@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { X, Home, User, CreditCard, FileText, HelpCircle, Settings, Globe, Building, Users, Bell, Activity, MessageSquare } from "lucide-react";
+import { X, Home, User, CreditCard, FileText, HelpCircle, Settings, Globe, Building, Users, Bell, Activity, MessageSquare, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -27,7 +27,8 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
 
   const adminMenuItems = [
     { path: "/dashboard/admin/usuarios", label: "Gerenciar Usuários", icon: Users },
-    { path: "/dashboard/admin/member-types", label: "Tipos de Membro", icon: Settings },
+    { path: "/dashboard/admin/member-management", label: "Gestão de Cargos e Planos", icon: Settings },
+    { path: "/dashboard/admin/financeiro-asaas", label: "Financeiro (Asaas)", icon: DollarSign },
     { path: "/dashboard/admin/regularizacao", label: "Regularização", icon: FileText },
     { path: "/dashboard/admin/notifications", label: "Notificações", icon: Bell },
     { path: "/dashboard/admin/diagnostics", label: "Diagnóstico do Sistema", icon: Activity },

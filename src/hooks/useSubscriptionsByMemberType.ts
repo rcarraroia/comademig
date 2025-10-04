@@ -5,10 +5,10 @@ import { z } from 'zod';
 // Schema para plano de assinatura filtrado
 const FilteredSubscriptionPlanSchema = z.object({
   id: z.string().uuid(),
-  plan_title: z.string(),
+  name: z.string(),
   description: z.string().nullable(),
   price: z.number(),
-  recurrence: z.enum(['Mensal', 'Anual']),
+  recurrence: z.enum(['monthly', 'semestral', 'annual']),
   permissions: z.record(z.boolean()).default({}),
   is_active: z.boolean(),
   created_at: z.string(),
@@ -54,7 +54,7 @@ export function useSubscriptionsByMemberType(memberTypeId?: string) {
             )
           `)
           .eq('is_active', true)
-          .order('plan_title', { ascending: true });
+          .order('name', { ascending: true });
 
         const { data: plansData, error: plansError } = await query;
 
@@ -129,7 +129,7 @@ export function useAllSubscriptionsWithTypes() {
             )
           `)
           .eq('is_active', true)
-          .order('plan_title', { ascending: true });
+          .order('name', { ascending: true });
 
         if (error) {
           throw new Error(`Erro ao carregar planos: ${error.message}`);

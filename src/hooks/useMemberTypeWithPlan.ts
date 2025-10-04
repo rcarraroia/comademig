@@ -12,9 +12,9 @@ export interface UnifiedMemberType {
   
   // Financial Data (denormalized from subscription_plans)
   plan_id?: string;
-  plan_title?: string;
+  plan_name?: string;
   plan_value?: number;
-  plan_recurrence?: 'Mensal' | 'Anual';
+  plan_recurrence?: 'monthly' | 'semestral' | 'annual';
   plan_id_gateway?: string;
   plan_description?: string;
 }
@@ -53,7 +53,7 @@ export const useMemberTypeWithPlan = (): UseMemberTypeWithPlanReturn => {
           member_type_subscriptions(
             subscription_plans(
               id,
-              plan_title,
+              name,
               price,
               recurrence,
               plan_id_gateway,
@@ -89,9 +89,9 @@ export const useMemberTypeWithPlan = (): UseMemberTypeWithPlanReturn => {
           
           // Dados financeiros desnormalizados
           plan_id: subscription?.id,
-          plan_title: subscription?.plan_title,
+          plan_name: subscription?.name,
           plan_value: subscription?.price,
-          plan_recurrence: subscription?.recurrence as 'Mensal' | 'Anual',
+          plan_recurrence: subscription?.recurrence as 'monthly' | 'semestral' | 'annual',
           plan_id_gateway: subscription?.plan_id_gateway,
           plan_description: subscription?.description
         };
