@@ -9,7 +9,9 @@
     {
       "src": "package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
+      "config": {
+        "distDir": "dist"
+      }
     }
   ],
   "routes": [
@@ -26,9 +28,15 @@
       "dest": "/api/index.js"
     },
     {
-      "src": "/assets/(.*)",
+      "src": "/assets/(.*\\.js)$",
       "headers": {
-        "Content-Type": "application/javascript"
+        "Content-Type": "application/javascript; charset=utf-8"
+      }
+    },
+    {
+      "src": "/assets/(.*\\.mjs)$",
+      "headers": {
+        "Content-Type": "application/javascript; charset=utf-8"
       }
     },
     {
@@ -40,17 +48,6 @@
     {
       "src": "/(.*)",
       "dest": "/index.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/assets/(.*)",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/javascript"
-        }
-      ]
     }
   ]
 }
