@@ -53,7 +53,7 @@ const validations = {
       const config = JSON.parse(fs.readFileSync(vercelPath, 'utf8'));
       
       // Verificar configurações essenciais
-      if (!config.builds || !config.routes) {
+      if (!config.builds || (!config.routes && !config.rewrites)) {
         logError('Configuração do Vercel incompleta');
         return false;
       }
