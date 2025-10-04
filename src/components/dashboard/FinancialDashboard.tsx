@@ -22,7 +22,11 @@ import {
 } from 'lucide-react'
 import { startOfMonth, endOfMonth, subMonths } from 'date-fns'
 
-export default function FinancialDashboard() {
+interface FinancialDashboardProps {
+  userId?: string; // Se especificado, filtra dados por usuário
+}
+
+export default function FinancialDashboard({ userId }: FinancialDashboardProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<'current' | 'last' | 'custom'>('current')
   
   const currentMonth = new Date()
@@ -41,7 +45,7 @@ export default function FinancialDashboard() {
     getPendingPayments, 
     getRecentCommissions,
     getMonthlyRevenue 
-  } = useFinancialDashboard()
+  } = useFinancialDashboard(userId)
 
   const statsQuery = getFinancialStats(startDate, endDate)
   const recentPaymentsQuery = getRecentPayments(10)

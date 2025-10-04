@@ -50,17 +50,17 @@ interface CommissionSummary {
   cobranca_description?: string
 }
 
-export function useFinancialDashboard() {
+export function useFinancialDashboard(userId?: string) {
   // Estatísticas gerais
   const getFinancialStats = (startDate?: Date, endDate?: Date) => {
     const start = startDate || startOfMonth(new Date())
     const end = endDate || endOfMonth(new Date())
 
     return useQuery({
-      queryKey: ['financial-stats', start.toISOString(), end.toISOString()],
+      queryKey: ['financial-stats', start.toISOString(), end.toISOString(), userId],
       queryFn: async (): Promise<FinancialStats> => {
-        // Buscar todas as cobranças no período
-        const { data: cobrancas, error: cobrancasError } = await supabase
+        // Buscar cobranças no período (filtrar por usuário se especificado)
+        let query = supabase
           .from('asaas_cobrancas' as any)
           .select(`
             *,
@@ -68,6 +68,13 @@ export function useFinancialDashboard() {
           `)
           .gte('created_at', start.toISOString())
           .lte('created_at', end.toISOString())
+
+        // Filtrar por usuário se não for admin
+        if (userId) {
+          query = query.eq('user_id', userId)
+        }
+
+        const { data: cobrancas, error: cobrancasError } = await query
 
         if (cobrancasError) {
           console.error('Error fetching cobrancas:', cobrancasError)
@@ -158,9 +165,9 @@ export function useFinancialDashboard() {
   // Pagamentos recentes
   const getRecentPayments = (limit: number = 10) => {
     return useQuery({
-      queryKey: ['recent-payments', limit],
+      queryKey: ['recent-payments', limit, userId],
       queryFn: async (): Promise<PaymentSummary[]> => {
-        const { data, error } = await supabase
+        let query = supabase
           .from('asaas_cobrancas' as any)
           .select(`
             *,
@@ -168,6 +175,13 @@ export function useFinancialDashboard() {
           `)
           .order('created_at', { ascending: false })
           .limit(limit)
+
+        // Filtrar por usuário se especificado
+        if (userId) {
+          query = query.eq('user_id', userId)
+        }
+
+        const { data, error } = await query
 
         if (error) {
           console.error('Error fetching recent payments:', error)
@@ -195,9 +209,9 @@ export function useFinancialDashboard() {
   // Pagamentos pendentes
   const getPendingPayments = () => {
     return useQuery({
-      queryKey: ['pending-payments'],
+      queryKey: ['pending-payments', userId],
       queryFn: async (): Promise<PaymentSummary[]> => {
-        const { data, error } = await supabase
+        let query = supabase
           .from('asaas_cobrancas' as any)
           .select(`
             *,
@@ -205,6 +219,13 @@ export function useFinancialDashboard() {
           `)
           .eq('status', 'PENDING')
           .order('created_at', { ascending: false })
+
+        // Filtrar por usuário se especificado
+        if (userId) {
+          query = query.eq('user_id', userId)
+        }
+
+        const { data, error } = await query
 
         if (error) {
           console.error('Error fetching pending payments:', error)
