@@ -40,14 +40,11 @@ export const MemberTypeSelector: React.FC<MemberTypeSelectorProps> = ({
   const handleSelectionChange = (value: string) => {
     setInternalSelected(value);
     
-    if (value === '') {
-      onMemberTypeSelect(null);
-      return;
-    }
-
     const selectedType = memberTypes.find(type => type.id === value);
     if (selectedType) {
       onMemberTypeSelect(selectedType);
+    } else {
+      onMemberTypeSelect(null);
     }
   };
 
@@ -107,7 +104,7 @@ export const MemberTypeSelector: React.FC<MemberTypeSelectorProps> = ({
         </CardHeader>
         <CardContent>
           <Select
-            value={internalSelected}
+            value={internalSelected || undefined}
             onValueChange={handleSelectionChange}
             disabled={disabled}
           >
@@ -115,7 +112,6 @@ export const MemberTypeSelector: React.FC<MemberTypeSelectorProps> = ({
               <SelectValue placeholder="Selecione um tipo de membro..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Selecione...</SelectItem>
               {memberTypes.map((type) => (
                 <SelectItem key={type.id} value={type.id}>
                   <div className="flex items-center justify-between w-full">
