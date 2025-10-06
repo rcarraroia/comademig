@@ -1,0 +1,30 @@
+{
+  "timestamp": "2025-10-06T09:56:05.238669",
+  "authentication": {
+    "error": "Message: invalid selector: The result of the xpath expression \"//text()[contains(., 'Dashboard')]\" is: [object Text]. It should be an element.\n  (Session info: chrome=140.0.7339.208); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#invalidselectorexception\nStacktrace:\n\tGetHandleVerifier [0x0x39c333+65459]\n\tGetHandleVerifier [0x0x39c374+65524]\n\t(No symbol) [0x0x1bd973]\n\t(No symbol) [0x0x1c4330]\n\t(No symbol) [0x0x1c6734]\n\t(No symbol) [0x0x1c67c8]\n\t(No symbol) [0x0x206f74]\n\t(No symbol) [0x0x207a8b]\n\t(No symbol) [0x0x24dedc]\n\t(No symbol) [0x0x229e44]\n\t(No symbol) [0x0x24b606]\n\t(No symbol) [0x0x229bf6]\n\t(No symbol) [0x0x1fb38e]\n\t(No symbol) [0x0x1fc274]\n\tGetHandleVerifier [0x0x61eda3+2697763]\n\tGetHandleVerifier [0x0x619ec7+2677575]\n\tGetHandleVerifier [0x0x3c4194+228884]\n\tGetHandleVerifier [0x0x3b49f8+165496]\n\tGetHandleVerifier [0x0x3bb18d+192013]\n\tGetHandleVerifier [0x0x3a47d8+99416]\n\tGetHandleVerifier [0x0x3a4972+99826]\n\tGetHandleVerifier [0x0x38ebea+10346]\n\tBaseThreadInitThunk [0x0x75b8fcc9+25]\n\tRtlGetAppContainerNamedObjectPath [0x0x773582ae+286]\n\tRtlGetAppContainerNamedObjectPath [0x0x7735827e+238]\n\t(No symbol) [0x0]\n"
+  },
+  "dashboard_structure": {
+    "title": "COMADEMIG - Convenção de Ministros das Assembleias de Deus em MG",
+    "url": "https://comademig.vercel.app/dashboard",
+    "sidebar_present": false,
+    "sidebar_count": 0,
+    "header_present": true,
+    "header_count": 1,
+    "main_content_present": true,
+    "main_content_count": 1
+  },
+  "sidebar_menu": {},
+  "components_analysis": {
+    "total_images": 1,
+    "total_links": 21,
+    "total_buttons": 3,
+    "broken_images": 0,
+    "empty_links": 0,
+    "disabled_buttons": 0,
+    "js_errors": 0
+  },
+  "bugs_found": [],
+  "admin_vs_user_issues": [],
+  "recommendations": [],
+  "screenshots": []
+}

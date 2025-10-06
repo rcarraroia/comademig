@@ -1,0 +1,51 @@
+{
+  "site_structure": {
+    "title": "COMADEMIG - Convenção de Ministros das Assembleias de Deus em MG",
+    "nav_links_count": 0,
+    "forms_count": 0,
+    "auth_indicators": []
+  },
+  "authentication_methods": [
+    {
+      "type": "api_endpoint",
+      "url": "https://comademig.vercel.app/api/auth/login",
+      "status_code": 500,
+      "response_type": "text/plain; charset=utf-8"
+    },
+    {
+      "type": "api_endpoint",
+      "url": "https://comademig.vercel.app/api/login",
+      "status_code": 500,
+      "response_type": "text/plain; charset=utf-8"
+    }
+  ],
+  "admin_access_points": [],
+  "navigation_structure": [],
+  "forms_found": [],
+  "spa_detection": {
+    "is_spa": true,
+    "react_root": true,
+    "bundle_scripts": 0,
+    "react_mentions": 0
+  },
+  "javascript_routes": [],
+  "access_strategy": {
+    "recommended_approach": "selenium_automation",
+    "steps": [
+      "1. Usar Selenium para navegar até a página inicial",
+      "2. Procurar botão/link de login na interface",
+      "3. Preencher formulário de login automaticamente",
+      "4. Aguardar redirecionamento para dashboard",
+      "5. Analisar estrutura do painel administrativo"
+    ],
+    "tools_needed": [
+      "Selenium WebDriver",
+      "Chrome/Firefox"
+    ],
+    "challenges": [
+      "Necessita de browser real",
+      "JavaScript deve estar habilitado",
+      "Pode ter captcha ou proteções anti-bot"
+    ]
+  }
+}

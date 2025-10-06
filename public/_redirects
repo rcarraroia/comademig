@@ -1,0 +1,7 @@
+# Fallback for SPA routing
+/*    /index.html   200
+
+# API routes should not be redirected
+/api/*  /api/:splat  200
+/webhook/*  /webhook/:splat  200
+/internal/*  /internal/:splat  200

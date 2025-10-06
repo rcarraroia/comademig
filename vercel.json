@@ -26,6 +26,10 @@
     {
       "source": "/internal/(.*)",
       "destination": "/api/index.js"
+    },
+    {
+      "source": "/((?!api|webhook|internal|assets|_next|favicon.ico|robots.txt|sitemap.xml).*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [
