@@ -1,0 +1,355 @@
+{
+  "timestamp": "2025-10-04T09:57:01.642678",
+  "database_analysis": {},
+  "tables_structure": {
+    "profiles": {
+      "exists": true,
+      "count": 4,
+      "columns": [
+        "id",
+        "nome_completo",
+        "cpf",
+        "rg",
+        "data_nascimento",
+        "endereco",
+        "cidade",
+        "estado",
+        "cep",
+        "telefone",
+        "igreja",
+        "cargo",
+        "data_ordenacao",
+        "status",
+        "tipo_membro",
+        "created_at",
+        "updated_at",
+        "email",
+        "member_type_id",
+        "bio",
+        "foto_url",
+        "show_contact",
+        "show_ministry"
+      ],
+      "sample_data": [
+        {
+          "id": "d30e3f4b-74a4-4e55-a78d-f04f391b02f9",
+          "nome_completo": "BEATRIZ FATIMA ALMEIDA CARRARO",
+          "cpf": "123.456.789-00",
+          "rg": "5538004",
+          "data_nascimento": "1973-11-15",
+          "endereco": "Rua das Amendoeiras,, 10 - RC",
+          "cidade": "Estoril",
+          "estado": "Cascais",
+          "cep": "2765-365",
+          "telefone": "33998384177",
+          "igreja": "Igreja Teste",
+          "cargo": "Pastor",
+          "data_ordenacao": "2020-11-15",
+          "status": "ativo",
+          "tipo_membro": "pastor",
+          "created_at": "2025-09-06T19:18:36.525525+00:00",
+          "updated_at": "2025-09-06T20:47:26.750303+00:00",
+          "email": null,
+          "member_type_id": null,
+          "bio": "",
+          "foto_url": "https://amkelczfwazutrciqtlk.supabase.co/storage/v1/object/public/avatars/d30e3f4b-74a4-4e55-a78d-f04f391b02f9/profile.jpg",
+          "show_contact": false,
+          "show_ministry": true
+        },
+        {
+          "id": "c859e6a5-77af-4f61-92b1-1b64c7a80ccb",
+          "nome_completo": "teste@comademig.org.br",
+          "cpf": null,
+          "rg": null,
+          "data_nascimento": null,
+          "endereco": null,
+          "cidade": null,
+          "estado": null,
+          "cep": null,
+          "telefone": null,
+          "igreja": null,
+          "cargo": null,
+          "data_ordenacao": null,
+          "status": "pendente",
+          "tipo_membro": "membro",
+          "created_at": "2025-09-08T22:10:04.402521+00:00",
+          "updated_at": "2025-09-08T22:10:04.402521+00:00",
+          "email": null,
+          "member_type_id": null,
+          "bio": null,
+          "foto_url": null,
+          "show_contact": false,
+          "show_ministry": true
+        }
+      ],
+      "status": "OK"
+    },
+    "member_types": {
+      "exists": true,
+      "count": 5,
+      "columns": [
+        "id",
+        "name",
+        "description",
+        "is_active",
+        "sort_order",
+        "created_at",
+        "updated_at",
+        "created_by"
+      ],
+      "sample_data": [
+        {
+          "id": "61649ff8-c956-4766-b3b0-790b6f3e1a30",
+          "name": "Administrador",
+          "description": "Administrador do sistema",
+          "is_active": true,
+          "sort_order": 3,
+          "created_at": "2025-08-27T22:01:49.734063+00:00",
+          "updated_at": "2025-08-27T22:01:49.734063+00:00",
+          "created_by": null
+        },
+        {
+          "id": "2c3f1823-6ad0-4e6d-b97c-68f064d9bd8e",
+          "name": "Pastor",
+          "description": "Pastor",
+          "is_active": true,
+          "sort_order": 1,
+          "created_at": "2025-09-06T18:59:22.441744+00:00",
+          "updated_at": "2025-09-06T18:59:22.441744+00:00",
+          "created_by": null
+        }
+      ],
+      "status": "OK"
+    },
+    "subscription_plans": {
+      "exists": true,
+      "count": 0,
+      "columns": [],
+      "sample_data": [],
+      "status": "OK"
+    },
+    "member_type_subscriptions": {
+      "exists": true,
+      "count": 7,
+      "columns": [
+        "id",
+        "member_type_id",
+        "created_at",
+        "created_by",
+        "subscription_plan_id"
+      ],
+      "sample_data": [
+        {
+          "id": "fd651da8-046d-4202-9157-29713ac8e855",
+          "member_type_id": "2c3f1823-6ad0-4e6d-b97c-68f064d9bd8e",
+          "created_at": "2025-09-07T22:00:02.201229+00:00",
+          "created_by": null,
+          "subscription_plan_id": null
+        },
+        {
+          "id": "02f5641a-8c3a-4b28-b7a7-99b99245a963",
+          "member_type_id": "61649ff8-c956-4766-b3b0-790b6f3e1a30",
+          "created_at": "2025-09-07T22:00:02.201229+00:00",
+          "created_by": null,
+          "subscription_plan_id": null
+        }
+      ],
+      "status": "OK"
+    },
+    "user_subscriptions": {
+      "exists": true,
+      "count": 1,
+      "columns": [
+        "id",
+        "user_id",
+        "subscription_plan_id",
+        "member_type_id",
+        "status",
+        "payment_reference",
+        "auto_renew",
+        "started_at",
+        "expires_at",
+        "created_at",
+        "updated_at"
+      ],
+      "sample_data": [
+        {
+          "id": "3794a691-11be-4de9-8eb4-3b49ab44a02a",
+          "user_id": "c2e01b5c-f6af-4906-94e3-ea7cdf1ec02a",
+          "subscription_plan_id": "fb2f3276-f351-4ab0-950c-e9d4156d0af4",
+          "member_type_id": "61649ff8-c956-4766-b3b0-790b6f3e1a30",
+          "status": "active",
+          "payment_reference": null,
+          "auto_renew": true,
+          "started_at": "2025-09-28T18:50:45.952722+00:00",
+          "expires_at": "2035-09-28T18:50:45.952722+00:00",
+          "created_at": "2025-09-28T18:50:45.952722+00:00",
+          "updated_at": "2025-09-28T18:50:45.952722+00:00"
+        }
+      ],
+      "status": "OK"
+    },
+    "user_roles": {
+      "exists": true,
+      "count": 1,
+      "columns": [
+        "id",
+        "user_id",
+        "role",
+        "created_at"
+      ],
+      "sample_data": [
+        {
+          "id": "e70bd06c-8a30-4b66-818f-c100a5a53309",
+          "user_id": "c2e01b5c-f6af-4906-94e3-ea7cdf1ec02a",
+          "role": "admin",
+          "created_at": "2025-09-08T03:51:10.888421+00:00"
+        }
+      ],
+      "status": "OK"
+    },
+    "asaas_cobrancas": {
+      "exists": true,
+      "count": 0,
+      "columns": [],
+      "sample_data": [],
+      "status": "OK"
+    },
+    "certidoes": {
+      "exists": true,
+      "count": 0,
+      "columns": [],
+      "sample_data": [],
+      "status": "OK"
+    },
+    "eventos": {
+      "exists": true,
+      "count": 0,
+      "columns": [],
+      "sample_data": [],
+      "status": "OK"
+    },
+    "presencas_eventos": {
+      "exists": true,
+      "count": 0,
+      "columns": [],
+      "sample_data": [],
+      "status": "OK"
+    },
+    "affiliates": {
+      "exists": true,
+      "count": 0,
+      "columns": [],
+      "sample_data": [],
+      "status": "OK"
+    },
+    "affiliate_commissions": {
+      "exists": true,
+      "count": 0,
+      "columns": [],
+      "sample_data": [],
+      "status": "OK"
+    },
+    "notifications": {
+      "exists": true,
+      "count": 0,
+      "columns": [],
+      "sample_data": [],
+      "status": "OK"
+    },
+    "notification_templates": {
+      "exists": false,
+      "error": "{'message': 'relation \"public.notification_templates\" does not exist', 'code': '42P01', 'hint': None, 'details': None}",
+      "status": "ERROR"
+    },
+    "audit_logs": {
+      "exists": true,
+      "count": 0,
+      "columns": [],
+      "sample_data": [],
+      "status": "OK"
+    },
+    "content_pages": {
+      "exists": false,
+      "error": "{'message': 'relation \"public.content_pages\" does not exist', 'code': '42P01', 'hint': None, 'details': None}",
+      "status": "ERROR"
+    }
+  },
+  "data_integrity": {
+    "checks": [
+      {
+        "check": "member_types_plans_relationship",
+        "status": "OK",
+        "details": "Relacionamentos OK"
+      },
+      {
+        "check": "user_profiles",
+        "status": "OK",
+        "details": "4 perfis encontrados"
+      }
+    ]
+  },
+  "relationships": {
+    "member_types_plans": {
+      "status": "ERROR",
+      "error": "{'message': \"Could not find a relationship between 'member_type_subscriptions' and 'subscription_plans' in the schema cache\", 'code': 'PGRST200', 'hint': None, 'details': \"Searched for a foreign key relationship between 'member_type_subscriptions' and 'subscription_plans' in the schema 'public', but no matches were found.\"}"
+    }
+  },
+  "rls_policies": {
+    "member_types_read": {
+      "status": "OK",
+      "details": "Leitura pública: Permitida"
+    },
+    "subscription_plans_read": {
+      "status": "WARNING",
+      "details": "Leitura pública: Bloqueada"
+    },
+    "profiles_read": {
+      "status": "WARNING",
+      "details": "Leitura pública: Permitida (RISCO!)"
+    }
+  },
+  "edge_functions": {
+    "create_unified_member_type_and_plan": {
+      "status": "EXISTS",
+      "details": "Função RPC existe e validação de permissão funciona"
+    }
+  },
+  "admin_interface": {
+    "routes_configured": [
+      "/dashboard/admin/usuarios",
+      "/dashboard/admin/member-management",
+      "/dashboard/admin/financeiro-asaas",
+      "/dashboard/admin/regularizacao",
+      "/dashboard/admin/notifications",
+      "/dashboard/admin/diagnostics",
+      "/dashboard/admin/suporte",
+      "/dashboard/admin/content"
+    ],
+    "components_status": {},
+    "potential_issues": [],
+    "data_checks": {
+      "admin_users": {
+        "status": "OK",
+        "count": 1,
+        "details": "1 usuários admin encontrados"
+      }
+    }
+  },
+  "issues_found": [
+    "Tabela notification_templates: {'message': 'relation \"public.notification_templates\" does not exist', 'code': '42P01', 'hint': None, 'details': None}",
+    "Tabela content_pages: {'message': 'relation \"public.content_pages\" does not exist', 'code': '42P01', 'hint': None, 'details': None}",
+    "Erro nos relacionamentos member_types <-> plans: {'message': \"Could not find a relationship between 'member_type_subscriptions' and 'subscription_plans' in the schema cache\", 'code': 'PGRST200', 'hint': None, 'details': \"Searched for a foreign key relationship between 'member_type_subscriptions' and 'subscription_plans' in the schema 'public', but no matches were found.\"}",
+    "SEGURANÇA: Tabela profiles permite leitura pública - possível vazamento de dados"
+  ],
+  "recommendations": [
+    "Popular tabelas vazias com dados de teste/produção"
+  ],
+  "statistics": {
+    "total_tables": 16,
+    "existing_tables": 14,
+    "tables_with_data": 5,
+    "issues_count": 4,
+    "recommendations_count": 1
+  }
+}

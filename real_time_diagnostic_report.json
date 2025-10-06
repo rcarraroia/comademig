@@ -1,0 +1,98 @@
+{
+  "profiles": {
+    "exists": true,
+    "record_count": 0,
+    "status": "VAZIA",
+    "error": null
+  },
+  "member_types": {
+    "exists": true,
+    "record_count": 5,
+    "status": "OK",
+    "error": null
+  },
+  "member_type_subscriptions": {
+    "exists": true,
+    "record_count": 7,
+    "status": "OK",
+    "error": null
+  },
+  "user_subscriptions": {
+    "exists": true,
+    "record_count": 1,
+    "status": "OK",
+    "error": null
+  },
+  "user_roles": {
+    "exists": true,
+    "record_count": 1,
+    "status": "OK",
+    "error": null
+  },
+  "subscription_plans": {
+    "exists": true,
+    "record_count": 0,
+    "status": "VAZIA",
+    "error": null
+  },
+  "asaas_cobrancas": {
+    "exists": true,
+    "record_count": 0,
+    "status": "VAZIA",
+    "error": null
+  },
+  "certidoes": {
+    "exists": true,
+    "record_count": 0,
+    "status": "VAZIA",
+    "error": null
+  },
+  "eventos": {
+    "exists": true,
+    "record_count": 0,
+    "status": "VAZIA",
+    "error": null
+  },
+  "presencas_eventos": {
+    "exists": true,
+    "record_count": 0,
+    "status": "VAZIA",
+    "error": null
+  },
+  "affiliates": {
+    "exists": true,
+    "record_count": 0,
+    "status": "VAZIA",
+    "error": null
+  },
+  "affiliate_commissions": {
+    "exists": true,
+    "record_count": 0,
+    "status": "VAZIA",
+    "error": null
+  },
+  "notifications": {
+    "exists": true,
+    "record_count": 0,
+    "status": "VAZIA",
+    "error": null
+  },
+  "audit_logs": {
+    "exists": true,
+    "record_count": 0,
+    "status": "VAZIA",
+    "error": null
+  },
+  "notification_templates": {
+    "exists": true,
+    "record_count": 0,
+    "status": "VAZIA",
+    "error": null
+  },
+  "content_pages": {
+    "exists": true,
+    "record_count": 0,
+    "status": "VAZIA",
+    "error": null
+  }
+}
