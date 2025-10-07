@@ -48,7 +48,7 @@ export const useAuditLog = () => {
       ['audit-logs', filters],
       async (): Promise<AuditLog[]> => {
         let query = supabase
-          .from('member_system_audit')
+          .from('user_activity_log')
           .select('*')
           .order('created_at', { ascending: false });
 
@@ -111,7 +111,7 @@ export const useAuditLog = () => {
       if (!user) return [];
 
       const { data, error } = await supabase
-        .from('member_system_audit')
+        .from('user_activity_log')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
@@ -143,7 +143,7 @@ export const useAuditLog = () => {
       const ipAddress = await getUserIP();
 
       const { data, error } = await supabase
-        .from('member_system_audit')
+        .from('user_activity_log')
         .insert({
           table_name: logData.table_name,
           operation: logData.operation,

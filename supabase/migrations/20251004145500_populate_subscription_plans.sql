@@ -1,16 +1,17 @@
--- Tarefa 2.1 (CORRIGIDA): Popula a tabela 'subscription_plans' com os dados essenciais.
+-- ⚠️ MIGRAÇÃO DESABILITADA - CONFLITO COM MIGRAÇÃO 001
+-- 
+-- Esta migração foi desabilitada porque:
+-- 1. Fazia TRUNCATE que apagava dados da migração 001_fix_member_types_subscription_plans.sql
+-- 2. Criava planos genéricos sem relacionamento com member_types
+-- 3. Quebrava a estrutura 1:N implementada na migração 001
+--
+-- A migração 001 já cria os planos corretamente com:
+-- - Relacionamento member_type_id
+-- - Planos mensais, semestrais e anuais
+-- - Preços diferenciados por cargo
+-- - Estrutura completa de features
+--
+-- Se precisar recriar planos, use a migração 001 como referência.
 
--- Limpa a tabela antes de inserir para evitar duplicatas em caso de re-execução
-TRUNCATE TABLE public.subscription_plans RESTART IDENTITY CASCADE;
-
--- Insere os planos de assinatura sem tentar associá-los diretamente a um tipo de membro.
-INSERT INTO public.subscription_plans (name, description, price, recurrence, is_active)
-VALUES
-  ('Plano Obreiro', 'Plano de contribuição mensal para Obreiros.', 50.00, 'monthly', true),
-  ('Plano Evangelista', 'Plano de contribuição mensal para Evangelistas.', 50.00, 'monthly', true),
-  ('Plano Pastor', 'Plano de contribuição mensal para Pastores.', 70.00, 'monthly', true),
-  ('Plano Missionário', 'Plano de contribuição mensal para Missionários.', 50.00, 'monthly', true),
-  ('Plano Ministro', 'Plano de contribuição mensal para Ministros de Evangelho.', 100.00, 'monthly', true);
-
--- Confirmação de que o script foi criado.
--- A execução real deve ser feita manualmente no painel do Supabase.
+-- NENHUMA OPERAÇÃO SERÁ EXECUTADA
+SELECT 'Migração desabilitada - usar migração 001 para planos de assinatura' as status;
