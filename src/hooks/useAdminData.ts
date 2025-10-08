@@ -13,6 +13,16 @@ export interface AdminProfile {
   status: string;
   tipo_membro: string;
   created_at: string;
+  // Campos opcionais
+  rg?: string;
+  data_nascimento?: string;
+  endereco?: string;
+  cidade?: string;
+  estado?: string;
+  cep?: string;
+  data_ordenacao?: string;
+  foto_url?: string;
+  updated_at?: string;
 }
 
 export interface AdminTicket {

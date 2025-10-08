@@ -1,9 +1,12 @@
 import React, { useState, useMemo } from 'react'
 import { useRequirePermission } from '@/hooks/useRoleAccess'
-import { useAdminData } from '@/hooks/useAdminData'
+import { useAdminData, AdminProfile } from '@/hooks/useAdminData'
 import { useDebounce } from '@/hooks/useDebounce'
 import ConditionalRender from '@/components/auth/ConditionalRender'
 import { UserActions } from '@/components/admin/RoleBasedActions'
+import UserCreateModal from '@/components/admin/modals/UserCreateModal'
+import UserEditModal from '@/components/admin/modals/UserEditModal'
+import UserDeleteDialog from '@/components/admin/modals/UserDeleteDialog'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,6 +33,12 @@ export default function UsersAdmin() {
   // Estado para busca
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
+
+  // Estado para modals
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<AdminProfile | null>(null)
 
   // Calcular estatísticas reais
   const statistics = useMemo(() => {
@@ -140,6 +149,27 @@ export default function UsersAdmin() {
     refetchProfiles()
   }
 
+  const handleCreateUser = () => {
+    setIsCreateModalOpen(true)
+  }
+
+  const handleEditUser = (user: AdminProfile) => {
+    setSelectedUser(user)
+    setIsEditModalOpen(true)
+  }
+
+  const handleDeleteUser = (user: AdminProfile) => {
+    setSelectedUser(user)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleCloseModals = () => {
+    setIsCreateModalOpen(false)
+    setIsEditModalOpen(false)
+    setIsDeleteDialogOpen(false)
+    setSelectedUser(null)
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -156,7 +186,7 @@ export default function UsersAdmin() {
         {/* Ações do header - baseadas em permissões */}
         <div className="flex gap-2">
           <ConditionalRender requiredPermission="users.create">
-            <Button>
+            <Button onClick={handleCreateUser}>
               <Users className="h-4 w-4 mr-2" />
               Novo Usuário
             </Button>
@@ -170,6 +200,25 @@ export default function UsersAdmin() {
           </ConditionalRender>
         </div>
       </div>
+
+      {/* Modals */}
+      <UserCreateModal
+        isOpen={isCreateModalOpen}
+        onClose={handleCloseModals}
+        onSuccess={handleRefresh}
+      />
+      <UserEditModal
+        isOpen={isEditModalOpen}
+        user={selectedUser}
+        onClose={handleCloseModals}
+        onSuccess={handleRefresh}
+      />
+      <UserDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        user={selectedUser}
+        onClose={handleCloseModals}
+        onSuccess={handleRefresh}
+      />
 
       {/* Estatísticas - DADOS REAIS */}
       <ConditionalRender requiredRole={['admin', 'super_admin']}>
@@ -349,8 +398,8 @@ export default function UsersAdmin() {
                     <TableCell>
                       <UserActions
                         entityId={user.id}
-                        onEdit={() => console.log('Editar', user.id)}
-                        onDelete={() => console.log('Deletar', user.id)}
+                        onEdit={() => handleEditUser(user)}
+                        onDelete={() => handleDeleteUser(user)}
                       />
                     </TableCell>
                   </TableRow>
