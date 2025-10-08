@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { useRequirePermission } from '@/hooks/useRoleAccess'
 import { useAdminData } from '@/hooks/useAdminData'
+import { useDebounce } from '@/hooks/useDebounce'
 import ConditionalRender from '@/components/auth/ConditionalRender'
 import { UserActions } from '@/components/admin/RoleBasedActions'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,6 +29,7 @@ export default function UsersAdmin() {
   
   // Estado para busca
   const [searchTerm, setSearchTerm] = useState('')
+  const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
   // Calcular estatísticas reais
   const statistics = useMemo(() => {
@@ -51,20 +53,20 @@ export default function UsersAdmin() {
     }
   }, [profiles])
 
-  // Filtrar usuários baseado na busca
+  // Filtrar usuários baseado na busca (com debounce)
   const filteredUsers = useMemo(() => {
     if (!profiles) return []
     
-    if (!searchTerm) return profiles
+    if (!debouncedSearchTerm) return profiles
 
-    const term = searchTerm.toLowerCase()
+    const term = debouncedSearchTerm.toLowerCase()
     return profiles.filter(user => 
       user.nome_completo?.toLowerCase().includes(term) ||
       user.cpf?.includes(term) ||
       user.igreja?.toLowerCase().includes(term) ||
       user.telefone?.includes(term)
     )
-  }, [profiles, searchTerm])
+  }, [profiles, debouncedSearchTerm])
 
   if (permissionLoading) {
     return (
