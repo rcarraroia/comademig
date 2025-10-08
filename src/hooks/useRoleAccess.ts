@@ -206,12 +206,12 @@ export function withPermission<T extends object>(
   Component: React.ComponentType<T>,
   permission: string | string[],
   fallback?: React.ComponentType
-) {
-  return function ProtectedComponent(props: T) {
+): React.ComponentType<T> {
+  const ProtectedComponent: React.FC<T> = (props) => {
     const { hasPermission, hasAnyPermission, isLoading } = useRoleAccess()
 
     if (isLoading) {
-      return <div>Carregando...</div>
+      return null
     }
 
     const hasAccess = Array.isArray(permission) 
@@ -221,17 +221,15 @@ export function withPermission<T extends object>(
     if (!hasAccess) {
       if (fallback) {
         const FallbackComponent = fallback
-        return <FallbackComponent />
+        return React.createElement(FallbackComponent)
       }
-      return (
-        <div className="p-4 text-center">
-          <p className="text-gray-500">Você não tem permissão para ver este conteúdo.</p>
-        </div>
-      )
+      return null
     }
 
-    return <Component {...props} />
+    return React.createElement(Component, props)
   }
+  
+  return ProtectedComponent as React.ComponentType<T>
 }
 
 // Componente HOC para proteger componentes baseado em roles
@@ -239,12 +237,12 @@ export function withRole<T extends object>(
   Component: React.ComponentType<T>,
   role: UserRole | UserRole[],
   fallback?: React.ComponentType
-) {
-  return function ProtectedComponent(props: T) {
+): React.ComponentType<T> {
+  const ProtectedComponent: React.FC<T> = (props) => {
     const { hasRole, hasAnyRole, isLoading } = useRoleAccess()
 
     if (isLoading) {
-      return <div>Carregando...</div>
+      return null
     }
 
     const hasAccess = Array.isArray(role) 
@@ -254,17 +252,15 @@ export function withRole<T extends object>(
     if (!hasAccess) {
       if (fallback) {
         const FallbackComponent = fallback
-        return <FallbackComponent />
+        return React.createElement(FallbackComponent)
       }
-      return (
-        <div className="p-4 text-center">
-          <p className="text-gray-500">Você não tem permissão para ver este conteúdo.</p>
-        </div>
-      )
+      return null
     }
 
-    return <Component {...props} />
+    return React.createElement(Component, props)
   }
+  
+  return ProtectedComponent as React.ComponentType<T>
 }
 
 export type { UserRole, RolePermissions }
