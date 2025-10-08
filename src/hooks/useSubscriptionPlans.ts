@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 // Zod schema for validation
 const SubscriptionPlanSchema = z.object({
   id: z.string().uuid().optional(),
-  plan_title: z.string().min(1, 'Título é obrigatório').max(100, 'Título muito longo'),
+  name: z.string().min(1, 'Nome é obrigatório').max(100, 'Nome muito longo'),
   description: z.string().optional(),
   price: z.number().min(0, 'Preço deve ser positivo'),
   recurrence: z.enum(['Mensal', 'Anual'], {
@@ -19,7 +19,10 @@ const SubscriptionPlanSchema = z.object({
   created_by: z.string().uuid().optional(),
 });
 
-export type SubscriptionPlan = z.infer<typeof SubscriptionPlanSchema>;
+export type SubscriptionPlan = z.infer<typeof SubscriptionPlanSchema> & {
+  // Alias para compatibilidade com código existente
+  plan_title?: string;
+};
 
 export type CreateSubscriptionPlanData = Omit<SubscriptionPlan, 'id' | 'created_at' | 'updated_at'>;
 export type UpdateSubscriptionPlanData = Partial<CreateSubscriptionPlanData> & { id: string };
@@ -56,7 +59,7 @@ export function useSubscriptionPlans(options?: {
             )
           )
         `)
-        .order('plan_title', { ascending: true });
+        .order('name', { ascending: true });
 
       if (!options?.includeInactive) {
         query = query.eq('is_active', true);
@@ -69,10 +72,16 @@ export function useSubscriptionPlans(options?: {
         throw new Error(`Erro ao carregar planos de assinatura: ${error.message}`);
       }
 
+      // Mapear dados e adicionar alias para compatibilidade
+      const mappedData = data.map(plan => ({
+        ...plan,
+        plan_title: plan.name, // Alias para compatibilidade
+      }));
+
       // Filtrar por tipo de membro se especificado
-      let filteredData = data;
+      let filteredData = mappedData;
       if (options?.memberTypeId) {
-        filteredData = data.filter(plan => 
+        filteredData = mappedData.filter(plan => 
           plan.member_type_subscriptions?.some((mts: any) => 
             mts.member_type_id === options.memberTypeId
           )
