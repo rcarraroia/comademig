@@ -1,4 +1,4 @@
-import AdminCertidoes from '@/components/certidoes/AdminCertidoes';
+import { AdminCertidoes } from '@/components/certidoes/AdminCertidoes';
 
 export default function AdminCertidoesPage() {
   return <AdminCertidoes />;
