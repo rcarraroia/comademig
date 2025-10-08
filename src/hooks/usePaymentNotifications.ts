@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
-import { useAuthState } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
 
 interface PaymentNotification {
@@ -22,7 +22,7 @@ interface PaymentNotification {
 }
 
 export function usePaymentNotifications() {
-  const { user } = useAuthState()
+  const { user } = useAuth()
   const queryClient = useQueryClient()
   const [unreadCount, setUnreadCount] = useState(0)
 

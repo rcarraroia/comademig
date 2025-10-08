@@ -23,7 +23,7 @@ import {
   ChevronRight
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useAuthState } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -47,7 +47,7 @@ interface MenuSection {
 
 export default function AdminSidebar() {
   const location = useLocation()
-  const { user, profile } = useAuthState()
+  const { user, profile } = useAuth()
   const [openSections, setOpenSections] = React.useState<string[]>(['users', 'financial'])
 
   // Verificar se o usuário tem permissão para acessar uma seção/item

@@ -1,6 +1,6 @@
 import React from 'react'
 import { Outlet, Navigate } from 'react-router-dom'
-import { useAuthState } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/AuthContext'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 import { useRoleAccess } from '@/hooks/useRoleAccess'
 import PaymentNotifications from '@/components/notifications/PaymentNotifications'
@@ -10,12 +10,12 @@ import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 
 export default function AdminLayout() {
-  const { user, profile, isLoading } = useAuthState()
+  const { user, profile, loading } = useAuth()
   const { isAdmin } = useRoleAccess()
   const [sidebarOpen, setSidebarOpen] = React.useState(false)
 
   // Verificar se o usuário está logado e é admin
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>

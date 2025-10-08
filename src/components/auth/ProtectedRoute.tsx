@@ -1,6 +1,6 @@
 import React from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { useAuthState } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { useRoleAccess, UserRole } from '@/hooks/useRoleAccess'
 import AccessDenied from './AccessDenied'
 
@@ -21,12 +21,12 @@ export default function ProtectedRoute({
   redirectTo = '/dashboard',
   showAccessDenied = true
 }: ProtectedRouteProps) {
-  const { user, isLoading } = useAuthState()
+  const { user, loading } = useAuth()
   const { hasRole, hasAnyRole, hasPermission, hasAnyPermission } = useRoleAccess()
   const location = useLocation()
 
   // Mostrar loading enquanto carrega
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
