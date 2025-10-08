@@ -26,6 +26,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 
 export default function UsersAdmin() {
+  // Versão: 2025-01-08-v2 (forçar atualização de cache)
+  
   // Proteger a página - requer permissão para visualizar usuários
   const { hasAccess, isLoading: permissionLoading } = useRequirePermission('users.view')
   
