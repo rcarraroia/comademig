@@ -132,8 +132,7 @@ function App() {
               <Route path="/dashboard/perfil-completo" element={<PerfilCompleto />} />
             </Route>
 
-            {/* Admin routes - FORA de ProtectedRoute (AdminLayout tem auth própria) */}
-            {/* Admin routes - PADRÃO /admin/* */}
+            {/* Admin routes - FORA de ProtectedRoute */}
             <Route path="/admin" element={<AdminLayout />}>
               <Route path="users" element={<UsersAdmin />} />
               <Route path="financial" element={<FinancialAdmin />} />
@@ -149,7 +148,6 @@ function App() {
               <Route path="notification-management" element={<NotificationManagementPage />} />
             </Route>
 
-            {/* Admin routes - /dashboard/admin/* usando AdminLayout */}
             <Route path="/dashboard/admin" element={<AdminLayout />}>
               <Route path="usuarios" element={<UsersAdmin />} />
               <Route path="member-management" element={<MemberTypeManagement />} />
