@@ -62,11 +62,19 @@ export function validateEmail(email: string): boolean {
 }
 
 /**
+ * Limpa CPF (remove formatação)
+ */
+export function cleanCPF(cpf: string): string {
+  return cpf.replace(/\D/g, '')
+}
+
+/**
  * Formata CPF
  */
 export function formatCPF(cpf: string): string {
-  const cleanCPF = cpf.replace(/\D/g, '')
-  return cleanCPF.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+  const clean = cleanCPF(cpf)
+  if (clean.length !== 11) return cpf
+  return clean.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
 }
 
 /**

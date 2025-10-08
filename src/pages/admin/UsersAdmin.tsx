@@ -20,7 +20,8 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table'
-import { Search, Filter, Users, UserCheck, Crown, Loader2, Shield } from 'lucide-react'
+import { Search, Users, UserCheck, Crown, Loader2, Shield } from 'lucide-react'
+import { AdvancedFiltersPanel, AdvancedFilters } from '@/components/admin/AdvancedFiltersPanel'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 
@@ -29,11 +30,18 @@ export default function UsersAdmin() {
   const { hasAccess, isLoading: permissionLoading } = useRequirePermission('users.view')
   
   // Buscar dados reais do banco
-  const { profiles, stats, isLoading: dataLoading, refetchProfiles } = useAdminData()
+  const { profiles, isLoading: dataLoading, refetchProfiles } = useAdminData()
   
   // Estado para busca
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
+  
+  // Estado para filtros avançados
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
+    tipoMembro: [],
+    status: [],
+    periodo: 'all'
+  })
 
   // Estado para modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -64,20 +72,67 @@ export default function UsersAdmin() {
     }
   }, [profiles])
 
-  // Filtrar usuários baseado na busca (com debounce)
+  // Filtrar usuários baseado na busca e filtros avançados
   const filteredUsers = useMemo(() => {
     if (!profiles) return []
     
-    if (!debouncedSearchTerm) return profiles
+    let filtered = profiles
 
-    const term = debouncedSearchTerm.toLowerCase()
-    return profiles.filter(user => 
-      user.nome_completo?.toLowerCase().includes(term) ||
-      user.cpf?.includes(term) ||
-      user.igreja?.toLowerCase().includes(term) ||
-      user.telefone?.includes(term)
-    )
-  }, [profiles, debouncedSearchTerm])
+    // Aplicar busca por texto
+    if (debouncedSearchTerm) {
+      const term = debouncedSearchTerm.toLowerCase()
+      const cleanTerm = term.replace(/\D/g, '')
+      
+      filtered = filtered.filter(user => {
+        if (user.nome_completo?.toLowerCase().includes(term)) return true
+        if (user.cpf && user.cpf.replace(/\D/g, '').includes(cleanTerm)) return true
+        if (user.telefone && user.telefone.replace(/\D/g, '').includes(cleanTerm)) return true
+        if (user.igreja?.toLowerCase().includes(term)) return true
+        return false
+      })
+    }
+
+    // Aplicar filtro de tipo de membro
+    if (advancedFilters.tipoMembro.length > 0) {
+      filtered = filtered.filter(user => 
+        advancedFilters.tipoMembro.includes(user.tipo_membro)
+      )
+    }
+
+    // Aplicar filtro de status
+    if (advancedFilters.status.length > 0) {
+      filtered = filtered.filter(user => 
+        advancedFilters.status.includes(user.status || 'ativo')
+      )
+    }
+
+    // Aplicar filtro de período
+    if (advancedFilters.periodo !== 'all') {
+      const now = new Date()
+      let dateLimit = new Date()
+
+      switch (advancedFilters.periodo) {
+        case '7days':
+          dateLimit.setDate(now.getDate() - 7)
+          break
+        case '30days':
+          dateLimit.setDate(now.getDate() - 30)
+          break
+        case '90days':
+          dateLimit.setDate(now.getDate() - 90)
+          break
+        case '1year':
+          dateLimit.setFullYear(now.getFullYear() - 1)
+          break
+      }
+
+      filtered = filtered.filter(user => 
+        new Date(user.created_at) >= dateLimit
+      )
+    }
+
+    return filtered
+  }, [profiles, debouncedSearchTerm, advancedFilters])
 
   if (permissionLoading) {
     return (
@@ -178,6 +233,19 @@ export default function UsersAdmin() {
     setSelectedUser(null)
   }
 
+  const handleApplyFilters = (filters: AdvancedFilters) => {
+    setAdvancedFilters(filters)
+  }
+
+  // Contar filtros ativos
+  const activeFiltersCount = useMemo(() => {
+    let count = 0
+    if (advancedFilters.tipoMembro.length > 0) count += advancedFilters.tipoMembro.length
+    if (advancedFilters.status.length > 0) count += advancedFilters.status.length
+    if (advancedFilters.periodo !== 'all') count += 1
+    return count
+  }, [advancedFilters])
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -200,12 +268,10 @@ export default function UsersAdmin() {
             </Button>
           </ConditionalRender>
 
-          <ConditionalRender requiredRole="super_admin">
-            <Button variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
-              Filtros Avançados
-            </Button>
-          </ConditionalRender>
+          <AdvancedFiltersPanel 
+            onApplyFilters={handleApplyFilters}
+            activeFiltersCount={activeFiltersCount}
+          />
         </div>
       </div>
 
