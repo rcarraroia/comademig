@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Outlet, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 
@@ -44,6 +44,9 @@ import UsersAdmin from '@/pages/admin/UsersAdmin';
 import FinancialAdmin from '@/pages/admin/FinancialAdmin';
 import AuditLogs from '@/pages/admin/AuditLogs';
 import SupportManagement from '@/pages/admin/SupportManagement';
+import AdminCertidoesPage from '@/pages/admin/AdminCertidoesPage';
+import SubscriptionPlansPage from '@/pages/admin/SubscriptionPlansPage';
+import NotificationManagementPage from '@/pages/admin/NotificationManagementPage';
 
 // Admin Pages - COMPONENTES ANTIGOS (manter alguns)
 import AdminRegularizacaoPage from '@/pages/dashboard/admin/Regularizacao';
@@ -127,7 +130,7 @@ function App() {
               <Route path="/dashboard/suporte" element={<Suporte />} />
               <Route path="/dashboard/afiliados" element={<Afiliados />} />
 
-              {/* Admin routes - NOVO LAYOUT ADMINISTRATIVO */}
+              {/* Admin routes - PADRÃO /admin/* */}
               <Route path="/admin" element={<AdminLayout />}>
                 <Route path="users" element={<UsersAdmin />} />
                 <Route path="financial" element={<FinancialAdmin />} />
@@ -138,26 +141,33 @@ function App() {
                 <Route path="notifications" element={<AdminNotificationsPage />} />
                 <Route path="diagnostics" element={<SystemDiagnosticsPage />} />
                 <Route path="content" element={<ContentManagement />} />
+                <Route path="certidoes" element={<AdminCertidoesPage />} />
+                <Route path="subscription-plans" element={<SubscriptionPlansPage />} />
+                <Route path="notification-management" element={<NotificationManagementPage />} />
               </Route>
 
-              {/* Admin routes - ROTAS ANTIGAS (manter compatibilidade) */}
-              <Route path="/dashboard/admin/usuarios" element={<UsersAdmin />} />
-              <Route path="/dashboard/admin/member-management" element={<MemberTypeManagement />} />
-              <Route path="/dashboard/admin/financial" element={<FinancialAdmin />} />
-              <Route path="/dashboard/admin/regularizacao" element={<AdminRegularizacaoPage />} />
-              <Route path="/dashboard/admin/notifications" element={<AdminNotificationsPage />} />
-              <Route path="/dashboard/admin/diagnostics" element={<SystemDiagnosticsPage />} />
-              <Route path="/dashboard/admin/suporte" element={<SupportManagement />} />
-              <Route path="/dashboard/admin/content" element={<ContentManagement />} />
+              {/* Admin routes - /dashboard/admin/* usando AdminLayout */}
+              <Route path="/dashboard/admin" element={<AdminLayout />}>
+                <Route path="usuarios" element={<UsersAdmin />} />
+                <Route path="member-management" element={<MemberTypeManagement />} />
+                <Route path="financial" element={<FinancialAdmin />} />
+                <Route path="regularizacao" element={<AdminRegularizacaoPage />} />
+                <Route path="notifications" element={<AdminNotificationsPage />} />
+                <Route path="diagnostics" element={<SystemDiagnosticsPage />} />
+                <Route path="suporte" element={<SupportManagement />} />
+                <Route path="content" element={<ContentManagement />} />
+                <Route path="content/:pageName/edit" element={<ContentEdit />} />
+                <Route path="content/home-editor" element={<HomeContentEdit />} />
+                <Route path="content/sobre-editor" element={<AboutContentEdit />} />
+                <Route path="content/lideranca-editor" element={<LeadershipContentEdit />} />
+                <Route path="content/eventos-editor" element={<EventosContentEdit />} />
+                <Route path="content/multimidia-editor" element={<MultimidiaContentEdit />} />
+                <Route path="content/contato-editor" element={<ContatoContentEdit />} />
+                <Route path="content/noticias-editor" element={<NoticiasContentEdit />} />
+              </Route>
+
+              {/* Rotas de usuário comum */}
               <Route path="/dashboard/notifications" element={<Notifications />} />
-              <Route path="/dashboard/admin/content/:pageName/edit" element={<ContentEdit />} />
-              <Route path="/dashboard/admin/content/home-editor" element={<HomeContentEdit />} />
-              <Route path="/dashboard/admin/content/sobre-editor" element={<AboutContentEdit />} />
-              <Route path="/dashboard/admin/content/lideranca-editor" element={<LeadershipContentEdit />} />
-              <Route path="/dashboard/admin/content/eventos-editor" element={<EventosContentEdit />} />
-              <Route path="/dashboard/admin/content/multimidia-editor" element={<MultimidiaContentEdit />} />
-              <Route path="/dashboard/admin/content/contato-editor" element={<ContatoContentEdit />} />
-              <Route path="/dashboard/admin/content/noticias-editor" element={<NoticiasContentEdit />} />
               <Route path="/dashboard/perfil-completo" element={<PerfilCompleto />} />
             </Route>
 

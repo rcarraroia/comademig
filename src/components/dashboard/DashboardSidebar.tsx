@@ -27,27 +27,27 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
   ];
 
   const adminMenuItems = [
-    { 
+    {
       category: "Gestão de Usuários",
       items: [
-        { path: "/dashboard/admin/usuarios", label: "Gerenciar Usuários", icon: Users },
-        { path: "/dashboard/admin/member-management", label: "Gestão de Cargos e Planos", icon: Settings },
+        { path: "/admin/users", label: "Gerenciar Usuários", icon: Users },
+        { path: "/admin/member-management", label: "Gestão de Cargos e Planos", icon: Settings },
       ]
     },
     {
-      category: "Financeiro", 
+      category: "Financeiro",
       items: [
-        { path: "/dashboard/admin/financial", label: "Dashboard Financeiro", icon: BarChart3, badge: "Novo" },
-        { path: "/dashboard/admin/regularizacao", label: "Regularização", icon: FileText },
+        { path: "/admin/financial", label: "Dashboard Financeiro", icon: BarChart3, badge: "Novo" },
+        { path: "/admin/regularizacao", label: "Regularização", icon: FileText },
       ]
     },
     {
       category: "Sistema",
       items: [
-        { path: "/dashboard/admin/suporte", label: "Atendimento ao Membro", icon: MessageSquare },
-        { path: "/dashboard/admin/notifications", label: "Notificações", icon: Bell },
-        { path: "/dashboard/admin/diagnostics", label: "Diagnóstico do Sistema", icon: Activity },
-        { path: "/dashboard/admin/content", label: "Gerenciar Conteúdo", icon: FileText },
+        { path: "/admin/support", label: "Atendimento ao Membro", icon: MessageSquare },
+        { path: "/admin/notifications", label: "Notificações", icon: Bell },
+        { path: "/admin/diagnostics", label: "Diagnóstico do Sistema", icon: Activity },
+        { path: "/admin/content", label: "Gerenciar Conteúdo", icon: FileText },
       ]
     }
   ];
@@ -58,12 +58,12 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
     <>
       {/* Mobile Overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={onClose}
         />
       )}
-      
+
       {/* Sidebar */}
       <div className={`
         fixed top-0 left-0 h-full w-64 bg-comademig-blue shadow-lg z-50 transform transition-transform duration-300 flex flex-col
@@ -72,9 +72,9 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
       `}>
         {/* Header */}
         <div className="p-4 lg:p-6 border-b border-blue-600 flex items-center justify-between flex-shrink-0">
-          <img 
-            src="/lovable-uploads/3b224a34-6b1d-42ce-9831-77c118c82d27.png" 
-            alt="COMADEMIG" 
+          <img
+            src="/lovable-uploads/3b224a34-6b1d-42ce-9831-77c118c82d27.png"
+            alt="COMADEMIG"
             className="h-8 w-auto"
           />
           <Button
@@ -96,8 +96,8 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
               onClick={onClose}
               className={`
                 flex items-center space-x-3 p-2 lg:p-3 rounded-lg transition-colors duration-200 text-sm font-medium
-                ${isActive(item.path) 
-                  ? 'bg-comademig-gold text-comademig-blue' 
+                ${isActive(item.path)
+                  ? 'bg-comademig-gold text-comademig-blue'
                   : 'text-white hover:bg-blue-600'
                 }
               `}
@@ -125,8 +125,8 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
                       onClick={onClose}
                       className={`
                         flex items-center justify-between p-2 lg:p-3 rounded-lg transition-colors duration-200 text-sm font-medium mb-1
-                        ${isActive(item.path) 
-                          ? 'bg-comademig-gold text-comademig-blue' 
+                        ${isActive(item.path)
+                          ? 'bg-comademig-gold text-comademig-blue'
                           : 'text-white hover:bg-blue-600'
                         }
                       `}

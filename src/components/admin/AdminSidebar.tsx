@@ -6,19 +6,13 @@ import {
   Settings, 
   FileText, 
   BarChart3, 
-  Shield, 
   UserCheck, 
-  DollarSign, 
-  Receipt, 
-  AlertTriangle,
+  DollarSign,
   MessageSquare,
   Activity,
-  Database,
-  UserCog,
   Building,
-  Award,
-  Calendar,
   HelpCircle,
+  Bell,
   ChevronDown,
   ChevronRight
 } from 'lucide-react'
@@ -57,7 +51,7 @@ export default function AdminSidebar() {
     return requiredRole.includes(profile.role)
   }
 
-  // Definir estrutura do menu
+  // Definir estrutura do menu - APENAS ROTAS FUNCIONAIS
   const menuSections: MenuSection[] = [
     {
       title: 'Gestão de Usuários',
@@ -71,23 +65,10 @@ export default function AdminSidebar() {
           description: 'Gerenciar usuários do sistema'
         },
         {
-          title: 'Perfis e Permissões',
-          href: '/admin/profiles',
-          icon: UserCog,
-          description: 'Configurar roles e permissões',
-          requiredRole: ['super_admin']
-        },
-        {
-          title: 'Tipos de Membro',
-          href: '/admin/member-types',
+          title: 'Gestão de Cargos e Planos',
+          href: '/admin/member-management',
           icon: UserCheck,
-          description: 'Gerenciar cargos e hierarquia'
-        },
-        {
-          title: 'Validação de Carteiras',
-          href: '/admin/carteiras',
-          icon: Shield,
-          description: 'Aprovar carteiras digitais'
+          description: 'Gerenciar tipos de membro e planos'
         }
       ]
     },
@@ -103,23 +84,16 @@ export default function AdminSidebar() {
           description: 'Visão geral das finanças'
         },
         {
-          title: 'Transações',
-          href: '/admin/transactions',
-          icon: Receipt,
-          description: 'Histórico de pagamentos'
-        },
-        {
-          title: 'Inadimplência',
-          href: '/admin/overdue',
-          icon: AlertTriangle,
-          badge: '12',
-          description: 'Pagamentos em atraso'
-        },
-        {
           title: 'Planos de Assinatura',
           href: '/admin/subscription-plans',
           icon: CreditCard,
           description: 'Gerenciar planos e preços'
+        },
+        {
+          title: 'Regularização',
+          href: '/admin/regularizacao',
+          icon: FileText,
+          description: 'Solicitações de regularização'
         }
       ]
     },
@@ -134,22 +108,10 @@ export default function AdminSidebar() {
           description: 'Gerenciar solicitações de certidões'
         },
         {
-          title: 'Eventos',
-          href: '/admin/events',
-          icon: Calendar,
-          description: 'Cadastrar e gerenciar eventos'
-        },
-        {
-          title: 'Certificados',
-          href: '/admin/certificates',
-          icon: Award,
-          description: 'Emitir certificados de eventos'
-        },
-        {
-          title: 'Organizações',
-          href: '/admin/organizations',
+          title: 'Gerenciar Conteúdo',
+          href: '/admin/content',
           icon: Building,
-          description: 'Gerenciar organizações parceiras'
+          description: 'Editar conteúdo do site'
         }
       ]
     },
@@ -161,14 +123,19 @@ export default function AdminSidebar() {
           title: 'Tickets de Suporte',
           href: '/admin/support',
           icon: HelpCircle,
-          badge: '5',
           description: 'Atender solicitações de suporte'
         },
         {
-          title: 'Mensagens',
-          href: '/admin/messages',
+          title: 'Notificações',
+          href: '/admin/notifications',
           icon: MessageSquare,
-          description: 'Sistema de mensagens'
+          description: 'Gerenciar notificações do sistema'
+        },
+        {
+          title: 'Gestão de Notificações',
+          href: '/admin/notification-management',
+          icon: Bell,
+          description: 'Criar e enviar notificações'
         }
       ]
     },
@@ -183,18 +150,10 @@ export default function AdminSidebar() {
           description: 'Histórico de atividades'
         },
         {
-          title: 'Configurações',
-          href: '/admin/settings',
+          title: 'Diagnóstico do Sistema',
+          href: '/admin/diagnostics',
           icon: Settings,
-          description: 'Configurações do sistema',
-          requiredRole: ['super_admin']
-        },
-        {
-          title: 'Banco de Dados',
-          href: '/admin/database',
-          icon: Database,
-          description: 'Gerenciar dados do sistema',
-          requiredRole: ['super_admin']
+          description: 'Status e diagnóstico do sistema'
         }
       ]
     }
