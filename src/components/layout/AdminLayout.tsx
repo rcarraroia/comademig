@@ -35,6 +35,7 @@ export default function AdminLayout() {
     try {
       await supabase.auth.signOut()
       toast.success('Logout realizado com sucesso')
+      window.location.href = '/'
     } catch (error) {
       console.error('Erro no logout:', error)
       toast.error('Erro ao fazer logout')
