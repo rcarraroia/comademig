@@ -28,22 +28,31 @@ import {
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
 import { useCreateUser, CreateUserInput } from '@/hooks/useCreateUser'
+import { validateCPF, validatePhone, validateCEP, ERROR_MESSAGES } from '@/utils/validators'
 
-// Schema de validação
+// Schema de validação com validações brasileiras
 const userSchema = z.object({
-  nome_completo: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
-  cpf: z.string().regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, 'CPF inválido (formato: XXX.XXX.XXX-XX)'),
-  telefone: z.string().min(10, 'Telefone inválido'),
-  igreja: z.string().min(3, 'Nome da igreja é obrigatório'),
-  cargo: z.string().min(3, 'Cargo é obrigatório'),
+  nome_completo: z.string()
+    .min(3, ERROR_MESSAGES.MIN_LENGTH(3))
+    .max(100, ERROR_MESSAGES.MAX_LENGTH(100)),
+  cpf: z.string()
+    .regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, 'CPF deve estar no formato XXX.XXX.XXX-XX')
+    .refine(validateCPF, ERROR_MESSAGES.CPF_INVALID),
+  telefone: z.string()
+    .min(10, 'Telefone deve ter no mínimo 10 dígitos')
+    .refine(val => validatePhone(val.replace(/\D/g, '')), ERROR_MESSAGES.PHONE_INVALID),
+  igreja: z.string().min(3, ERROR_MESSAGES.MIN_LENGTH(3)),
+  cargo: z.string().min(3, ERROR_MESSAGES.MIN_LENGTH(3)),
   tipo_membro: z.enum(['membro', 'pastor', 'moderador', 'admin']),
   status: z.enum(['ativo', 'inativo', 'pendente']),
   rg: z.string().optional(),
   data_nascimento: z.string().optional(),
   endereco: z.string().optional(),
   cidade: z.string().optional(),
-  estado: z.string().optional(),
-  cep: z.string().optional(),
+  estado: z.string().max(2, 'Use a sigla do estado (ex: MG)').optional(),
+  cep: z.string()
+    .optional()
+    .refine(val => !val || validateCEP(val.replace(/\D/g, '')), ERROR_MESSAGES.CEP_INVALID),
   data_ordenacao: z.string().optional(),
 })
 
