@@ -24,8 +24,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     });
 
     if (!loading && profile && profile.tipo_membro === 'admin') {
-      console.log('🔐 Admin detectado no DashboardLayout! Redirecionando para /admin/usuarios');
-      navigate('/admin/usuarios', { replace: true });
+      console.log('🔐 Admin detectado no DashboardLayout! Redirecionando para /admin/users');
+      navigate('/admin/users', { replace: true });
     }
   }, [profile, loading, navigate]);
 

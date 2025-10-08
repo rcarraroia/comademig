@@ -49,8 +49,8 @@ const Auth = () => {
       
       // Redirecionar baseado no tipo de usuário
       if (profile.tipo_membro === 'admin') {
-        console.log('🔐 ADMIN DETECTADO! Redirecionando para /admin/usuarios');
-        navigate("/admin/usuarios");
+        console.log('🔐 ADMIN DETECTADO! Redirecionando para /admin/users');
+        navigate("/admin/users");
       } else {
         console.log('👤 Usuário comum (tipo: ' + profile.tipo_membro + '). Redirecionando para /dashboard');
         navigate("/dashboard");
