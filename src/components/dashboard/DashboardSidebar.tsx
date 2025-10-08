@@ -1,7 +1,8 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { X, Home, User, CreditCard, FileText, HelpCircle, Globe, Building, Users, Bell } from "lucide-react";
+import { X, Home, User, CreditCard, FileText, HelpCircle, Settings, Globe, Building, Users, Bell, Activity, MessageSquare, DollarSign, BarChart3, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardSidebarProps {
@@ -11,7 +12,7 @@ interface DashboardSidebarProps {
 
 const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
   const location = useLocation();
-  const { isAdmin } = useAuth();
+  const { isAdmin, loading } = useAuth();
 
   const menuItems = [
     { path: "/dashboard", label: "Dashboard", icon: Home },
@@ -25,7 +26,31 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
     { path: "/dashboard/suporte", label: "Suporte", icon: HelpCircle },
   ];
 
-
+  const adminMenuItems = [
+    {
+      category: "Gestão de Usuários",
+      items: [
+        { path: "/admin/users", label: "Gerenciar Usuários", icon: Users },
+        { path: "/admin/member-management", label: "Gestão de Cargos e Planos", icon: Settings },
+      ]
+    },
+    {
+      category: "Financeiro",
+      items: [
+        { path: "/admin/financial", label: "Dashboard Financeiro", icon: BarChart3, badge: "Novo" },
+        { path: "/admin/regularizacao", label: "Regularização", icon: FileText },
+      ]
+    },
+    {
+      category: "Sistema",
+      items: [
+        { path: "/admin/support", label: "Atendimento ao Membro", icon: MessageSquare },
+        { path: "/admin/notifications", label: "Notificações", icon: Bell },
+        { path: "/admin/diagnostics", label: "Diagnóstico do Sistema", icon: Activity },
+        { path: "/admin/content", label: "Gerenciar Conteúdo", icon: FileText },
+      ]
+    }
+  ];
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -82,21 +107,49 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
             </Link>
           ))}
 
-
+          {/* Admin Section - Visível apenas para administradores */}
+          {!loading && isAdmin() && (
+            <div className="mt-6 pt-4 border-t border-blue-600">
+              <div className="text-xs font-semibold text-blue-200 mb-3 px-3">
+                ADMINISTRAÇÃO
+              </div>
+              {adminMenuItems.map((section) => (
+                <div key={section.category} className="mb-4">
+                  <div className="text-xs font-medium text-blue-300 mb-2 px-3">
+                    {section.category}
+                  </div>
+                  {section.items.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={onClose}
+                      className={`
+                        flex items-center justify-between p-2 lg:p-3 rounded-lg transition-colors duration-200 text-sm font-medium mb-1
+                        ${isActive(item.path)
+                          ? 'bg-comademig-gold text-comademig-blue'
+                          : 'text-white hover:bg-blue-600'
+                        }
+                      `}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <item.icon size={18} />
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge && (
+                        <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                          {item.badge}
+                        </Badge>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
         </nav>
 
         {/* Bottom Section - Fixed at bottom */}
         <div className="p-3 lg:p-4 space-y-2 lg:space-y-3 border-t border-blue-600 flex-shrink-0">
-          {isAdmin() && (
-            <Link
-              to="/admin/users"
-              onClick={onClose}
-              className="flex items-center space-x-3 p-2 lg:p-3 text-white hover:bg-blue-600 rounded-lg transition-colors duration-200 text-sm font-medium bg-blue-700"
-            >
-              <Users size={18} />
-              <span>Painel Administrativo</span>
-            </Link>
-          )}
           <Link
             to="/"
             onClick={onClose}

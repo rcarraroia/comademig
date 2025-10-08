@@ -1,5 +1,4 @@
 ESSAS SÃO AS URLS DAS PAGINAS DO PAINEL DE USUARIOS
-Que devem aparecer somente no painel de usuarios como ja acontecendo. O problema são os menus abaixo aparecer no painel administrativo
 
 Dashboard - https://comademig.vercel.app/dashboard
 Meu Perfil - https://comademig.vercel.app/dashboard/perfil-completo
@@ -13,7 +12,7 @@ Suporte - https://comademig.vercel.app/dashboard/suporte
 
 
 
-ESSAS ERAM AS URLS DAS PAGINAS DO PAINEL ADMINISTRATIVO
+ESSES SÃO AS URLS DAS PAGINAS DO PAINEL DE USUARIOS
 
 GERENCIAR USUARIOS - https://comademig.vercel.app/dashboard( TA ERRADO ESTÁ DIRECIONANDO PARA MESMA PAGINA DO PAINEL DE USUARIOS)
 
@@ -28,9 +27,4 @@ Notificações - https://comademig.vercel.app/dashboard/admin/notifications
 Diagnóstico do Sistema - https://comademig.vercel.app/dashboard/admin/diagnostics
 Gerenciar Conteúdo - https://comademig.vercel.app/dashboard/admin/content
 
-agora todos os menus da sessão administração estão redirecionando para https://comademig.vercel.app/dashboard realmente eu não sei o que esperar. Sempre que voce aplica uma alteração as coisas pioram
-
-
 QUANDO ACESSO O PAINEL ADMINISTRATIVO COM MEU USUARIO E SENHA DE ADMIN APARECE AS DUAS BARRAS DE MENUS LATERAIS COM OS MENUS DE USUARIO COMUM E DE ADMIN JUNTOS NA MESMA PAGINA CONFIRA NO PRINT EU PRECISO QUE AO QUANDO UM ADMIN ACESSAR A PAGINA DO PAINEL APAREÇA SOMENTE OS MENUS DE ADMINISTRAÇÃO, NÃO JUSTIFICA NO PAINEL DE ADMIN TE MENUS RELACIONANDO AO PAINEL DE USUARIO COMUM DA MESMA FORMA QUE O CONTRARIO TAMBEM NÃO SE APLICA. 
-
-

@@ -14,8 +14,7 @@ import {
   HelpCircle,
   Bell,
   ChevronDown,
-  ChevronRight,
-  Home
+  ChevronRight
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
@@ -259,16 +258,9 @@ export default function AdminSidebar() {
         })}
       </nav>
 
-      {/* Link para Dashboard e Informações do usuário */}
-      <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-gray-50">
-        <Link
-          to="/dashboard"
-          className="flex items-center gap-2 px-4 py-3 hover:bg-gray-100 transition-colors border-b border-gray-200"
-        >
-          <Home className="h-4 w-4 text-gray-600" />
-          <span className="text-sm font-medium text-gray-700">Voltar ao Dashboard</span>
-        </Link>
-        <div className="flex items-center gap-3 p-4">
+      {/* Informações do usuário */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-gray-50">
+        <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
             <span className="text-white text-sm font-medium">
               {user?.email?.charAt(0).toUpperCase()}

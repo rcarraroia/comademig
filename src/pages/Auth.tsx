@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthActions } from "@/hooks/useAuthActions";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,8 +26,6 @@ const Auth = () => {
 
   useEffect(() => {
     if (user) {
-      // Verificar se é admin e redirecionar apropriadamente
-      // Nota: profile pode não estar carregado ainda no useEffect
       navigate("/dashboard");
     }
   }, [user, navigate]);
@@ -70,29 +67,7 @@ const Auth = () => {
     const result = await handleSignIn(loginData.email, loginData.password);
     
     if (result.success) {
-      // Buscar perfil do usuário para verificar se é admin
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single();
-          
-          // Redirecionar baseado no role
-          if (profile?.role === 'admin' || profile?.role === 'super_admin') {
-            navigate("/admin/users");
-          } else {
-            navigate("/dashboard");
-          }
-        } else {
-          navigate("/dashboard");
-        }
-      } catch (error) {
-        // Em caso de erro, redirecionar para dashboard
-        navigate("/dashboard");
-      }
+      navigate("/dashboard");
     }
   };
 
