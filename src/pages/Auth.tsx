@@ -17,7 +17,7 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [searchParams] = useSearchParams();
   
-  const { user } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const { signIn } = useAuthActions();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -25,17 +25,53 @@ const Auth = () => {
   const confirmed = searchParams.get('confirmed');
 
   useEffect(() => {
-    if (user) {
-      navigate("/dashboard");
+    // Debug detalhado
+    console.log('🔍 Auth useEffect executado:', {
+      timestamp: new Date().toISOString(),
+      hasUser: !!user,
+      userId: user?.id,
+      hasProfile: !!profile,
+      authLoading,
+      tipoMembro: profile?.tipo_membro,
+      nomeCompleto: profile?.nome_completo,
+      allConditionsMet: !!(user && profile && !authLoading)
+    });
+
+    // Aguardar user E profile estarem disponíveis
+    if (user && profile && !authLoading) {
+      console.log('✅ TODAS AS CONDIÇÕES SATISFEITAS!');
+      console.log('📊 Dados do profile:', {
+        id: profile.id,
+        nome: profile.nome_completo,
+        tipo_membro: profile.tipo_membro,
+        cargo: profile.cargo
+      });
+      
+      // Redirecionar baseado no tipo de usuário
+      if (profile.tipo_membro === 'admin') {
+        console.log('🔐 ADMIN DETECTADO! Redirecionando para /admin/usuarios');
+        navigate("/admin/usuarios");
+      } else {
+        console.log('👤 Usuário comum (tipo: ' + profile.tipo_membro + '). Redirecionando para /dashboard');
+        navigate("/dashboard");
+      }
+    } else {
+      console.log('⏳ Aguardando condições:', {
+        needUser: !user,
+        needProfile: !profile,
+        needLoadingComplete: authLoading
+      });
     }
-  }, [user, navigate]);
+  }, [user, profile, authLoading, navigate]);
 
   const handleSignIn = async (email: string, password: string) => {
     setLoading(true);
     try {
+      console.log('🔐 Iniciando login...');
       const { error } = await signIn(email, password);
       
       if (error) {
+        console.error('❌ Erro no login:', error);
         toast({
           title: "Erro no login",
           description: error.message || "Credenciais inválidas",
@@ -44,6 +80,7 @@ const Auth = () => {
         return { success: false };
       }
       
+      console.log('✅ Login bem-sucedido! Aguardando profile...');
       toast({
         title: "Sucesso",
         description: "Login realizado com sucesso!",
@@ -51,6 +88,7 @@ const Auth = () => {
       
       return { success: true };
     } catch (error: any) {
+      console.error('❌ Exceção no login:', error);
       toast({
         title: "Erro no login",
         description: error.message || "Erro inesperado",
@@ -66,8 +104,11 @@ const Auth = () => {
     e.preventDefault();
     const result = await handleSignIn(loginData.email, loginData.password);
     
-    if (result.success) {
-      navigate("/dashboard");
+    // Não redirecionar aqui - deixar o useEffect fazer o redirecionamento
+    // baseado no tipo de usuário após o profile ser carregado
+    if (!result.success) {
+      // Apenas tratar erro se houver
+      return;
     }
   };
 
