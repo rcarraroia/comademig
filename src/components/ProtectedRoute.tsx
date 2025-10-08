@@ -2,7 +2,6 @@
 import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -24,11 +23,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
   
-  return (
-    <DashboardLayout>
-      {children}
-    </DashboardLayout>
-  );
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;
