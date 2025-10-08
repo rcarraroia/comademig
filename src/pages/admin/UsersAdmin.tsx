@@ -62,7 +62,8 @@ export default function UsersAdmin() {
     }
 
     const now = new Date()
-    const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30))
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(now.getDate() - 30)
 
     return {
       total: profiles.length,
