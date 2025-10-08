@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { useAuditLog } from '@/hooks/useAuditLog'
 
 export interface UpdateUserInput {
   id: string
@@ -24,12 +25,20 @@ export interface UpdateUserInput {
 export const useUpdateUser = () => {
   const queryClient = useQueryClient()
   const { toast } = useToast()
+  const { logAction } = useAuditLog()
 
   return useMutation({
     mutationFn: async ({ id, ...userData }: UpdateUserInput) => {
       if (!id) {
         throw new Error('ID do usuário é obrigatório')
       }
+
+      // Buscar valores antigos para audit log
+      const { data: oldData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', id)
+        .single()
 
       // Atualizar no banco de dados
       const { data, error } = await supabase
@@ -47,9 +56,18 @@ export const useUpdateUser = () => {
         throw error
       }
 
-      return data
+      return { data, oldData }
     },
-    onSuccess: (data) => {
+    onSuccess: async ({ data, oldData }) => {
+      // Registrar no audit log
+      await logAction({
+        action: 'update',
+        entityType: 'user',
+        entityId: data.id,
+        oldValues: oldData,
+        newValues: data,
+      })
+
       // Invalidar cache para recarregar lista
       queryClient.invalidateQueries({ queryKey: ['admin-profiles'] })
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] })

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useRequirePermission } from '@/hooks/useRoleAccess'
 import { useAdminData, AdminProfile } from '@/hooks/useAdminData'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -7,6 +7,7 @@ import { UserActions } from '@/components/admin/RoleBasedActions'
 import UserCreateModal from '@/components/admin/modals/UserCreateModal'
 import UserEditModal from '@/components/admin/modals/UserEditModal'
 import UserDeleteDialog from '@/components/admin/modals/UserDeleteDialog'
+import { UserPermissionsModal } from '@/components/admin/modals/UserPermissionsModal'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,7 +20,7 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table'
-import { Search, Filter, Users, UserCheck, UserX, Crown, Loader2 } from 'lucide-react'
+import { Search, Filter, Users, UserCheck, Crown, Loader2, Shield } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 
@@ -38,6 +39,7 @@ export default function UsersAdmin() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<AdminProfile | null>(null)
 
   // Calcular estatísticas reais
@@ -163,10 +165,16 @@ export default function UsersAdmin() {
     setIsDeleteDialogOpen(true)
   }
 
+  const handleChangePermissions = (user: AdminProfile) => {
+    setSelectedUser(user)
+    setIsPermissionsModalOpen(true)
+  }
+
   const handleCloseModals = () => {
     setIsCreateModalOpen(false)
     setIsEditModalOpen(false)
     setIsDeleteDialogOpen(false)
+    setIsPermissionsModalOpen(false)
     setSelectedUser(null)
   }
 
@@ -219,6 +227,13 @@ export default function UsersAdmin() {
         onClose={handleCloseModals}
         onSuccess={handleRefresh}
       />
+      {selectedUser && (
+        <UserPermissionsModal
+          open={isPermissionsModalOpen}
+          onOpenChange={setIsPermissionsModalOpen}
+          user={selectedUser}
+        />
+      )}
 
       {/* Estatísticas - DADOS REAIS */}
       <ConditionalRender requiredRole={['admin', 'super_admin']}>
@@ -361,7 +376,7 @@ export default function UsersAdmin() {
                   <TableHead>Igreja</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Cadastro</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -395,12 +410,22 @@ export default function UsersAdmin() {
                         {new Date(user.created_at).toLocaleDateString('pt-BR')}
                       </span>
                     </TableCell>
-                    <TableCell>
-                      <UserActions
-                        entityId={user.id}
-                        onEdit={() => handleEditUser(user)}
-                        onDelete={() => handleDeleteUser(user)}
-                      />
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleChangePermissions(user)}
+                          title="Alterar permissões"
+                        >
+                          <Shield className="h-4 w-4" />
+                        </Button>
+                        <UserActions
+                          entityId={user.id}
+                          onEdit={() => handleEditUser(user)}
+                          onDelete={() => handleDeleteUser(user)}
+                        />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

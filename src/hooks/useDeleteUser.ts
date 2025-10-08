@@ -1,10 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { useAuditLog } from '@/hooks/useAuditLog'
 
 export const useDeleteUser = () => {
   const queryClient = useQueryClient()
   const { toast } = useToast()
+  const { logAction } = useAuditLog()
 
   return useMutation({
     mutationFn: async (userId: string) => {
@@ -12,10 +14,10 @@ export const useDeleteUser = () => {
         throw new Error('ID do usuário é obrigatório')
       }
 
-      // Buscar nome do usuário antes de deletar (para mensagem de sucesso)
+      // Buscar dados do usuário antes de deletar (para audit log e mensagem)
       const { data: userData } = await supabase
         .from('profiles')
-        .select('nome_completo')
+        .select('*')
         .eq('id', userId)
         .single()
 
@@ -30,9 +32,17 @@ export const useDeleteUser = () => {
         throw error
       }
 
-      return { id: userId, nome: userData?.nome_completo || 'Usuário' }
+      return { id: userId, nome: userData?.nome_completo || 'Usuário', userData }
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      // Registrar no audit log
+      await logAction({
+        action: 'delete',
+        entityType: 'user',
+        entityId: data.id,
+        oldValues: data.userData,
+      })
+
       // Invalidar cache para recarregar lista
       queryClient.invalidateQueries({ queryKey: ['admin-profiles'] })
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] })

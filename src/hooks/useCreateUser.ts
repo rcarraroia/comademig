@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { useAuditLog } from '@/hooks/useAuditLog'
 
 export interface CreateUserInput {
   nome_completo: string
@@ -23,6 +24,7 @@ export interface CreateUserInput {
 export const useCreateUser = () => {
   const queryClient = useQueryClient()
   const { toast } = useToast()
+  const { logAction } = useAuditLog()
 
   return useMutation({
     mutationFn: async (userData: CreateUserInput) => {
@@ -64,7 +66,19 @@ export const useCreateUser = () => {
 
       return data
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      // Registrar no audit log
+      await logAction({
+        action: 'create',
+        entityType: 'user',
+        entityId: data.id,
+        newValues: {
+          nome_completo: data.nome_completo,
+          cpf: data.cpf,
+          tipo_membro: data.tipo_membro,
+        },
+      })
+
       // Invalidar cache para recarregar lista
       queryClient.invalidateQueries({ queryKey: ['admin-profiles'] })
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] })
