@@ -102,15 +102,15 @@ export default function AdminLayout() {
               <div className="hidden sm:flex items-center gap-3">
                 <div className="text-right">
                   <p className="text-sm font-medium text-gray-900">
-                    {profile?.full_name || 'Administrador'}
+                    {profile?.nome_completo || 'Administrador'}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {profile?.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                    {profile?.tipo_membro === 'super_admin' ? 'Super Admin' : 'Admin'}
                   </p>
                 </div>
                 <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
                   <span className="text-white text-sm font-medium">
-                    {(profile?.full_name || user.email)?.charAt(0).toUpperCase()}
+                    {(profile?.nome_completo || user.email)?.charAt(0).toUpperCase()}
                   </span>
                 </div>
               </div>

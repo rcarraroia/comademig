@@ -84,12 +84,12 @@ export function useRoleAccess() {
 
   // Verificar se o usuário tem uma permissão específica
   const hasPermission = (permission: string): boolean => {
-    if (isLoading || !profile?.role) return false
+    if (isLoading || !profile?.tipo_membro) return false
     
     const allowedRoles = ROLE_PERMISSIONS[permission]
     if (!allowedRoles) return false
     
-    return allowedRoles.includes(profile.role as UserRole)
+    return allowedRoles.includes(profile.tipo_membro as UserRole)
   }
 
   // Verificar se o usuário tem pelo menos uma das permissões
@@ -104,14 +104,14 @@ export function useRoleAccess() {
 
   // Verificar se o usuário tem um role específico
   const hasRole = (role: UserRole): boolean => {
-    if (isLoading || !profile?.role) return false
-    return profile.role === role
+    if (isLoading || !profile?.tipo_membro) return false
+    return profile.tipo_membro === role
   }
 
   // Verificar se o usuário tem pelo menos um dos roles
   const hasAnyRole = (roles: UserRole[]): boolean => {
-    if (isLoading || !profile?.role) return false
-    return roles.includes(profile.role as UserRole)
+    if (isLoading || !profile?.tipo_membro) return false
+    return roles.includes(profile.tipo_membro as UserRole)
   }
 
   // Verificar se é admin (admin ou super_admin)
@@ -138,7 +138,7 @@ export function useRoleAccess() {
     isAdmin,
     isSuperAdmin,
     isModerator,
-    currentRole: profile?.role as UserRole,
+    currentRole: profile?.tipo_membro as UserRole,
     isLoading
   }
 }

@@ -26,7 +26,7 @@ export type FilteredSubscriptionPlan = z.infer<typeof FilteredSubscriptionPlanSc
 
 // Query keys
 const QUERY_KEYS = {
-  subscriptionsByMemberType: (memberTypeId?: string) => 
+  subscriptionsByMemberType: (memberTypeId?: string) =>
     ['subscriptions-by-member-type', memberTypeId] as const,
   allSubscriptionsWithTypes: ['all-subscriptions-with-types'] as const,
 } as const;
@@ -75,7 +75,7 @@ export function useSubscriptionsByMemberType(memberTypeId?: string) {
 
         // Aplicar filtro por tipo de membro se especificado
         if (memberTypeId) {
-          filteredPlans = filteredPlans.filter((plan: any) => 
+          filteredPlans = filteredPlans.filter((plan: any) =>
             plan.member_type_id === memberTypeId
           );
         }
@@ -151,8 +151,8 @@ export function useAllSubscriptionsWithTypes() {
 export function useSubscriptionCompatibility(memberTypeId: string, subscriptionPlanId: string) {
   const { data: subscriptions } = useAllSubscriptionsWithTypes();
 
-  const isCompatible = subscriptions?.some(plan => 
-    plan.id === subscriptionPlanId && 
+  const isCompatible = subscriptions?.some(plan =>
+    plan.id === subscriptionPlanId &&
     (plan.member_type_ids.includes(memberTypeId) || plan.member_type_ids.length === 0)
   ) || false;
 
@@ -176,8 +176,8 @@ export function filterSubscriptionsByMemberType(
     return subscriptions;
   }
 
-  return subscriptions.filter(plan => 
-    plan.member_type_ids.includes(memberTypeId) || 
+  return subscriptions.filter(plan =>
+    plan.member_type_ids.includes(memberTypeId) ||
     plan.member_type_ids.length === 0 // Planos universais
   );
 }
@@ -211,7 +211,7 @@ export function useSubscriptionCompatibilityStats() {
 
   if (subscriptions && subscriptions.length > 0) {
     const totalCompatibleTypes = subscriptions.reduce(
-      (sum, plan) => sum + plan.compatible_member_types.length, 
+      (sum, plan) => sum + plan.compatible_member_types.length,
       0
     );
     stats.averageCompatibleTypes = Math.round(totalCompatibleTypes / subscriptions.length);

@@ -47,8 +47,8 @@ export default function AdminSidebar() {
   // Verificar se o usuário tem permissão para acessar uma seção/item
   const hasPermission = (requiredRole?: string[]) => {
     if (!requiredRole || requiredRole.length === 0) return true
-    if (!profile?.role) return false
-    return requiredRole.includes(profile.role)
+    if (!profile?.tipo_membro) return false
+    return requiredRole.includes(profile.tipo_membro)
   }
 
   // Definir estrutura do menu - APENAS ROTAS FUNCIONAIS
@@ -188,7 +188,7 @@ export default function AdminSidebar() {
           Painel Administrativo
         </h2>
         <p className="text-sm text-gray-500 mt-1">
-          {profile?.role === 'super_admin' ? 'Super Administrador' : 'Administrador'}
+          {profile?.tipo_membro === 'super_admin' ? 'Super Administrador' : 'Administrador'}
         </p>
       </div>
 
@@ -268,7 +268,7 @@ export default function AdminSidebar() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">
-              {profile?.full_name || user?.email}
+              {profile?.nome_completo || user?.email}
             </p>
             <p className="text-xs text-gray-500 truncate">
               {user?.email}
