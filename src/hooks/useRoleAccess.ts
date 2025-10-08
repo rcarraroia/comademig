@@ -1,4 +1,4 @@
-import { useAuthState } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { toast } from 'sonner'
@@ -80,7 +80,7 @@ const ROLE_PERMISSIONS: RolePermissions = {
 }
 
 export function useRoleAccess() {
-  const { profile, isLoading } = useAuthState()
+  const { profile, loading: isLoading } = useAuth()
 
   // Verificar se o usuário tem uma permissão específica
   const hasPermission = (permission: string): boolean => {
