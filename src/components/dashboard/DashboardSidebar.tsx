@@ -1,7 +1,8 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { X, Home, User, CreditCard, FileText, HelpCircle, Settings, Globe, Building, Users, Bell, Activity, MessageSquare, DollarSign } from "lucide-react";
+import { X, Home, User, CreditCard, FileText, HelpCircle, Settings, Globe, Building, Users, Bell, Activity, MessageSquare, DollarSign, BarChart3, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardSidebarProps {
@@ -26,14 +27,29 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
   ];
 
   const adminMenuItems = [
-    { path: "/dashboard/admin/usuarios", label: "Gerenciar Usuários", icon: Users },
-    { path: "/dashboard/admin/member-management", label: "Gestão de Cargos e Planos", icon: Settings },
-    { path: "/dashboard/admin/financeiro-asaas", label: "Financeiro (Asaas)", icon: DollarSign },
-    { path: "/dashboard/admin/regularizacao", label: "Regularização", icon: FileText },
-    { path: "/dashboard/admin/notifications", label: "Notificações", icon: Bell },
-    { path: "/dashboard/admin/diagnostics", label: "Diagnóstico do Sistema", icon: Activity },
-    { path: "/dashboard/admin/suporte", label: "Atendimento ao Membro", icon: MessageSquare },
-    { path: "/dashboard/admin/content", label: "Gerenciar Conteúdo", icon: FileText },
+    { 
+      category: "Gestão de Usuários",
+      items: [
+        { path: "/dashboard/admin/usuarios", label: "Gerenciar Usuários", icon: Users },
+        { path: "/dashboard/admin/member-management", label: "Gestão de Cargos e Planos", icon: Settings },
+      ]
+    },
+    {
+      category: "Financeiro", 
+      items: [
+        { path: "/dashboard/admin/financial", label: "Dashboard Financeiro", icon: BarChart3, badge: "Novo" },
+        { path: "/dashboard/admin/regularizacao", label: "Regularização", icon: FileText },
+      ]
+    },
+    {
+      category: "Sistema",
+      items: [
+        { path: "/dashboard/admin/suporte", label: "Atendimento ao Membro", icon: MessageSquare },
+        { path: "/dashboard/admin/notifications", label: "Notificações", icon: Bell },
+        { path: "/dashboard/admin/diagnostics", label: "Diagnóstico do Sistema", icon: Activity },
+        { path: "/dashboard/admin/content", label: "Gerenciar Conteúdo", icon: FileText },
+      ]
+    }
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -94,25 +110,39 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
           {/* Admin Section - Visível apenas para administradores */}
           {!loading && isAdmin() && (
             <div className="mt-6 pt-4 border-t border-blue-600">
-              <div className="text-xs font-semibold text-blue-200 mb-2 px-3">
+              <div className="text-xs font-semibold text-blue-200 mb-3 px-3">
                 ADMINISTRAÇÃO
               </div>
-              {adminMenuItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={onClose}
-                  className={`
-                    flex items-center space-x-3 p-2 lg:p-3 rounded-lg transition-colors duration-200 text-sm font-medium
-                    ${isActive(item.path) 
-                      ? 'bg-comademig-gold text-comademig-blue' 
-                      : 'text-white hover:bg-blue-600'
-                    }
-                  `}
-                >
-                  <item.icon size={18} />
-                  <span>{item.label}</span>
-                </Link>
+              {adminMenuItems.map((section) => (
+                <div key={section.category} className="mb-4">
+                  <div className="text-xs font-medium text-blue-300 mb-2 px-3">
+                    {section.category}
+                  </div>
+                  {section.items.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={onClose}
+                      className={`
+                        flex items-center justify-between p-2 lg:p-3 rounded-lg transition-colors duration-200 text-sm font-medium mb-1
+                        ${isActive(item.path) 
+                          ? 'bg-comademig-gold text-comademig-blue' 
+                          : 'text-white hover:bg-blue-600'
+                        }
+                      `}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <item.icon size={18} />
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge && (
+                        <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                          {item.badge}
+                        </Badge>
+                      )}
+                    </Link>
+                  ))}
+                </div>
               ))}
             </div>
           )}

@@ -39,18 +39,15 @@ export function useSubscriptionsByMemberType(memberTypeId?: string) {
     queryKey: QUERY_KEYS.subscriptionsByMemberType(memberTypeId),
     queryFn: async (): Promise<FilteredSubscriptionPlan[]> => {
       try {
-        // Buscar planos de assinatura com relacionamentos
+        // Buscar planos de assinatura com relacionamento direto member_type_id
         let query = supabase
           .from('subscription_plans')
           .select(`
             *,
-            member_type_subscriptions(
-              member_type_id,
-              member_types(
-                id,
-                name,
-                description
-              )
+            member_types(
+              id,
+              name,
+              description
             )
           `)
           .eq('is_active', true)
@@ -67,23 +64,19 @@ export function useSubscriptionsByMemberType(memberTypeId?: string) {
           return [];
         }
 
-        // Processar e filtrar dados
+        // Processar e filtrar dados usando member_type_id direto
         let filteredPlans = plansData.map((plan: any) => {
-          const memberTypeRelations = plan.member_type_subscriptions || [];
-          
           return {
             ...plan,
-            member_type_ids: memberTypeRelations.map((rel: any) => rel.member_type_id),
-            compatible_member_types: memberTypeRelations.map((rel: any) => rel.member_types).filter(Boolean),
-            member_type_subscriptions: undefined // Remove para limpeza
+            member_type_ids: plan.member_type_id ? [plan.member_type_id] : [],
+            compatible_member_types: plan.member_types ? [plan.member_types] : [],
           };
         });
 
         // Aplicar filtro por tipo de membro se especificado
         if (memberTypeId) {
           filteredPlans = filteredPlans.filter((plan: any) => 
-            plan.member_type_ids.includes(memberTypeId) || 
-            plan.member_type_ids.length === 0 // Planos sem restrição de tipo
+            plan.member_type_id === memberTypeId
           );
         }
 
@@ -119,13 +112,10 @@ export function useAllSubscriptionsWithTypes() {
           .from('subscription_plans')
           .select(`
             *,
-            member_type_subscriptions(
-              member_type_id,
-              member_types(
-                id,
-                name,
-                description
-              )
+            member_types(
+              id,
+              name,
+              description
             )
           `)
           .eq('is_active', true)
@@ -138,13 +128,10 @@ export function useAllSubscriptionsWithTypes() {
         if (!plansData) return [];
 
         const processedPlans = plansData.map((plan: any) => {
-          const memberTypeRelations = plan.member_type_subscriptions || [];
-          
           return {
             ...plan,
-            member_type_ids: memberTypeRelations.map((rel: any) => rel.member_type_id),
-            compatible_member_types: memberTypeRelations.map((rel: any) => rel.member_types).filter(Boolean),
-            member_type_subscriptions: undefined
+            member_type_ids: plan.member_type_id ? [plan.member_type_id] : [],
+            compatible_member_types: plan.member_types ? [plan.member_types] : [],
           };
         });
 

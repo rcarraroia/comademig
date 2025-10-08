@@ -1,271 +1,348 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { z } from 'zod';
 import { toast } from 'sonner';
 
-// Zod schema for validation
-const MemberTypeSchema = z.object({
-  id: z.string().uuid().optional(),
-  name: z.string().min(1, 'Nome é obrigatório').max(255, 'Nome muito longo'),
-  description: z.string().optional(),
-  order_of_exhibition: z.number().int().min(0, 'Ordem deve ser positiva').optional(),
-  is_active: z.boolean().default(true),
-  created_at: z.string().optional(),
-  updated_at: z.string().optional(),
-  created_by: z.string().uuid().optional(),
-});
+export interface MemberType {
+  id: string;
+  name: string;
+  description: string;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
+}
 
-export type MemberType = z.infer<typeof MemberTypeSchema>;
+export interface SubscriptionPlan {
+  id: string;
+  member_type_id: string;
+  name: string;
+  price: number;
+  recurrence: string;
+  duration_months: number;
+  is_active: boolean;
+  sort_order: number;
+  features: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
 
-export type CreateMemberTypeData = Omit<MemberType, 'id' | 'created_at' | 'updated_at'>;
-export type UpdateMemberTypeData = Partial<CreateMemberTypeData> & { id: string };
+export interface MemberTypeWithPlans extends MemberType {
+  subscription_plans: SubscriptionPlan[];
+}
 
-// Query keys for cache management
-const QUERY_KEYS = {
-  memberTypes: ['member-types'] as const,
-  memberType: (id: string) => ['member-types', id] as const,
-} as const;
+interface UseMemberTypesOptions {
+  includeInactive?: boolean;
+  includePlans?: boolean;
+}
 
-/**
- * Hook para buscar todos os tipos de membro
- */
-export function useMemberTypes(options?: { includeInactive?: boolean }) {
+export function useMemberTypes(options: UseMemberTypesOptions = {}) {
+  const { includeInactive = false, includePlans = true } = options;
+
   return useQuery({
-    queryKey: [...QUERY_KEYS.memberTypes, { includeInactive: options?.includeInactive }],
+    queryKey: ['member-types', { includeInactive, includePlans }],
     queryFn: async () => {
       let query = supabase
         .from('member_types')
-        .select('*')
-        .order('order_of_exhibition', { ascending: true });
+        .select(
+          includePlans
+            ? `
+              *,
+              subscription_plans (
+                id,
+                name,
+                price,
+                recurrence,
+                duration_months,
+                is_active,
+                sort_order,
+                features
+              )
+            `
+            : '*'
+        )
+        .order('sort_order', { ascending: true });
 
-      if (!options?.includeInactive) {
+      if (!includeInactive) {
         query = query.eq('is_active', true);
       }
 
       const { data, error } = await query;
 
       if (error) {
-        console.error('Erro ao buscar tipos de membro:', error);
-        throw new Error(`Erro ao carregar tipos de membro: ${error.message}`);
+        console.error('Erro ao buscar member types:', error);
+        throw error;
       }
 
-      // Validar dados retornados
-      try {
-        return data.map(item => MemberTypeSchema.parse(item));
-      } catch (validationError) {
-        console.error('Erro de validação nos dados:', validationError);
-        // Fallback: retornar dados sem validação em caso de erro
-        return data as MemberType[];
+      // Ordenar planos por duration_months
+      if (includePlans && data) {
+        return data.map((mt: any) => ({
+          ...mt,
+          subscription_plans: mt.subscription_plans?.sort(
+            (a: SubscriptionPlan, b: SubscriptionPlan) => 
+              a.duration_months - b.duration_months
+          ) || []
+        })) as MemberTypeWithPlans[];
       }
+
+      return data as MemberType[];
     },
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000, // 10 minutos
   });
 }
 
-/**
- * Hook para buscar um tipo de membro específico
- */
-export function useMemberType(id: string) {
-  return useQuery({
-    queryKey: QUERY_KEYS.memberType(id),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('member_types')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) {
-        if (error.code === 'PGRST116') {
-          throw new Error('Tipo de membro não encontrado');
-        }
-        throw new Error(`Erro ao carregar tipo de membro: ${error.message}`);
-      }
-
-      return MemberTypeSchema.parse(data);
-    },
-    enabled: !!id,
-    staleTime: 5 * 60 * 1000,
-  });
-}
-
-/**
- * Hook para criar um novo tipo de membro
- */
-export function useCreateMemberType() {
+export function useCreateMemberTypeWithPlans() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: CreateMemberTypeData) => {
-      // Validar dados de entrada
-      const validatedData = MemberTypeSchema.omit({ 
-        id: true, 
-        created_at: true, 
-        updated_at: true 
-      }).parse(data);
-
-      const { data: result, error } = await supabase
+    mutationFn: async (data: {
+      memberType: Omit<MemberType, 'id' | 'created_at' | 'updated_at'>;
+      plans: Array<{
+        name: string;
+        price: number;
+        duration_months: number;
+        features?: Record<string, any>;
+        sort_order?: number;
+      }>;
+    }) => {
+      // 1. Criar member_type
+      const { data: memberType, error: mtError } = await supabase
         .from('member_types')
-        .insert([validatedData])
+        .insert(data.memberType)
         .select()
         .single();
 
-      if (error) {
-        if (error.code === '23505') {
-          throw new Error('Já existe um tipo de membro com este nome');
-        }
-        throw new Error(`Erro ao criar tipo de membro: ${error.message}`);
+      if (mtError) {
+        console.error('Erro ao criar member type:', mtError);
+        throw mtError;
       }
 
-      return MemberTypeSchema.parse(result);
+      // 2. Criar subscription_plans
+      const plansToInsert = data.plans.map((plan, index) => ({
+        member_type_id: memberType.id,
+        name: plan.name,
+        price: plan.price,
+        recurrence: 'monthly', // Sempre monthly devido ao constraint
+        duration_months: plan.duration_months,
+        features: plan.features || {},
+        sort_order: plan.sort_order ?? index + 1,
+        is_active: true,
+      }));
+
+      const { error: plansError } = await supabase
+        .from('subscription_plans')
+        .insert(plansToInsert);
+
+      if (plansError) {
+        console.error('Erro ao criar planos:', plansError);
+        // Rollback: deletar member_type criado
+        await supabase.from('member_types').delete().eq('id', memberType.id);
+        throw plansError;
+      }
+
+      return { memberType, plans: plansToInsert };
     },
-    onSuccess: (data) => {
-      // Invalidar cache para recarregar listas
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memberTypes });
-      
-      // Adicionar ao cache individual
-      queryClient.setQueryData(QUERY_KEYS.memberType(data.id!), data);
-      
-      toast.success('Tipo de membro criado com sucesso!');
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['member-types'] });
+      toast.success('Cargo e planos criados com sucesso!');
     },
-    onError: (error: Error) => {
-      console.error('Erro ao criar tipo de membro:', error);
-      toast.error(error.message);
+    onError: (error: any) => {
+      console.error('Erro na criação:', error);
+      toast.error('Erro ao criar cargo e planos: ' + error.message);
     },
   });
 }
 
-/**
- * Hook para atualizar um tipo de membro
- */
 export function useUpdateMemberType() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: UpdateMemberTypeData) => {
-      const { id, ...updateData } = data;
-      
-      // Validar dados de entrada
-      const validatedData = MemberTypeSchema.omit({ 
-        id: true, 
-        created_at: true, 
-        updated_at: true 
-      }).partial().parse(updateData);
-
+    mutationFn: async (data: {
+      id: string;
+      updates: Partial<MemberType>;
+    }) => {
       const { data: result, error } = await supabase
         .from('member_types')
-        .update(validatedData)
-        .eq('id', id)
+        .update(data.updates)
+        .eq('id', data.id)
         .select()
         .single();
 
       if (error) {
-        if (error.code === '23505') {
-          throw new Error('Já existe um tipo de membro com este nome');
-        }
-        if (error.code === 'PGRST116') {
-          throw new Error('Tipo de membro não encontrado');
-        }
-        throw new Error(`Erro ao atualizar tipo de membro: ${error.message}`);
+        console.error('Erro ao atualizar member type:', error);
+        throw error;
       }
 
-      return MemberTypeSchema.parse(result);
+      return result;
     },
-    onSuccess: (data) => {
-      // Invalidar cache para recarregar listas
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memberTypes });
-      
-      // Atualizar cache individual
-      queryClient.setQueryData(QUERY_KEYS.memberType(data.id!), data);
-      
-      toast.success('Tipo de membro atualizado com sucesso!');
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['member-types'] });
+      toast.success('Cargo atualizado com sucesso!');
     },
-    onError: (error: Error) => {
-      console.error('Erro ao atualizar tipo de membro:', error);
-      toast.error(error.message);
+    onError: (error: any) => {
+      console.error('Erro na atualização:', error);
+      toast.error('Erro ao atualizar cargo: ' + error.message);
     },
   });
 }
 
-/**
- * Hook para deletar um tipo de membro
- */
+export function useToggleMemberTypeStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { id: string; is_active: boolean }) => {
+      const { data: result, error } = await supabase
+        .from('member_types')
+        .update({ is_active: data.is_active })
+        .eq('id', data.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Erro ao alterar status:', error);
+        throw error;
+      }
+
+      return result;
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['member-types'] });
+      const status = result.is_active ? 'ativado' : 'desativado';
+      toast.success(`Cargo ${status} com sucesso!`);
+    },
+    onError: (error: any) => {
+      console.error('Erro ao alterar status:', error);
+      toast.error('Erro ao alterar status: ' + error.message);
+    },
+  });
+}
+
 export function useDeleteMemberType() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('member_types')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        if (error.code === '23503') {
-          throw new Error('Não é possível excluir este tipo de membro pois ele está sendo usado');
-        }
-        if (error.code === 'PGRST116') {
-          throw new Error('Tipo de membro não encontrado');
-        }
-        throw new Error(`Erro ao excluir tipo de membro: ${error.message}`);
-      }
-
-      return id;
-    },
-    onSuccess: (deletedId) => {
-      // Invalidar cache para recarregar listas
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memberTypes });
-      
-      // Remover do cache individual
-      queryClient.removeQueries({ queryKey: QUERY_KEYS.memberType(deletedId) });
-      
-      toast.success('Tipo de membro excluído com sucesso!');
-    },
-    onError: (error: Error) => {
-      console.error('Erro ao excluir tipo de membro:', error);
-      toast.error(error.message);
-    },
-  });
-}
-
-/**
- * Hook para desativar/ativar um tipo de membro (soft delete)
- */
-export function useToggleMemberTypeStatus() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      // Soft delete: apenas desativar
       const { data: result, error } = await supabase
         .from('member_types')
-        .update({ is_active })
+        .update({ is_active: false })
         .eq('id', id)
         .select()
         .single();
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          throw new Error('Tipo de membro não encontrado');
-        }
-        throw new Error(`Erro ao alterar status: ${error.message}`);
+        console.error('Erro ao deletar member type:', error);
+        throw error;
       }
 
-      return MemberTypeSchema.parse(result);
+      return result;
     },
-    onSuccess: (data) => {
-      // Invalidar cache para recarregar listas
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.memberTypes });
-      
-      // Atualizar cache individual
-      queryClient.setQueryData(QUERY_KEYS.memberType(data.id!), data);
-      
-      const action = data.is_active ? 'ativado' : 'desativado';
-      toast.success(`Tipo de membro ${action} com sucesso!`);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['member-types'] });
+      toast.success('Cargo removido com sucesso!');
     },
-    onError: (error: Error) => {
-      console.error('Erro ao alterar status:', error);
-      toast.error(error.message);
+    onError: (error: any) => {
+      console.error('Erro ao deletar:', error);
+      toast.error('Erro ao remover cargo: ' + error.message);
+    },
+  });
+}
+
+// Hook para gerenciar planos de um cargo específico
+export function useSubscriptionPlans(memberTypeId?: string) {
+  return useQuery({
+    queryKey: ['subscription-plans', memberTypeId],
+    queryFn: async () => {
+      if (!memberTypeId) return [];
+
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('member_type_id', memberTypeId)
+        .eq('is_active', true)
+        .order('duration_months', { ascending: true });
+
+      if (error) {
+        console.error('Erro ao buscar planos:', error);
+        throw error;
+      }
+
+      return data as SubscriptionPlan[];
+    },
+    enabled: !!memberTypeId,
+  });
+}
+
+export function useCreateSubscriptionPlan() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      member_type_id: string;
+      name: string;
+      price: number;
+      duration_months: number;
+      features?: Record<string, any>;
+    }) => {
+      const { data: result, error } = await supabase
+        .from('subscription_plans')
+        .insert({
+          ...data,
+          recurrence: 'monthly', // Sempre monthly devido ao constraint
+          features: data.features || {},
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Erro ao criar plano:', error);
+        throw error;
+      }
+
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['member-types'] });
+      queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
+      toast.success('Plano criado com sucesso!');
+    },
+    onError: (error: any) => {
+      console.error('Erro na criação do plano:', error);
+      toast.error('Erro ao criar plano: ' + error.message);
+    },
+  });
+}
+
+export function useUpdateSubscriptionPlan() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      id: string;
+      updates: Partial<SubscriptionPlan>;
+    }) => {
+      const { data: result, error } = await supabase
+        .from('subscription_plans')
+        .update(data.updates)
+        .eq('id', data.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Erro ao atualizar plano:', error);
+        throw error;
+      }
+
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['member-types'] });
+      queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
+      toast.success('Plano atualizado com sucesso!');
+    },
+    onError: (error: any) => {
+      console.error('Erro na atualização do plano:', error);
+      toast.error('Erro ao atualizar plano: ' + error.message);
     },
   });
 }

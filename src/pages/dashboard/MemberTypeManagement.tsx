@@ -21,31 +21,18 @@ import {
   AlertCircle,
   Loader2
 } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { 
+  useMemberTypes, 
+  useCreateMemberTypeWithPlans, 
+  useUpdateMemberType,
+  useToggleMemberTypeStatus,
+  useDeleteMemberType,
+  type MemberTypeWithPlans 
+} from '@/hooks/useMemberTypes';
 
-interface MemberType {
-  id: string;
-  name: string;
-  description: string;
-  sort_order: number;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-interface SubscriptionPlan {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  recurrence: 'monthly' | 'semestral' | 'annual';
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+// Interfaces movidas para o hook useMemberTypes
 
 interface UnifiedMemberTypeForm {
   memberType: {
@@ -54,18 +41,16 @@ interface UnifiedMemberTypeForm {
     sort_order: number;
     is_active: boolean;
   };
-  subscriptionPlan: {
+  plans: Array<{
     name: string;
-    description: string;
     price: number;
-    recurrence: 'monthly' | 'semestral' | 'annual';
-    is_active: boolean;
-  };
+    duration_months: number;
+    features?: Record<string, any>;
+  }>;
 }
 
 const MemberTypeManagement: React.FC = () => {
   const { isAdmin } = useAuth();
-  const queryClient = useQueryClient();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [formData, setFormData] = useState<UnifiedMemberTypeForm>({
@@ -75,56 +60,23 @@ const MemberTypeManagement: React.FC = () => {
       sort_order: 0,
       is_active: true,
     },
-    subscriptionPlan: {
-      name: '',
-      description: '',
-      price: 0,
-      recurrence: 'monthly',
-      is_active: true,
-    },
+    plans: [
+      { name: '', price: 0, duration_months: 1 }, // Mensal
+      { name: '', price: 0, duration_months: 6 }, // Semestral
+      { name: '', price: 0, duration_months: 12 }, // Anual
+    ],
   });
 
   // Query para buscar tipos de membro com planos associados
-  const { data: memberTypesWithPlans, isLoading, error } = useQuery({
-    queryKey: ['memberTypesWithPlans'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('member_types')
-        .select(`
-          *,
-          member_type_subscriptions(
-            subscription_plans(*)
-          )
-        `)
-        .order('sort_order');
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: isAdmin(),
+  const { data: memberTypesWithPlans, isLoading, error } = useMemberTypes({
+    includeInactive: true,
+    includePlans: true,
   });
 
-  // Mutation para criar tipo unificado usando a função RPC
-  const createUnifiedMutation = useMutation({
-    mutationFn: async (data: UnifiedMemberTypeForm) => {
-      const { data: result, error } = await supabase.rpc('create_unified_member_type_and_plan', {
-        member_type_data: data.memberType,
-        subscription_plan_data: data.subscriptionPlan,
-      });
-
-      if (error) throw error;
-      return result;
-    },
-    onSuccess: () => {
-      toast.success('Tipo de membro e plano criados com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['memberTypesWithPlans'] });
-      setShowCreateForm(false);
-      resetForm();
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao criar: ${error.message}`);
-    },
-  });
+  // Mutations usando os hooks corrigidos
+  const createUnifiedMutation = useCreateMemberTypeWithPlans();
+  const toggleStatusMutation = useToggleMemberTypeStatus();
+  const deleteMutation = useDeleteMemberType();
 
   const resetForm = () => {
     setFormData({
@@ -134,13 +86,11 @@ const MemberTypeManagement: React.FC = () => {
         sort_order: 0,
         is_active: true,
       },
-      subscriptionPlan: {
-        name: '',
-        description: '',
-        price: 0,
-        recurrence: 'monthly',
-        is_active: true,
-      },
+      plans: [
+        { name: '', price: 0, duration_months: 1 }, // Mensal
+        { name: '', price: 0, duration_months: 6 }, // Semestral
+        { name: '', price: 0, duration_months: 12 }, // Anual
+      ],
     });
   };
 
@@ -153,25 +103,52 @@ const MemberTypeManagement: React.FC = () => {
       return;
     }
     
-    if (!formData.subscriptionPlan.name.trim()) {
-      toast.error('Nome do plano é obrigatório');
-      return;
-    }
+    // Validar se pelo menos um plano tem nome e preço
+    const validPlans = formData.plans.filter(plan => 
+      plan.name.trim() && plan.price >= 0
+    );
     
-    if (formData.subscriptionPlan.price < 0) {
-      toast.error('Preço deve ser maior ou igual a zero');
+    if (validPlans.length === 0) {
+      toast.error('Pelo menos um plano deve ser preenchido');
       return;
     }
 
-    createUnifiedMutation.mutate(formData);
+    // Gerar nomes automáticos se não preenchidos
+    const plansToCreate = formData.plans.map((plan, index) => {
+      const durationLabels = ['Mensal', 'Semestral', 'Anual'];
+      return {
+        ...plan,
+        name: plan.name.trim() || `${formData.memberType.name} - ${durationLabels[index]}`,
+      };
+    }).filter(plan => plan.price >= 0);
+
+    createUnifiedMutation.mutate({
+      memberType: formData.memberType,
+      plans: plansToCreate,
+    }, {
+      onSuccess: () => {
+        setShowCreateForm(false);
+        resetForm();
+      }
+    });
   };
 
-  const getRecurrenceLabel = (recurrence: string) => {
-    switch (recurrence) {
-      case 'monthly': return 'Mensal';
-      case 'semestral': return 'Semestral';
-      case 'annual': return 'Anual';
-      default: return recurrence;
+  const getDurationLabel = (duration_months: number) => {
+    switch (duration_months) {
+      case 1: return 'Mensal';
+      case 6: return 'Semestral';
+      case 12: return 'Anual';
+      default: return `${duration_months} meses`;
+    }
+  };
+
+  const handleToggleStatus = (id: string, currentStatus: boolean) => {
+    toggleStatusMutation.mutate({ id, is_active: !currentStatus });
+  };
+
+  const handleDelete = (id: string, name: string) => {
+    if (confirm(`Tem certeza que deseja remover o cargo "${name}"?`)) {
+      deleteMutation.mutate(id);
     }
   };
 
@@ -299,79 +276,58 @@ const MemberTypeManagement: React.FC = () => {
 
               <Separator />
 
-              {/* Dados do Plano de Assinatura */}
+              {/* Dados dos Planos de Assinatura */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <DollarSign className="h-5 w-5" />
-                  Dados do Plano de Assinatura
+                  Planos de Assinatura (Mensal, Semestral, Anual)
                 </h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="planName">Nome do Plano *</Label>
-                    <Input
-                      id="planName"
-                      value={formData.subscriptionPlan.name}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        subscriptionPlan: { ...prev.subscriptionPlan, name: e.target.value }
-                      }))}
-                      placeholder="Ex: Anuidade Pastor 2025"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="price">Preço (R$) *</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={formData.subscriptionPlan.price}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        subscriptionPlan: { ...prev.subscriptionPlan, price: parseFloat(e.target.value) || 0 }
-                      }))}
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="recurrence">Recorrência *</Label>
-                    <Select
-                      value={formData.subscriptionPlan.recurrence}
-                      onValueChange={(value: 'monthly' | 'semestral' | 'annual') => 
-                        setFormData(prev => ({
-                          ...prev,
-                          subscriptionPlan: { ...prev.subscriptionPlan, recurrence: value }
-                        }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="monthly">Mensal</SelectItem>
-                        <SelectItem value="semestral">Semestral</SelectItem>
-                        <SelectItem value="annual">Anual</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                {formData.plans.map((plan, index) => {
+                  const labels = ['Mensal (1 mês)', 'Semestral (6 meses)', 'Anual (12 meses)'];
+                  return (
+                    <div key={index} className="border rounded-lg p-4 space-y-3">
+                      <h4 className="font-medium text-sm text-gray-700">{labels[index]}</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor={`planName${index}`}>Nome do Plano</Label>
+                          <Input
+                            id={`planName${index}`}
+                            value={plan.name}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              plans: prev.plans.map((p, i) => 
+                                i === index ? { ...p, name: e.target.value } : p
+                              )
+                            }))}
+                            placeholder={`${formData.memberType.name} - ${labels[index].split(' ')[0]}`}
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor={`price${index}`}>Preço (R$)</Label>
+                          <Input
+                            id={`price${index}`}
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={plan.price}
+                            onChange={(e) => setFormData(prev => ({
+                              ...prev,
+                              plans: prev.plans.map((p, i) => 
+                                i === index ? { ...p, price: parseFloat(e.target.value) || 0 } : p
+                              )
+                            }))}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
                 
-                <div>
-                  <Label htmlFor="planDescription">Descrição do Plano</Label>
-                  <Textarea
-                    id="planDescription"
-                    value={formData.subscriptionPlan.description}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      subscriptionPlan: { ...prev.subscriptionPlan, description: e.target.value }
-                    }))}
-                    placeholder="Descreva os benefícios e características deste plano"
-                    rows={3}
-                  />
+                <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                  <strong>Dica:</strong> Você pode deixar alguns planos com preço 0 se não quiser oferecê-los. 
+                  Os nomes serão gerados automaticamente se não preenchidos.
                 </div>
               </div>
 
@@ -398,7 +354,7 @@ const MemberTypeManagement: React.FC = () => {
                   ) : (
                     <Save className="h-4 w-4 mr-2" />
                   )}
-                  Criar Tipo + Plano
+                  Criar Tipo + Planos
                 </Button>
               </div>
             </form>
@@ -412,8 +368,8 @@ const MemberTypeManagement: React.FC = () => {
         
         {memberTypesWithPlans && memberTypesWithPlans.length > 0 ? (
           <div className="grid gap-4">
-            {memberTypesWithPlans.map((memberType: any) => {
-              const associatedPlans = memberType.member_type_subscriptions?.map((mts: any) => mts.subscription_plans).filter(Boolean) || [];
+            {(memberTypesWithPlans as MemberTypeWithPlans[]).map((memberType) => {
+              const associatedPlans = memberType.subscription_plans || [];
               
               return (
                 <Card key={memberType.id} className="hover:shadow-md transition-shadow">
@@ -431,16 +387,30 @@ const MemberTypeManagement: React.FC = () => {
                           ) : (
                             <Badge variant="secondary">Inativo</Badge>
                           )}
+                          <Badge variant="outline">
+                            Ordem: {memberType.sort_order}
+                          </Badge>
                         </CardTitle>
                         <CardDescription>
                           {memberType.description || 'Sem descrição'}
                         </CardDescription>
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          <Edit className="h-4 w-4" />
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleToggleStatus(memberType.id, memberType.is_active)}
+                          disabled={toggleStatusMutation.isPending}
+                        >
+                          {memberType.is_active ? 'Desativar' : 'Ativar'}
                         </Button>
-                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => handleDelete(memberType.id, memberType.name)}
+                          disabled={deleteMutation.isPending}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -454,18 +424,28 @@ const MemberTypeManagement: React.FC = () => {
                         Planos Associados ({associatedPlans.length})
                       </h4>
                       <div className="space-y-2">
-                        {associatedPlans.map((plan: any) => (
+                        {associatedPlans.map((plan) => (
                           <div key={plan.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div>
                               <p className="font-medium">{plan.name}</p>
-                              <p className="text-sm text-gray-600">{plan.description}</p>
+                              <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <Calendar className="h-3 w-3" />
+                                {getDurationLabel(plan.duration_months)}
+                                {plan.features && Object.keys(plan.features).length > 0 && (
+                                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                    {Object.keys(plan.features).length} recursos
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             <div className="text-right">
                               <p className="font-bold text-comademig-blue">R$ {plan.price.toFixed(2)}</p>
-                              <div className="flex items-center gap-1 text-sm text-gray-600">
-                                <Calendar className="h-3 w-3" />
-                                {getRecurrenceLabel(plan.recurrence)}
-                              </div>
+                              <p className="text-xs text-gray-500">
+                                {plan.duration_months === 1 ? '/mês' : 
+                                 plan.duration_months === 6 ? '/semestre' : 
+                                 plan.duration_months === 12 ? '/ano' : 
+                                 `/${plan.duration_months} meses`}
+                              </p>
                             </div>
                           </div>
                         ))}

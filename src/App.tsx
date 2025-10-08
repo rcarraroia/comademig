@@ -39,13 +39,15 @@ import CheckoutRegularizacao from '@/pages/dashboard/CheckoutRegularizacao';
 import Suporte from '@/pages/dashboard/Suporte';
 import Afiliados from '@/pages/dashboard/Afiliados';
 
-// Admin Pages
-import AdminUsersPage from '@/pages/dashboard/AdminUsers';
-import AdminSupportPage from '@/pages/dashboard/AdminSupportPage';
+// Admin Pages - NOVOS COMPONENTES
+import UsersAdmin from '@/pages/admin/UsersAdmin';
+import FinancialAdmin from '@/pages/admin/FinancialAdmin';
+import AuditLogs from '@/pages/admin/AuditLogs';
+import SupportManagement from '@/pages/admin/SupportManagement';
+
+// Admin Pages - COMPONENTES ANTIGOS (manter alguns)
 import AdminRegularizacaoPage from '@/pages/dashboard/admin/Regularizacao';
-import MemberTypes from '@/pages/dashboard/admin/MemberTypes';
 import MemberTypeManagement from '@/pages/dashboard/MemberTypeManagement';
-import NotificationManagement from '@/pages/dashboard/admin/NotificationManagement';
 import AdminNotificationsPage from '@/pages/dashboard/admin/AdminNotifications';
 import ContentManagement from '@/pages/dashboard/ContentManagement';
 import SystemDiagnosticsPage from '@/pages/dashboard/admin/SystemDiagnostics';
@@ -67,6 +69,7 @@ import NoticiasContentEdit from '@/pages/dashboard/NoticiasContentEdit';
 // Layouts
 import Layout from '@/components/Layout';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import AdminLayout from '@/components/layout/AdminLayout';
 
 // Contexts
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -124,14 +127,27 @@ function App() {
               <Route path="/dashboard/suporte" element={<Suporte />} />
               <Route path="/dashboard/afiliados" element={<Afiliados />} />
 
-              {/* Admin routes */}
-              <Route path="/dashboard/admin/usuarios" element={<AdminUsersPage />} />
-              <Route path="/dashboard/admin/member-types" element={<MemberTypes />} />
+              {/* Admin routes - NOVO LAYOUT ADMINISTRATIVO */}
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route path="users" element={<UsersAdmin />} />
+                <Route path="financial" element={<FinancialAdmin />} />
+                <Route path="audit-logs" element={<AuditLogs />} />
+                <Route path="support" element={<SupportManagement />} />
+                <Route path="member-management" element={<MemberTypeManagement />} />
+                <Route path="regularizacao" element={<AdminRegularizacaoPage />} />
+                <Route path="notifications" element={<AdminNotificationsPage />} />
+                <Route path="diagnostics" element={<SystemDiagnosticsPage />} />
+                <Route path="content" element={<ContentManagement />} />
+              </Route>
+
+              {/* Admin routes - ROTAS ANTIGAS (manter compatibilidade) */}
+              <Route path="/dashboard/admin/usuarios" element={<UsersAdmin />} />
               <Route path="/dashboard/admin/member-management" element={<MemberTypeManagement />} />
+              <Route path="/dashboard/admin/financial" element={<FinancialAdmin />} />
               <Route path="/dashboard/admin/regularizacao" element={<AdminRegularizacaoPage />} />
               <Route path="/dashboard/admin/notifications" element={<AdminNotificationsPage />} />
               <Route path="/dashboard/admin/diagnostics" element={<SystemDiagnosticsPage />} />
-              <Route path="/dashboard/admin/suporte" element={<AdminSupportPage />} />
+              <Route path="/dashboard/admin/suporte" element={<SupportManagement />} />
               <Route path="/dashboard/admin/content" element={<ContentManagement />} />
               <Route path="/dashboard/notifications" element={<Notifications />} />
               <Route path="/dashboard/admin/content/:pageName/edit" element={<ContentEdit />} />
