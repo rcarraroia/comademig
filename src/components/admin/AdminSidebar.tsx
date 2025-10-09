@@ -1,12 +1,12 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { 
-  Users, 
-  CreditCard, 
-  Settings, 
-  FileText, 
-  BarChart3, 
-  UserCheck, 
+import {
+  Users,
+  CreditCard,
+  Settings,
+  FileText,
+  BarChart3,
+  UserCheck,
   DollarSign,
   MessageSquare,
   Activity,
@@ -154,7 +154,7 @@ export default function AdminSidebar() {
   ]
 
   const toggleSection = (sectionTitle: string) => {
-    setOpenSections(prev => 
+    setOpenSections(prev =>
       prev.includes(sectionTitle)
         ? prev.filter(s => s !== sectionTitle)
         : [...prev, sectionTitle]
@@ -170,8 +170,8 @@ export default function AdminSidebar() {
   }
 
   // Filtrar seções baseado nas permissões
-  const visibleSections = menuSections.filter(section => 
-    hasPermission(section.requiredRole) && 
+  const visibleSections = menuSections.filter(section =>
+    hasPermission(section.requiredRole) &&
     section.items.some(item => hasPermission(item.requiredRole))
   )
 
@@ -237,7 +237,7 @@ export default function AdminSidebar() {
                     <item.icon className="h-4 w-4 flex-shrink-0" />
                     <span className="flex-1">{item.title}</span>
                     {item.badge && (
-                      <Badge 
+                      <Badge
                         variant={isActive(item.href) ? "default" : "secondary"}
                         className="text-xs"
                       >
