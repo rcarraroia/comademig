@@ -88,6 +88,12 @@ export default function AdminSidebar() {
           href: '/admin/regularizacao',
           icon: FileText,
           description: 'Solicitações de regularização'
+        },
+        {
+          title: 'Certidões',
+          href: '/admin/certidoes',
+          icon: FileText,
+          description: 'Gerenciar solicitações de certidões'
         }
       ]
     },
@@ -95,12 +101,6 @@ export default function AdminSidebar() {
       title: 'Conteúdo e Serviços',
       icon: FileText,
       items: [
-        {
-          title: 'Certidões',
-          href: '/admin/certidoes',
-          icon: FileText,
-          description: 'Gerenciar solicitações de certidões'
-        },
         {
           title: 'Gerenciar Conteúdo',
           href: '/admin/content',

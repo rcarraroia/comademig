@@ -25,8 +25,48 @@ const FinancialAdmin: React.FC = () => {
   const { data: metrics, refetch } = useFinancialMetrics();
 
   const handleExportReport = () => {
-    // TODO: Implementar exportação de relatório
-    console.log('Exportar relatório financeiro');
+    if (!metrics) {
+      alert('Aguarde o carregamento dos dados');
+      return;
+    }
+
+    // Preparar dados para exportação
+    const reportData = {
+      data_geracao: new Date().toLocaleString('pt-BR'),
+      resumo_financeiro: {
+        receita_total: `R$ ${metrics.total_revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+        receita_anual: `R$ ${metrics.annual_revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+        receita_mensal: `R$ ${metrics.monthly_revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+        pagamentos_atrasados: `R$ ${metrics.overdue_payments.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+        taxa_adimplencia: `${metrics.total_revenue > 0 ? (((metrics.total_revenue - metrics.overdue_payments) / metrics.total_revenue) * 100).toFixed(1) : 100}%`
+      },
+      metodos_pagamento: metrics.payment_methods.map(m => ({
+        metodo: m.method === 'pix' ? 'PIX' : 
+                m.method === 'credit_card' ? 'Cartão de Crédito' :
+                m.method === 'boleto' ? 'Boleto' : m.method,
+        receita: `R$ ${m.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+        percentual: `${((m.revenue / metrics.total_revenue) * 100).toFixed(1)}%`
+      })),
+      receita_por_cargo: metrics.member_type_revenue.map(mt => ({
+        cargo: mt.member_type,
+        receita: `R$ ${mt.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+        quantidade_membros: mt.member_count
+      }))
+    };
+
+    // Converter para JSON formatado
+    const jsonString = JSON.stringify(reportData, null, 2);
+    
+    // Criar blob e fazer download
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `relatorio-financeiro-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handleRefreshData = () => {
