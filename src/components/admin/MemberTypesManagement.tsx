@@ -28,23 +28,31 @@ import UnifiedMemberTypeForm from './UnifiedMemberTypeForm';
 
 export default function MemberTypesManagement() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showInactive, setShowInactive] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUnifiedFormOpen, setIsUnifiedFormOpen] = useState(false);
   const [editingMemberType, setEditingMemberType] = useState<any>(null);
   const [deletingMemberType, setDeletingMemberType] = useState<any>(null);
 
-  // Hooks
+  // Hooks - sempre buscar todos (ativos e inativos)
   const { data: memberTypes, isLoading, error } = useMemberTypes({ 
-    includeInactive: showInactive 
+    includeInactive: true 
   });
   const toggleStatusMutation = useToggleMemberTypeStatus();
   const deleteMutation = useDeleteMemberType();
 
-  // Filtrar tipos de membro por busca
-  const filteredMemberTypes = memberTypes?.filter(memberType =>
-    memberType.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    memberType.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  // Separar tipos ativos e inativos
+  const activeMemberTypes = memberTypes?.filter(memberType => 
+    memberType.is_active && (
+      memberType.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      memberType.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  ) || [];
+
+  const inactiveMemberTypes = memberTypes?.filter(memberType => 
+    !memberType.is_active && (
+      memberType.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      memberType.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   ) || [];
 
   const handleToggleStatus = (memberType: any) => {
@@ -114,58 +122,39 @@ export default function MemberTypesManagement() {
       {/* Filtros e Busca */}
       <Card>
         <CardHeader>
-          <CardTitle>Filtros</CardTitle>
+          <CardTitle>Buscar</CardTitle>
           <CardDescription>
-            Use os filtros abaixo para encontrar tipos específicos
+            Busque por nome ou descrição dos tipos
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome ou descrição..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <Button
-              variant={showInactive ? "default" : "outline"}
-              onClick={() => setShowInactive(!showInactive)}
-            >
-              {showInactive ? (
-                <>
-                  <Eye className="h-4 w-4 mr-2" />
-                  Mostrando Inativos
-                </>
-              ) : (
-                <>
-                  <EyeOff className="h-4 w-4 mr-2" />
-                  Apenas Ativos
-                </>
-              )}
-            </Button>
+        <CardContent>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome ou descrição..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
           </div>
         </CardContent>
       </Card>
 
-      {/* Tabela de Tipos de Membro */}
+      {/* Tipos Ativos */}
       <Card>
         <CardHeader>
-          <CardTitle>
-            Lista de Tipos ({filteredMemberTypes.length})
+          <CardTitle className="flex items-center gap-2">
+            <Badge variant="default" className="bg-green-600">Ativos</Badge>
+            <span>Tipos de Membro Ativos ({activeMemberTypes.length})</span>
           </CardTitle>
           <CardDescription>
-            {searchTerm && `Resultados para "${searchTerm}"`}
+            Tipos de membro disponíveis para uso no sistema
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
+              {[...Array(3)].map((_, i) => (
                 <div key={i} className="flex items-center space-x-4">
                   <Skeleton className="h-4 w-[250px]" />
                   <Skeleton className="h-4 w-[200px]" />
@@ -173,12 +162,12 @@ export default function MemberTypesManagement() {
                 </div>
               ))}
             </div>
-          ) : filteredMemberTypes.length === 0 ? (
+          ) : activeMemberTypes.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">
                 {searchTerm 
-                  ? 'Nenhum tipo de membro encontrado com os filtros aplicados'
-                  : 'Nenhum tipo de membro cadastrado'
+                  ? 'Nenhum tipo ativo encontrado com os filtros aplicados'
+                  : 'Nenhum tipo de membro ativo cadastrado'
                 }
               </p>
               {!searchTerm && (
@@ -199,13 +188,12 @@ export default function MemberTypesManagement() {
                     <TableHead>Nome</TableHead>
                     <TableHead>Descrição</TableHead>
                     <TableHead>Ordem</TableHead>
-                    <TableHead>Status</TableHead>
                     <TableHead>Criado em</TableHead>
                     <TableHead className="w-[70px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredMemberTypes.map((memberType) => (
+                  {activeMemberTypes.map((memberType) => (
                     <TableRow key={memberType.id}>
                       <TableCell className="font-medium">
                         {memberType.name}
@@ -216,13 +204,6 @@ export default function MemberTypesManagement() {
                       <TableCell>
                         <Badge variant="outline">
                           {memberType.order_of_exhibition || 0}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={memberType.is_active ? "default" : "secondary"}
-                        >
-                          {memberType.is_active ? 'Ativo' : 'Inativo'}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
@@ -247,17 +228,8 @@ export default function MemberTypesManagement() {
                               onClick={() => handleToggleStatus(memberType)}
                               disabled={toggleStatusMutation.isPending}
                             >
-                              {memberType.is_active ? (
-                                <>
-                                  <EyeOff className="h-4 w-4 mr-2" />
-                                  Desativar
-                                </>
-                              ) : (
-                                <>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  Ativar
-                                </>
-                              )}
+                              <EyeOff className="h-4 w-4 mr-2" />
+                              Desativar
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={() => handleDelete(memberType)}
@@ -277,6 +249,88 @@ export default function MemberTypesManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Tipos Inativos */}
+      {inactiveMemberTypes.length > 0 && (
+        <Card className="border-orange-200 bg-orange-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Badge variant="secondary" className="bg-orange-200 text-orange-800">Inativos</Badge>
+              <span>Tipos de Membro Inativos ({inactiveMemberTypes.length})</span>
+            </CardTitle>
+            <CardDescription>
+              Tipos desativados que não estão disponíveis para uso
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border border-orange-200">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Ordem</TableHead>
+                    <TableHead>Desativado em</TableHead>
+                    <TableHead className="w-[70px]">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {inactiveMemberTypes.map((memberType) => (
+                    <TableRow key={memberType.id} className="opacity-60">
+                      <TableCell className="font-medium">
+                        {memberType.name}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {memberType.description || '-'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {memberType.order_of_exhibition || 0}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {memberType.updated_at 
+                          ? new Date(memberType.updated_at).toLocaleDateString('pt-BR')
+                          : '-'
+                        }
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              onClick={() => handleToggleStatus(memberType)}
+                              disabled={toggleStatusMutation.isPending}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              Reativar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEdit(memberType)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDelete(memberType)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir Permanentemente
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Modais */}
       <MemberTypeFormModal

@@ -25,19 +25,13 @@ export default function MemberTypeDeleteModal({
   const deleteMutation = useDeleteMemberType();
 
   const handleDelete = async () => {
-    if (!memberType?.id) {
-      console.error('❌ Erro: memberType.id não existe');
-      return;
-    }
-
-    console.log('🗑️ Iniciando delete de:', memberType.name, memberType.id);
+    if (!memberType?.id) return;
 
     try {
       await deleteMutation.mutateAsync(memberType.id);
-      console.log('✅ Delete bem-sucedido!');
       onClose();
     } catch (error) {
-      console.error('❌ Delete error:', error);
+      console.error('Erro ao desativar tipo de membro:', error);
     }
   };
 
