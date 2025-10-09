@@ -25,14 +25,19 @@ export default function MemberTypeDeleteModal({
   const deleteMutation = useDeleteMemberType();
 
   const handleDelete = async () => {
-    if (!memberType?.id) return;
+    if (!memberType?.id) {
+      console.error('❌ Erro: memberType.id não existe');
+      return;
+    }
+
+    console.log('🗑️ Iniciando delete de:', memberType.name, memberType.id);
 
     try {
       await deleteMutation.mutateAsync(memberType.id);
+      console.log('✅ Delete bem-sucedido!');
       onClose();
     } catch (error) {
-      // Error handling is done in the hook
-      console.error('Delete error:', error);
+      console.error('❌ Delete error:', error);
     }
   };
 

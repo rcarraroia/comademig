@@ -221,6 +221,8 @@ export function useDeleteMemberType() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      console.log('🔧 Hook useDeleteMemberType - ID recebido:', id);
+      
       // Soft delete: apenas desativar
       const { data: result, error } = await supabase
         .from('member_types')
@@ -230,19 +232,21 @@ export function useDeleteMemberType() {
         .single();
 
       if (error) {
-        console.error('Erro ao deletar member type:', error);
+        console.error('❌ Erro ao deletar member type:', error);
         throw error;
       }
 
+      console.log('✅ Soft delete bem-sucedido:', result);
       return result;
     },
     onSuccess: () => {
+      console.log('✅ onSuccess chamado - invalidando cache');
       queryClient.invalidateQueries({ queryKey: ['member-types'] });
-      toast.success('Cargo removido com sucesso!');
+      toast.success('Tipo de membro desativado com sucesso!');
     },
     onError: (error: any) => {
-      console.error('Erro ao deletar:', error);
-      toast.error('Erro ao remover cargo: ' + error.message);
+      console.error('❌ onError chamado:', error);
+      toast.error('Erro ao desativar tipo: ' + error.message);
     },
   });
 }
