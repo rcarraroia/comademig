@@ -257,25 +257,6 @@ export default function AdminSidebar() {
           )
         })}
       </nav>
-
-      {/* Informações do usuário */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-gray-50">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-sm font-medium">
-              {user?.email?.charAt(0).toUpperCase()}
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">
-              {profile?.nome_completo || user?.email}
-            </p>
-            <p className="text-xs text-gray-500 truncate">
-              {user?.email}
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

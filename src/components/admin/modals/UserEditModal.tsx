@@ -37,8 +37,8 @@ const userSchema = z.object({
     .min(3, ERROR_MESSAGES.MIN_LENGTH(3))
     .max(100, ERROR_MESSAGES.MAX_LENGTH(100)),
   cpf: z.string()
-    .regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, 'CPF deve estar no formato XXX.XXX.XXX-XX')
-    .refine(validateCPF, ERROR_MESSAGES.CPF_INVALID),
+    .min(11, 'CPF deve ter no mínimo 11 dígitos')
+    .refine(validateCPF, 'CPF inválido. Digite apenas números (11 dígitos)'),
   telefone: z.string()
     .min(10, 'Telefone deve ter no mínimo 10 dígitos')
     .refine(val => validatePhone(val.replace(/\D/g, '')), ERROR_MESSAGES.PHONE_INVALID),
