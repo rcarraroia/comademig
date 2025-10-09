@@ -47,7 +47,11 @@ WHERE subscription_plan_id IN (
 );
 */
 
--- 4. OPÇÃO B: Setar subscription_plan_id como NULL (mais seguro)
+-- 4. Remover constraint NOT NULL temporariamente
+ALTER TABLE user_subscriptions 
+ALTER COLUMN subscription_plan_id DROP NOT NULL;
+
+-- 5. OPÇÃO B: Setar subscription_plan_id como NULL (mais seguro)
 -- Mantém o registro mas remove a referência inválida
 UPDATE user_subscriptions
 SET subscription_plan_id = NULL
@@ -59,7 +63,7 @@ WHERE subscription_plan_id IN (
     AND sp.id IS NULL
 );
 
--- 5. Verificar se ainda há órfãos
+-- 6. Verificar se ainda há órfãos
 DO $$
 DECLARE
     remaining_orphans INTEGER;
@@ -76,3 +80,6 @@ BEGIN
         RAISE NOTICE '✅ Todos os registros órfãos foram corrigidos!';
     END IF;
 END $$;
+
+-- 7. NOTA: Não recolocamos NOT NULL aqui porque subscription_plan_id pode ser NULL
+-- quando o usuário tem apenas member_type_id (sem plano específico)

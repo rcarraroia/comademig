@@ -48,6 +48,7 @@ Deve mostrar:
 ### Migração 1 (Cleanup):
 - Identifica registros órfãos em `user_subscriptions`
 - Mostra os registros problemáticos para auditoria
+- **Remove constraint NOT NULL** de `subscription_plan_id` (temporário)
 - **Seta subscription_plan_id como NULL** nos registros órfãos (opção segura)
 - Valida que não restaram órfãos
 
@@ -59,6 +60,8 @@ Deve mostrar:
 
 ## ⚠️ IMPORTANTE
 - **Execute na ORDEM correta** (cleanup primeiro, FK depois)
+- A limpeza **remove NOT NULL** de `subscription_plan_id` (necessário para permitir NULL)
 - A limpeza seta `subscription_plan_id = NULL` nos órfãos (não deleta registros)
 - Sem a Foreign Key, o Supabase não consegue fazer os JOINs automáticos
 - Depois de executar, os usuários afetados precisarão reativar suas assinaturas
+- `subscription_plan_id` pode ser NULL quando usuário tem apenas `member_type_id`
