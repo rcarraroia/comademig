@@ -59,6 +59,48 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Supabase (PostgreSQL + Auth + Storage)
+- TanStack Query (React Query)
+- Asaas (Payment Gateway)
+
+## Project Structure
+
+### Key Features
+
+- **Authentication System**: User registration and login with Supabase Auth
+- **Digital Wallet**: Professional digital identification cards
+- **Service Request Module**: Unified system for requesting certificates and regularization services
+- **Payment Integration**: PIX and Credit Card payments via Asaas gateway
+- **Admin Panel**: Complete management of users, services, and requests
+- **Affiliate System**: Referral program with automatic commissions
+
+### Database Structure
+
+#### Main Tables:
+- `profiles`: User profiles and authentication data
+- `servicos`: Service catalog (certificates, regularization, etc.)
+- `servico_exigencias`: Requirements and documents needed per service
+- `solicitacoes_servicos`: User service requests with status tracking
+- `asaas_cobrancas`: Payment records and transactions
+
+### Service Request Flow
+
+1. **User selects a service** from the catalog
+2. **Fills dynamic form** based on service requirements
+3. **Uploads required documents**
+4. **Proceeds to checkout** (PIX or Credit Card)
+5. **Payment processed** via Asaas gateway
+6. **Request created** automatically after payment confirmation
+7. **Admin reviews** and updates request status
+8. **User receives** final document/certificate
+
+### Admin Features
+
+- Service management (create, edit, activate/deactivate)
+- Request management (review, approve, reject, deliver)
+- User management
+- Financial dashboard
+- Audit logs
 
 ## How can I deploy this project?
 

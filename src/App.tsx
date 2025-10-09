@@ -18,7 +18,7 @@ import Auth from '@/pages/Auth';
 import EsqueciSenha from '@/pages/EsqueciSenha';
 import ResetPassword from '@/pages/ResetPassword';
 import Checkout from '@/pages/Checkout';
-import PagamentoSucesso from '@/pages/PagamentoSucesso';
+import PagamentoSucessoFiliacao from '@/pages/PagamentoSucesso';
 import ValidarCarteira from '@/pages/ValidarCarteira';
 import ValidarCertificado from '@/pages/ValidarCertificado';
 import ValidarCertidao from '@/pages/ValidarCertidao';
@@ -26,18 +26,17 @@ import NotFound from '@/pages/NotFound';
 
 // Dashboard Pages
 import Dashboard from '@/pages/dashboard/Dashboard';
-
 import MeusDados from '@/pages/dashboard/MeusDados';
 import CarteiraDigital from '@/pages/dashboard/CarteiraDigital';
 import Comunicacao from '@/pages/dashboard/Comunicacao';
 import ComunicacaoDashboard from '@/pages/dashboard/ComunicacaoDashboard';
 import EventosDashboard from '@/pages/dashboard/EventosDashboard';
-import Certidoes from '@/pages/dashboard/Certidoes';
 import Financeiro from '@/pages/dashboard/Financeiro';
-import Regularizacao from '@/pages/dashboard/Regularizacao';
-import CheckoutRegularizacao from '@/pages/dashboard/CheckoutRegularizacao';
 import Suporte from '@/pages/dashboard/Suporte';
 import Afiliados from '@/pages/dashboard/Afiliados';
+import SolicitacaoServicos from '@/pages/dashboard/SolicitacaoServicos';
+import CheckoutServico from '@/pages/dashboard/CheckoutServico';
+import PagamentoSucessoServico from '@/pages/dashboard/PagamentoSucesso';
 
 // Admin Pages - NOVOS COMPONENTES
 import UsersAdmin from '@/pages/admin/UsersAdmin';
@@ -46,9 +45,11 @@ import AuditLogs from '@/pages/admin/AuditLogs';
 import SupportManagement from '@/pages/admin/SupportManagement';
 import AdminCertidoesPage from '@/pages/admin/AdminCertidoesPage';
 import NotificationManagementPage from '@/pages/admin/NotificationManagementPage';
+import ServicosAdmin from '@/pages/admin/ServicosAdmin';
+import SolicitacoesAdmin from '@/pages/admin/SolicitacoesAdmin';
+import WebhookErrors from '@/pages/admin/WebhookErrors';
 
 // Admin Pages - COMPONENTES ANTIGOS (manter alguns)
-import AdminRegularizacaoPage from '@/pages/dashboard/admin/Regularizacao';
 import MemberTypeManagement from '@/pages/dashboard/MemberTypeManagement';
 import AdminNotificationsPage from '@/pages/dashboard/admin/AdminNotifications';
 import ContentManagement from '@/pages/dashboard/ContentManagement';
@@ -105,7 +106,7 @@ function App() {
             <Route path="/esqueci-senha" element={<EsqueciSenha />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/checkout/:cobrancaId" element={<Checkout />} />
-            <Route path="/pagamento-sucesso" element={<PagamentoSucesso />} />
+            <Route path="/pagamento-sucesso" element={<PagamentoSucessoFiliacao />} />
             <Route path="/validar-carteira/:numeroCarteira" element={<ValidarCarteira />} />
             <Route path="/validar-certificado/:numeroCertificado" element={<ValidarCertificado />} />
             <Route path="/validar-certidao/:numeroProtocolo" element={<ValidarCertidao />} />
@@ -121,14 +122,18 @@ function App() {
               <Route path="/dashboard/comunicacao" element={<Comunicacao />} />
               <Route path="/dashboard/comunicacao-dashboard" element={<ComunicacaoDashboard />} />
               <Route path="/dashboard/eventos" element={<EventosDashboard />} />
-              <Route path="/dashboard/certidoes" element={<Certidoes />} />
+              <Route path="/dashboard/solicitacao-servicos" element={<SolicitacaoServicos />} />
+              <Route path="/dashboard/checkout-servico" element={<CheckoutServico />} />
+              <Route path="/dashboard/pagamento-sucesso" element={<PagamentoSucessoServico />} />
               <Route path="/dashboard/financeiro" element={<Financeiro />} />
-              <Route path="/dashboard/regularizacao" element={<Regularizacao />} />
-              <Route path="/dashboard/checkout-regularizacao" element={<CheckoutRegularizacao />} />
               <Route path="/dashboard/suporte" element={<Suporte />} />
               <Route path="/dashboard/afiliados" element={<Afiliados />} />
               <Route path="/dashboard/notifications" element={<Notifications />} />
               <Route path="/dashboard/perfil-completo" element={<PerfilCompleto />} />
+              {/* Redirecionamentos das URLs antigas */}
+              <Route path="/dashboard/certidoes" element={<Navigate to="/dashboard/solicitacao-servicos?tab=certidao" replace />} />
+              <Route path="/dashboard/regularizacao" element={<Navigate to="/dashboard/solicitacao-servicos?tab=regularizacao" replace />} />
+              <Route path="/dashboard/checkout-regularizacao" element={<Navigate to="/dashboard/solicitacao-servicos" replace />} />
             </Route>
 
             {/* Admin routes - FORA de ProtectedRoute */}
@@ -138,19 +143,20 @@ function App() {
               <Route path="audit-logs" element={<AuditLogs />} />
               <Route path="support" element={<SupportManagement />} />
               <Route path="member-management" element={<MemberTypeManagement />} />
-              <Route path="regularizacao" element={<AdminRegularizacaoPage />} />
               <Route path="notifications" element={<AdminNotificationsPage />} />
               <Route path="diagnostics" element={<SystemDiagnosticsPage />} />
               <Route path="content" element={<ContentManagement />} />
               <Route path="certidoes" element={<AdminCertidoesPage />} />
               <Route path="notification-management" element={<NotificationManagementPage />} />
+              <Route path="servicos" element={<ServicosAdmin />} />
+              <Route path="solicitacoes" element={<SolicitacoesAdmin />} />
+              <Route path="webhook-errors" element={<WebhookErrors />} />
             </Route>
 
             <Route path="/dashboard/admin" element={<AdminLayout />}>
               <Route path="usuarios" element={<UsersAdmin />} />
               <Route path="member-management" element={<MemberTypeManagement />} />
               <Route path="financial" element={<FinancialAdmin />} />
-              <Route path="regularizacao" element={<AdminRegularizacaoPage />} />
               <Route path="notifications" element={<AdminNotificationsPage />} />
               <Route path="diagnostics" element={<SystemDiagnosticsPage />} />
               <Route path="suporte" element={<SupportManagement />} />

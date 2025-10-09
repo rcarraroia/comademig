@@ -82,18 +82,27 @@ export default function AdminSidebar() {
           href: '/admin/financial',
           icon: BarChart3,
           description: 'Visão geral das finanças'
+        }
+      ]
+    },
+    {
+      title: 'Serviços',
+      icon: Settings,
+      defaultOpen: true,
+      items: [
+        {
+          title: 'Gestão de Serviços',
+          href: '/admin/servicos',
+          icon: Settings,
+          description: 'Gerenciar serviços oferecidos',
+          badge: 'Novo'
         },
         {
-          title: 'Regularização',
-          href: '/admin/regularizacao',
+          title: 'Solicitações',
+          href: '/admin/solicitacoes',
           icon: FileText,
-          description: 'Solicitações de regularização'
-        },
-        {
-          title: 'Certidões',
-          href: '/admin/certidoes',
-          icon: FileText,
-          description: 'Gerenciar solicitações de certidões'
+          description: 'Gerenciar todas as solicitações',
+          badge: 'Novo'
         }
       ]
     },
@@ -142,6 +151,12 @@ export default function AdminSidebar() {
           href: '/admin/audit-logs',
           icon: Activity,
           description: 'Histórico de atividades'
+        },
+        {
+          title: 'Erros de Webhook',
+          href: '/admin/webhook-errors',
+          icon: Activity,
+          description: 'Gerenciar webhooks com erro'
         },
         {
           title: 'Diagnóstico do Sistema',

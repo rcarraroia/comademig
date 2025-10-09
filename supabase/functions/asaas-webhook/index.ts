@@ -249,26 +249,152 @@ serve(async (req) => {
 })
 
 async function handlePaymentConfirmed(supabaseClient: any, payment: any) {
-  // Atualizar status da assinatura do usuário se aplicável
-  if (payment.subscription) {
-    const { error } = await supabaseClient
-      .from('user_subscriptions')
-      .update({
-        status: 'active',
-        last_payment_date: payment.paymentDate || payment.confirmedDate,
-        updated_at: new Date().toISOString()
-      })
-      .eq('asaas_subscription_id', payment.subscription)
+  try {
+    // Atualizar status da assinatura do usuário se aplicável
+    if (payment.subscription) {
+      const { error } = await supabaseClient
+        .from('user_subscriptions')
+        .update({
+          status: 'active',
+          last_payment_date: payment.paymentDate || payment.confirmedDate,
+          updated_at: new Date().toISOString()
+        })
+        .eq('asaas_subscription_id', payment.subscription)
 
-    if (error) {
-      console.error('Erro ao atualizar assinatura:', error)
+      if (error) {
+        console.error('Erro ao atualizar assinatura:', error)
+      }
     }
-  }
 
-  // Aqui você pode adicionar lógica para:
-  // - Enviar email de confirmação
-  // - Ativar benefícios do usuário
-  // - Registrar log de auditoria
+    // Buscar dados da cobrança para verificar se é uma solicitação de serviço
+    const { data: cobranca, error: cobrancaError } = await supabaseClient
+      .from('asaas_cobrancas')
+      .select('*')
+      .eq('asaas_payment_id', payment.id)
+      .single()
+
+    if (cobrancaError) {
+      console.error('Erro ao buscar cobrança:', cobrancaError)
+      return
+    }
+
+    // Verificar se há service_data (indica solicitação de serviço)
+    if (cobranca?.service_data) {
+      await createServiceRequest(supabaseClient, cobranca, payment)
+    }
+
+  } catch (error) {
+    console.error('Erro em handlePaymentConfirmed:', error)
+  }
+}
+
+async function createServiceRequest(supabaseClient: any, cobranca: any, payment: any) {
+  try {
+    const serviceData = cobranca.service_data
+    
+    // Gerar número de protocolo único
+    const protocolo = `SRV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+    
+    // Criar solicitação de serviço
+    const { data: solicitacao, error: solicitacaoError } = await supabaseClient
+      .from('solicitacoes_servicos')
+      .insert({
+        user_id: cobranca.user_id,
+        servico_id: serviceData.servico_id,
+        protocolo: protocolo,
+        status: 'pendente',
+        valor: payment.value,
+        dados_adicionais: serviceData.dados_formulario || {},
+        documentos: serviceData.documentos || [],
+        payment_id: payment.id,
+        payment_status: payment.status,
+        payment_method: payment.billingType,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (solicitacaoError) {
+      console.error('Erro ao criar solicitação:', solicitacaoError)
+      throw solicitacaoError
+    }
+
+    console.log('Solicitação criada com sucesso:', solicitacao)
+
+    // Criar notificação para o usuário
+    await supabaseClient
+      .from('notifications')
+      .insert({
+        user_id: cobranca.user_id,
+        title: 'Pagamento Confirmado',
+        message: `Seu pagamento foi confirmado! Protocolo: ${protocolo}. Sua solicitação está sendo processada.`,
+        type: 'payment_confirmed',
+        link: `/dashboard/solicitacao-servicos?protocolo=${protocolo}`,
+        read: false,
+        created_at: new Date().toISOString()
+      })
+
+    // Criar notificação para admins
+    const { data: admins } = await supabaseClient
+      .from('profiles')
+      .select('id')
+      .in('tipo_membro', ['admin', 'super_admin'])
+
+    if (admins && admins.length > 0) {
+      const adminNotifications = admins.map((admin: any) => ({
+        user_id: admin.id,
+        title: 'Nova Solicitação de Serviço',
+        message: `Nova solicitação recebida. Protocolo: ${protocolo}`,
+        type: 'new_service_request',
+        link: `/admin/solicitacoes?protocolo=${protocolo}`,
+        read: false,
+        created_at: new Date().toISOString()
+      }))
+
+      await supabaseClient
+        .from('notifications')
+        .insert(adminNotifications)
+    }
+
+    // Registrar em audit_logs
+    await supabaseClient
+      .from('audit_logs')
+      .insert({
+        user_id: cobranca.user_id,
+        action: 'service_request_created',
+        table_name: 'solicitacoes_servicos',
+        record_id: solicitacao.id,
+        changes: {
+          protocolo: protocolo,
+          servico_id: serviceData.servico_id,
+          payment_id: payment.id,
+          valor: payment.value
+        },
+        created_at: new Date().toISOString()
+      })
+
+    console.log('Notificações e logs criados com sucesso')
+
+  } catch (error) {
+    console.error('Erro ao criar solicitação de serviço:', error)
+    
+    // Tentar registrar erro para retry posterior
+    await supabaseClient
+      .from('webhook_errors')
+      .insert({
+        payment_id: payment.id,
+        error_message: error.message,
+        error_stack: error.stack,
+        payload: { cobranca, payment },
+        retry_count: 0,
+        created_at: new Date().toISOString()
+      })
+      .catch((logError: any) => {
+        console.error('Erro ao registrar erro de webhook:', logError)
+      })
+    
+    throw error
+  }
 }
 
 async function handlePaymentOverdue(supabaseClient: any, payment: any) {

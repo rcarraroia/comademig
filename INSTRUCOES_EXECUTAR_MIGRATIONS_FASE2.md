@@ -1,4 +1,4 @@
-# 🚀 INSTRUÇÕES: Executar Migrations da Fase 2
+JA FORRA# 🚀 INSTRUÇÕES: Executar Migrations da Fase 2
 
 **Data:** 09/01/2025  
 **Fase:** 2 - Estrutura do Banco de Dados  

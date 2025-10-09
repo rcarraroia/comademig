@@ -783,6 +783,173 @@ export type Database = {
         }
         Relationships: []
       }
+      servicos: {
+        Row: {
+          id: string
+          nome: string
+          descricao: string
+          categoria: string
+          prazo: string
+          valor: number
+          is_active: boolean
+          sort_order: number
+          aceita_pix: boolean
+          aceita_cartao: boolean
+          max_parcelas: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          nome: string
+          descricao: string
+          categoria: string
+          prazo: string
+          valor: number
+          is_active?: boolean
+          sort_order?: number
+          aceita_pix?: boolean
+          aceita_cartao?: boolean
+          max_parcelas?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          nome?: string
+          descricao?: string
+          categoria?: string
+          prazo?: string
+          valor?: number
+          is_active?: boolean
+          sort_order?: number
+          aceita_pix?: boolean
+          aceita_cartao?: boolean
+          max_parcelas?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      servico_exigencias: {
+        Row: {
+          id: string
+          servico_id: string
+          tipo: string
+          nome: string
+          descricao: string | null
+          obrigatorio: boolean
+          opcoes: string[] | null
+          ordem: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          servico_id: string
+          tipo: string
+          nome: string
+          descricao?: string | null
+          obrigatorio?: boolean
+          opcoes?: string[] | null
+          ordem?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          servico_id?: string
+          tipo?: string
+          nome?: string
+          descricao?: string | null
+          obrigatorio?: boolean
+          opcoes?: string[] | null
+          ordem?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "servico_exigencias_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      solicitacoes_servicos: {
+        Row: {
+          id: string
+          protocolo: string
+          user_id: string
+          servico_id: string
+          dados_enviados: Json
+          observacoes_admin: string | null
+          arquivo_entrega: string | null
+          status: string
+          payment_reference: string | null
+          valor_pago: number
+          forma_pagamento: string | null
+          created_at: string
+          updated_at: string
+          data_pagamento: string | null
+          data_analise: string | null
+          data_conclusao: string | null
+        }
+        Insert: {
+          id?: string
+          protocolo?: string
+          user_id: string
+          servico_id: string
+          dados_enviados?: Json
+          observacoes_admin?: string | null
+          arquivo_entrega?: string | null
+          status?: string
+          payment_reference?: string | null
+          valor_pago: number
+          forma_pagamento?: string | null
+          created_at?: string
+          updated_at?: string
+          data_pagamento?: string | null
+          data_analise?: string | null
+          data_conclusao?: string | null
+        }
+        Update: {
+          id?: string
+          protocolo?: string
+          user_id?: string
+          servico_id?: string
+          dados_enviados?: Json
+          observacoes_admin?: string | null
+          arquivo_entrega?: string | null
+          status?: string
+          payment_reference?: string | null
+          valor_pago?: number
+          forma_pagamento?: string | null
+          created_at?: string
+          updated_at?: string
+          data_pagamento?: string | null
+          data_analise?: string | null
+          data_conclusao?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitacoes_servicos_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solicitacoes_servicos_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       referrals: {
         Row: {
           affiliate_id: string
@@ -1080,6 +1247,51 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_errors: {
+        Row: {
+          id: string
+          payment_id: string
+          error_message: string
+          error_stack: string | null
+          payload: Json | null
+          retry_count: number
+          last_retry_at: string | null
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          payment_id: string
+          error_message: string
+          error_stack?: string | null
+          payload?: Json | null
+          retry_count?: number
+          last_retry_at?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          payment_id?: string
+          error_message?: string
+          error_stack?: string | null
+          payload?: Json | null
+          retry_count?: number
+          last_retry_at?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1109,6 +1321,10 @@ export type Database = {
       make_user_admin: {
         Args: { _user_email: string }
         Returns: undefined
+      }
+      retry_webhook_error: {
+        Args: { p_error_id: string }
+        Returns: Json
       }
     }
     Enums: {
