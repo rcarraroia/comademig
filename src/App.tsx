@@ -43,7 +43,6 @@ import UsersAdmin from '@/pages/admin/UsersAdmin';
 import FinancialAdmin from '@/pages/admin/FinancialAdmin';
 import AuditLogs from '@/pages/admin/AuditLogs';
 import SupportManagement from '@/pages/admin/SupportManagement';
-import AdminCertidoesPage from '@/pages/admin/AdminCertidoesPage';
 import NotificationManagementPage from '@/pages/admin/NotificationManagementPage';
 import ServicosAdmin from '@/pages/admin/ServicosAdmin';
 import SolicitacoesAdmin from '@/pages/admin/SolicitacoesAdmin';
@@ -146,7 +145,6 @@ function App() {
               <Route path="notifications" element={<AdminNotificationsPage />} />
               <Route path="diagnostics" element={<SystemDiagnosticsPage />} />
               <Route path="content" element={<ContentManagement />} />
-              <Route path="certidoes" element={<AdminCertidoesPage />} />
               <Route path="notification-management" element={<NotificationManagementPage />} />
               <Route path="servicos" element={<ServicosAdmin />} />
               <Route path="solicitacoes" element={<SolicitacoesAdmin />} />
