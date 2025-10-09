@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useRequirePermission } from '@/hooks/useRoleAccess'
 import { useAdminData, AdminProfile } from '@/hooks/useAdminData'
 import { useDebounce } from '@/hooks/useDebounce'
@@ -53,7 +53,7 @@ export default function UsersAdmin() {
   const [selectedUser, setSelectedUser] = useState<AdminProfile | null>(null)
 
   // Calcular estatísticas reais
-  const statistics = useMemo(() => {
+  const getStatistics = () => {
     if (!profiles || profiles.length === 0) {
       return {
         total: 0,
@@ -73,13 +73,15 @@ export default function UsersAdmin() {
       admins: profiles.filter(p => p.tipo_membro === 'admin' || p.tipo_membro === 'super_admin').length,
       recent: profiles.filter(p => new Date(p.created_at) > thirtyDaysAgo).length
     }
-  }, [profiles])
+  }
+  
+  const statistics = getStatistics()
 
   // Filtrar usuários baseado na busca e filtros avançados
-  const filteredUsers = useMemo(() => {
+  const getFilteredUsers = () => {
     if (!profiles) return []
     
-    let filtered = profiles
+    let filtered = [...profiles]
 
     // Aplicar busca por texto
     if (debouncedSearchTerm) {
@@ -112,7 +114,7 @@ export default function UsersAdmin() {
     // Aplicar filtro de período
     if (advancedFilters.periodo !== 'all') {
       const now = new Date()
-      let dateLimit = new Date()
+      const dateLimit = new Date()
 
       switch (advancedFilters.periodo) {
         case '7days':
@@ -135,7 +137,9 @@ export default function UsersAdmin() {
     }
 
     return filtered
-  }, [profiles, debouncedSearchTerm, advancedFilters])
+  }
+  
+  const filteredUsers = getFilteredUsers()
 
   if (permissionLoading) {
     return (
@@ -241,13 +245,15 @@ export default function UsersAdmin() {
   }
 
   // Contar filtros ativos
-  const activeFiltersCount = useMemo(() => {
+  const getActiveFiltersCount = () => {
     let count = 0
     if (advancedFilters.tipoMembro.length > 0) count += advancedFilters.tipoMembro.length
     if (advancedFilters.status.length > 0) count += advancedFilters.status.length
     if (advancedFilters.periodo !== 'all') count += 1
     return count
-  }, [advancedFilters])
+  }
+  
+  const activeFiltersCount = getActiveFiltersCount()
 
   return (
     <div className="space-y-6">
