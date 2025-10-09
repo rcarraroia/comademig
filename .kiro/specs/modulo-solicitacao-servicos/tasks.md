@@ -33,6 +33,7 @@ Este plano de implementação divide o desenvolvimento do Módulo Unificado de S
 - [x] 3. Gerar relatório de análise prévia
 
 
+
   - Consolidar dados coletados nas tarefas 1 e 2
   - Identificar problemas e riscos
   - Recomendar estratégia de migração
@@ -43,36 +44,47 @@ Este plano de implementação divide o desenvolvimento do Módulo Unificado de S
 
 ## Fase 2: Estrutura do Banco de Dados
 
-- [ ] 4. Criar tabela `servicos` com schema completo
+- [x] 4. Criar tabela `servicos` com schema completo
+
+
   - Escrever migration SQL com todas as colunas definidas no design
   - Adicionar constraints (CHECK, NOT NULL, DEFAULT)
   - Criar índices: categoria, is_active, sort_order
   - Adicionar trigger para updated_at
   - _Requirements: 7.1_
 
-- [ ] 5. Criar tabela `servico_exigencias`
+- [x] 5. Criar tabela `servico_exigencias`
+
+
   - Escrever migration SQL com schema completo
   - Adicionar FK para servicos com ON DELETE CASCADE
   - Criar índice em servico_id
   - Validar tipos de exigências (documento, campo_texto, etc)
   - _Requirements: 7.2_
 
+
+
 - [ ] 6. Criar tabela `solicitacoes_servicos`
   - Escrever migration SQL com schema completo
   - Adicionar FKs para profiles e servicos
   - Criar todos os índices necessários (user_id, servico_id, status, protocolo, payment)
   - Adicionar trigger para updated_at
+
+
   - _Requirements: 7.3_
 
 - [ ] 7. Configurar RLS policies para `servicos`
   - Policy: SELECT para serviços ativos (público)
   - Policy: ALL para admin (super_admin)
+
+
   - Testar acesso como usuário comum
   - Testar acesso como admin
   - _Requirements: 7.4_
 
 - [ ] 8. Configurar RLS policies para `solicitacoes_servicos`
   - Policy: SELECT para usuário (apenas suas solicitações)
+
   - Policy: SELECT para admin (todas as solicitações)
   - Policy: INSERT apenas via service role (webhook)
   - Policy: UPDATE apenas para admin
