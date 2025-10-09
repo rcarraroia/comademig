@@ -12,21 +12,27 @@ Este plano de implementação divide o desenvolvimento do Módulo Unificado de S
 
 ## Fase 1: Análise e Preparação do Banco de Dados
 
-- [ ] 1. Analisar estrutura atual do banco de dados
+- [x] 1. Analisar estrutura atual do banco de dados
+
+
   - Criar script Python para mapear todas as tabelas relacionadas
   - Documentar colunas, tipos, constraints e relacionamentos
   - Contar registros existentes em cada tabela
   - Identificar dados órfãos ou inconsistentes
   - _Requirements: 1.1, 1.2, 1.4_
 
-- [ ] 2. Verificar e documentar RLS policies existentes
+- [x] 2. Verificar e documentar RLS policies existentes
+
+
   - Listar todas as policies ativas em certidoes, valores_certidoes, solicitacoes_certidoes
   - Listar todas as policies ativas em servicos_regularizacao, solicitacoes_regularizacao
   - Identificar gaps de segurança
   - Documentar policies que precisam ser migradas
   - _Requirements: 1.3_
 
-- [ ] 3. Gerar relatório de análise prévia
+- [x] 3. Gerar relatório de análise prévia
+
+
   - Consolidar dados coletados nas tarefas 1 e 2
   - Identificar problemas e riscos
   - Recomendar estratégia de migração
