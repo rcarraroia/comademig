@@ -45,7 +45,6 @@ import FinancialAdmin from '@/pages/admin/FinancialAdmin';
 import AuditLogs from '@/pages/admin/AuditLogs';
 import SupportManagement from '@/pages/admin/SupportManagement';
 import AdminCertidoesPage from '@/pages/admin/AdminCertidoesPage';
-import SubscriptionPlansPage from '@/pages/admin/SubscriptionPlansPage';
 import NotificationManagementPage from '@/pages/admin/NotificationManagementPage';
 
 // Admin Pages - COMPONENTES ANTIGOS (manter alguns)
@@ -144,7 +143,6 @@ function App() {
               <Route path="diagnostics" element={<SystemDiagnosticsPage />} />
               <Route path="content" element={<ContentManagement />} />
               <Route path="certidoes" element={<AdminCertidoesPage />} />
-              <Route path="subscription-plans" element={<SubscriptionPlansPage />} />
               <Route path="notification-management" element={<NotificationManagementPage />} />
             </Route>
 

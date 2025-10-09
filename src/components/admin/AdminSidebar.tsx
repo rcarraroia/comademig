@@ -84,12 +84,6 @@ export default function AdminSidebar() {
           description: 'Visão geral das finanças'
         },
         {
-          title: 'Planos de Assinatura',
-          href: '/admin/subscription-plans',
-          icon: CreditCard,
-          description: 'Gerenciar planos e preços'
-        },
-        {
           title: 'Regularização',
           href: '/admin/regularizacao',
           icon: FileText,

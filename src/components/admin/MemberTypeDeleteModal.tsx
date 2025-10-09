@@ -43,18 +43,18 @@ export default function MemberTypeDeleteModal({
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-destructive" />
-            Confirmar Exclusão
+            <AlertTriangle className="h-5 w-5 text-orange-500" />
+            Desativar Tipo de Membro
           </DialogTitle>
           <DialogDescription>
-            Esta ação não pode ser desfeita. O tipo de membro será permanentemente removido.
+            O tipo de membro será desativado e não aparecerá mais nas listagens ativas.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Informações do tipo que será excluído */}
+          {/* Informações do tipo que será desativado */}
           <div className="p-4 bg-muted rounded-lg">
-            <h4 className="font-medium mb-2">Tipo de Membro a ser excluído:</h4>
+            <h4 className="font-medium mb-2">Tipo de Membro a ser desativado:</h4>
             <div className="space-y-1 text-sm">
               <p><strong>Nome:</strong> {memberType.name}</p>
               {memberType.description && (
@@ -65,12 +65,11 @@ export default function MemberTypeDeleteModal({
           </div>
 
           {/* Aviso sobre consequências */}
-          <Alert variant="destructive">
+          <Alert>
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Atenção:</strong> Se este tipo de membro estiver sendo usado por usuários 
-              ou vinculado a planos de assinatura, a exclusão falhará. Considere desativar 
-              ao invés de excluir.
+              <strong>Nota:</strong> O tipo de membro será apenas desativado, não excluído permanentemente.
+              Você pode reativá-lo depois se necessário. Planos e usuários vinculados não serão afetados.
             </AlertDescription>
           </Alert>
 
@@ -102,7 +101,7 @@ export default function MemberTypeDeleteModal({
               {deleteMutation.isPending && (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               )}
-              Excluir Permanentemente
+              Desativar Tipo
             </Button>
           </div>
         </div>
