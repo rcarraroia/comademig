@@ -21,6 +21,11 @@ export const useDeleteUser = () => {
         .eq('id', userId)
         .single()
 
+      // PROTEÇÃO: Não permitir deletar super_admin
+      if (userData?.tipo_membro === 'super_admin') {
+        throw new Error('Não é possível excluir o Super Administrador do sistema')
+      }
+
       // Deletar do banco de dados
       const { error } = await supabase
         .from('profiles')

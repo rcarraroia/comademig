@@ -11,7 +11,7 @@ export interface UpdateUserInput {
   telefone?: string
   igreja?: string
   cargo?: string
-  tipo_membro?: 'membro' | 'pastor' | 'moderador' | 'admin'
+  tipo_membro?: 'membro' | 'pastor' | 'moderador' | 'admin' | 'super_admin'
   status?: 'ativo' | 'inativo' | 'pendente'
   rg?: string
   data_nascimento?: string

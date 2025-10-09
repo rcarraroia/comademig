@@ -33,14 +33,9 @@ const MEMBER_TYPES = [
     description: 'Acesso ao painel administrativo. Pode gerenciar usuários, aprovar certidões e visualizar relatórios.',
     icon: '⚙️',
     color: 'text-orange-600'
-  },
-  {
-    value: 'super_admin',
-    label: 'Super Administrador',
-    description: 'Acesso total ao sistema. Pode alterar configurações críticas, gerenciar outros admins e acessar logs de auditoria.',
-    icon: '👑',
-    color: 'text-red-600'
   }
+  // Nota: Super Admin não está disponível no modal
+  // Apenas o owner do sistema deve ter esse tipo (configurado via banco de dados)
 ];
 
 export function UserPermissionsModal({ open, onOpenChange, user }: UserPermissionsModalProps) {
