@@ -14,7 +14,9 @@ import {
   HelpCircle,
   Bell,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Award,
+  Split
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
@@ -65,6 +67,13 @@ export default function AdminSidebar() {
           description: 'Gerenciar usuários do sistema'
         },
         {
+          title: 'Gestão de Afiliados',
+          href: '/admin/affiliates',
+          icon: Award,
+          description: 'Gerenciar afiliados e comissões',
+          badge: 'Novo'
+        },
+        {
           title: 'Gestão de Cargos e Planos',
           href: '/admin/member-management',
           icon: UserCheck,
@@ -82,6 +91,14 @@ export default function AdminSidebar() {
           href: '/admin/financial',
           icon: BarChart3,
           description: 'Visão geral das finanças'
+        },
+        {
+          title: 'Gestão de Split',
+          href: '/admin/split-management',
+          icon: Split,
+          description: 'Configurar divisão de pagamentos',
+          badge: 'Super Admin',
+          requiredRole: ['super_admin']
         }
       ]
     },
