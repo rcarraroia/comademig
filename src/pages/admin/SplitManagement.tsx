@@ -2,8 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuthState } from '@/hooks/useAuthState';
-import { useUserRoles } from '@/hooks/useUserRoles';
+import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, Settings, History, BarChart3, FileText } from 'lucide-react';
 
 // Componentes
@@ -18,21 +17,17 @@ import SplitAuditLog from './components/SplitAuditLog';
  */
 export default function SplitManagement() {
   const navigate = useNavigate();
-  const { user, loading } = useAuthState();
-  const { roles, loading: loadingRoles, hasRole } = useUserRoles();
-
-  const isLoading = loading || loadingRoles;
-  const isSuperAdmin = hasRole('super_admin' as any); // Super admin role
+  const { user, loading, isSuperAdmin } = useAuth();
 
   // Verificar acesso - apenas super_admin
   useEffect(() => {
-    if (!isLoading && (!user || !isSuperAdmin)) {
+    if (!loading && (!user || !isSuperAdmin())) {
       console.warn('Acesso negado: usuário não é super_admin');
       navigate('/dashboard');
     }
-  }, [user, isSuperAdmin, isLoading, navigate]);
+  }, [user, isSuperAdmin, loading, navigate]);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -40,7 +35,7 @@ export default function SplitManagement() {
     );
   }
 
-  if (!user || !isSuperAdmin) {
+  if (!user || !isSuperAdmin()) {
     return null;
   }
 

@@ -12,7 +12,7 @@ interface DashboardSidebarProps {
 
 const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
   const location = useLocation();
-  const { isAdmin, loading } = useAuth();
+  const { isAdmin, isSuperAdmin, loading, profile } = useAuth();
 
   const menuItems = [
     { path: "/dashboard", label: "Dashboard", icon: Home },
@@ -119,7 +119,15 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
                   <div className="text-xs font-medium text-blue-300 mb-2 px-3">
                     {section.category}
                   </div>
-                  {section.items.map((item) => (
+                  {section.items
+                    .filter((item) => {
+                      // Filtrar "Gestão de Split" apenas para super_admin
+                      if (item.path === '/admin/split-management') {
+                        return isSuperAdmin();
+                      }
+                      return true;
+                    })
+                    .map((item) => (
                     <Link
                       key={item.path}
                       to={item.path}

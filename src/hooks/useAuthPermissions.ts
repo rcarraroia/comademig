@@ -6,15 +6,24 @@ import { User } from '@supabase/supabase-js';
 export const useAuthPermissions = (profile: Profile | null, user: User | null = null) => {
   const { hasRole, isAdmin: isAdminRole } = useUserRoles(user);
 
+  const isSuperAdmin = () => {
+    return profile?.tipo_membro === 'super_admin';
+  };
+
   const isAdmin = () => {
     // Verificar tanto tipo_membro quanto user_roles para compatibilidade
+    // Super admin também é admin
     return profile?.tipo_membro === 'admin' ||
+      profile?.tipo_membro === 'super_admin' ||
       profile?.cargo?.toLowerCase().includes('admin') ||
       isAdminRole();
   };
 
   const hasPermission = (permission: string) => {
     if (!profile) return false;
+
+    // Super admin tem todas as permissões
+    if (isSuperAdmin()) return true;
 
     if (isAdmin()) return true;
 
@@ -37,6 +46,7 @@ export const useAuthPermissions = (profile: Profile | null, user: User | null = 
 
   return {
     isAdmin,
+    isSuperAdmin,
     hasPermission,
   };
 };

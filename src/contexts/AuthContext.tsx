@@ -17,6 +17,7 @@ interface AuthContextType {
   updateProfile: (data: Partial<Profile>) => Promise<{ error: any }>;
   refreshProfile: () => Promise<void>;
   isAdmin: () => boolean;
+  isSuperAdmin: () => boolean;
   hasPermission: (permission: string) => boolean;
 }
 
@@ -25,7 +26,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { session, user, profile, loading, setProfile, refreshProfile } = useAuthState();
   const { signIn, signUp, signOut, resetPassword, updateProfile: updateProfileImpl } = useAuthActions();
-  const { isAdmin, hasPermission } = useAuthPermissions(profile, user);
+  const { isAdmin, isSuperAdmin, hasPermission } = useAuthPermissions(profile, user);
 
   const updateProfile = (data: Partial<Profile>) => {
     return updateProfileImpl(user, profile, setProfile, data);
@@ -48,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     updateProfile,
     refreshProfile,
     isAdmin,
+    isSuperAdmin,
     hasPermission,
   };
 
