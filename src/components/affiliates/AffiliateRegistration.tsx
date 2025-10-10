@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, DollarSign, Users, TrendingUp, Shield } from 'lucide-react';
-import { useAffiliate } from '@/hooks/useAffiliate';
-import { useAuth } from '@/contexts/AuthContext';
+import { useCreateAffiliate } from '@/hooks/useAffiliate';
+import { useAuthState } from '@/hooks/useAuthState';
 
 interface AffiliateRegistrationProps {
   onSuccess: () => void;
@@ -14,8 +14,8 @@ interface AffiliateRegistrationProps {
 
 export const AffiliateRegistration = ({ onSuccess }: AffiliateRegistrationProps) => {
   const [walletId, setWalletId] = useState('');
-  const { createAffiliate, loading } = useAffiliate();
-  const { profile, user } = useAuth();
+  const createAffiliate = useCreateAffiliate();
+  const { user, profile } = useAuthState();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +36,7 @@ export const AffiliateRegistration = ({ onSuccess }: AffiliateRegistrationProps)
     }
 
     try {
-      await createAffiliate({
+      await createAffiliate.mutateAsync({
         display_name: profile.nome_completo.trim(),
         cpf_cnpj: profile.cpf.trim(),
         asaas_wallet_id: walletId.trim(),
@@ -181,14 +181,14 @@ export const AffiliateRegistration = ({ onSuccess }: AffiliateRegistrationProps)
                 type="submit" 
                 className="flex-1" 
                 disabled={
-                  loading || 
+                  createAffiliate.isPending || 
                   !walletId.trim() || 
                   walletId.trim().length < 10 ||
                   !profile?.nome_completo || 
                   !profile?.cpf
                 }
               >
-                {loading ? 'Processando...' : 'Quero Participar'}
+                {createAffiliate.isPending ? 'Processando...' : 'Quero Participar'}
               </Button>
               
               <Button 

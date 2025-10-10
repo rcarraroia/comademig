@@ -30,8 +30,8 @@ export const useUpdateContent = () => {
       const { data, error } = await supabase
         .from('content_management')
         .update({
-          content_json: content,
-          last_updated_at: new Date().toISOString()
+          content_json: content
+          // last_updated_at será atualizado automaticamente pelo trigger
         })
         .eq('page_name', pageName)
         .select('page_name, content_json, last_updated_at');
