@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { X, Home, User, CreditCard, FileText, HelpCircle, Settings, Globe, Building, Users, Bell, Activity, MessageSquare, DollarSign, BarChart3, Shield } from "lucide-react";
+import { X, Home, User, CreditCard, FileText, HelpCircle, Settings, Globe, Building, Users, Bell, Activity, MessageSquare, DollarSign, BarChart3, Shield, Award, Split } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,6 +30,7 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
       category: "Gestão de Usuários",
       items: [
         { path: "/admin/users", label: "Gerenciar Usuários", icon: Users },
+        { path: "/admin/affiliates", label: "Gestão de Afiliados", icon: Award, badge: "Novo" },
         { path: "/admin/member-management", label: "Gestão de Cargos e Planos", icon: Settings },
       ]
     },
@@ -37,6 +38,7 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
       category: "Financeiro",
       items: [
         { path: "/admin/financial", label: "Dashboard Financeiro", icon: BarChart3, badge: "Novo" },
+        { path: "/admin/split-management", label: "Gestão de Split", icon: Split, badge: "Super Admin" },
         { path: "/admin/regularizacao", label: "Regularização", icon: FileText },
       ]
     },

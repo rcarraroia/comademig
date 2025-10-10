@@ -47,6 +47,8 @@ import NotificationManagementPage from '@/pages/admin/NotificationManagementPage
 import ServicosAdmin from '@/pages/admin/ServicosAdmin';
 import SolicitacoesAdmin from '@/pages/admin/SolicitacoesAdmin';
 import WebhookErrors from '@/pages/admin/WebhookErrors';
+import AffiliatesManagement from '@/pages/admin/AffiliatesManagement';
+import SplitManagement from '@/pages/admin/SplitManagement';
 
 // Admin Pages - COMPONENTES ANTIGOS (manter alguns)
 import MemberTypeManagement from '@/pages/dashboard/MemberTypeManagement';
@@ -141,6 +143,8 @@ function App() {
               <Route path="financial" element={<FinancialAdmin />} />
               <Route path="audit-logs" element={<AuditLogs />} />
               <Route path="support" element={<SupportManagement />} />
+              <Route path="affiliates" element={<AffiliatesManagement />} />
+              <Route path="split-management" element={<SplitManagement />} />
               <Route path="member-management" element={<MemberTypeManagement />} />
               <Route path="notifications" element={<AdminNotificationsPage />} />
               <Route path="diagnostics" element={<SystemDiagnosticsPage />} />
