@@ -48,8 +48,8 @@ const Auth = () => {
       });
       
       // Redirecionar baseado no tipo de usuário
-      if (profile.tipo_membro === 'admin') {
-        console.log('🔐 ADMIN DETECTADO! Redirecionando para /admin/users');
+      if (profile.tipo_membro === 'admin' || profile.tipo_membro === 'super_admin') {
+        console.log('🔐 ADMIN/SUPER_ADMIN DETECTADO! Redirecionando para /admin/users');
         navigate("/admin/users");
       } else {
         console.log('👤 Usuário comum (tipo: ' + profile.tipo_membro + '). Redirecionando para /dashboard');

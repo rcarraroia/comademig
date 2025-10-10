@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const location = useLocation();
   
   if (loading) {
@@ -22,6 +22,11 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   
   if (!user) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+  
+  // Redirecionar admins/super_admins para área administrativa
+  if (profile && (profile.tipo_membro === 'admin' || profile.tipo_membro === 'super_admin')) {
+    return <Navigate to="/admin/users" replace />;
   }
   
   return (
