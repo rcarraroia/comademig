@@ -278,6 +278,9 @@ async function handlePaymentConfirmed(supabaseClient: any, payment: any) {
       return
     }
 
+    // INTEGRAÇÃO: Processar splits automaticamente
+    await processPaymentSplits(supabaseClient, cobranca, payment)
+
     // Verificar se há service_data (indica solicitação de serviço)
     if (cobranca?.service_data) {
       await createServiceRequest(supabaseClient, cobranca, payment)
@@ -285,6 +288,125 @@ async function handlePaymentConfirmed(supabaseClient: any, payment: any) {
 
   } catch (error) {
     console.error('Erro em handlePaymentConfirmed:', error)
+  }
+}
+
+/**
+ * Processa splits automaticamente após confirmação de pagamento
+ */
+async function processPaymentSplits(supabaseClient: any, cobranca: any, payment: any) {
+  try {
+    console.log('Processing payment splits for:', payment.id)
+
+    // Determinar tipo de serviço baseado na descrição ou metadata
+    let serviceType = 'outros'
+    const description = payment.description?.toLowerCase() || ''
+    
+    if (description.includes('filiação') || description.includes('filiacao') || description.includes('anuidade')) {
+      serviceType = 'filiacao'
+    } else if (description.includes('certidão') || description.includes('certidao') || description.includes('regularização')) {
+      serviceType = 'servicos'
+    } else if (description.includes('publicidade') || description.includes('patrocínio')) {
+      serviceType = 'publicidade'
+    } else if (description.includes('evento') || description.includes('curso')) {
+      serviceType = 'eventos'
+    }
+
+    // Chamar Edge Function para processar splits
+    const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/asaas-process-splits`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+      },
+      body: JSON.stringify({
+        cobrancaId: cobranca.id,
+        paymentValue: payment.value,
+        serviceType: serviceType,
+      }),
+    })
+
+    const result = await response.json()
+
+    if (!result.success) {
+      console.error('Failed to process splits:', result)
+      return
+    }
+
+    console.log('Splits processed successfully:', result)
+
+    // Se houver afiliado, atualizar status da indicação e enviar notificação
+    if (result.data?.processedSplits) {
+      const affiliateSplit = result.data.processedSplits.find(
+        (s: any) => s.recipientType === 'affiliate'
+      )
+
+      if (affiliateSplit) {
+        await updateReferralAndNotify(supabaseClient, cobranca, payment, affiliateSplit)
+      }
+    }
+
+  } catch (error) {
+    console.error('Error processing payment splits:', error)
+    // Não falha o processo principal - apenas loga o erro
+  }
+}
+
+/**
+ * Atualiza status da indicação e notifica o afiliado
+ */
+async function updateReferralAndNotify(supabaseClient: any, cobranca: any, payment: any, affiliateSplit: any) {
+  try {
+    // Buscar indicação
+    const { data: referral } = await supabaseClient
+      .from('affiliate_referrals')
+      .select(`
+        *,
+        affiliate:affiliates!affiliate_id(
+          id,
+          user_id,
+          display_name
+        )
+      `)
+      .eq('referred_user_id', cobranca.user_id)
+      .eq('status', 'pending')
+      .single()
+
+    if (!referral) {
+      console.log('No pending referral found for user:', cobranca.user_id)
+      return
+    }
+
+    // Atualizar status para 'converted'
+    await supabaseClient
+      .from('affiliate_referrals')
+      .update({
+        status: 'converted',
+        conversion_date: new Date().toISOString(),
+        conversion_value: payment.value,
+      })
+      .eq('id', referral.id)
+
+    console.log('Referral status updated to converted:', referral.id)
+
+    // Enviar notificação para o afiliado
+    if (referral.affiliate?.user_id) {
+      await supabaseClient
+        .from('notifications')
+        .insert({
+          user_id: referral.affiliate.user_id,
+          type: 'comissao_recebida',
+          title: 'Nova Comissão Recebida!',
+          message: `Você recebeu uma comissão de R$ ${affiliateSplit.amount?.toFixed(2)} referente ao pagamento de ${referral.affiliate.display_name || 'um indicado'}.`,
+          action_url: '/dashboard/afiliados',
+        })
+
+      console.log('Commission notification sent to affiliate:', referral.affiliate.id)
+    }
+
+  } catch (error) {
+    console.error('Error updating referral and notifying:', error)
+    // Não falha o processo principal
   }
 }
 

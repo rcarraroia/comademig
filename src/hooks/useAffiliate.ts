@@ -1,7 +1,7 @@
 
-import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 export interface AffiliateData {
   display_name: string;
@@ -49,209 +49,180 @@ export interface Transaction {
   created_at: string;
 }
 
-export const useAffiliate = () => {
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+// Hook para buscar dados do afiliado atual
+export function useMyAffiliate() {
+  return useQuery({
+    queryKey: ['my-affiliate'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Não autenticado');
 
-  const createAffiliate = async (data: AffiliateData) => {
-    setLoading(true);
-    console.log('Creating affiliate with data:', {
-      ...data,
-      asaas_wallet_id: '[HIDDEN]' // Não logar o wallet ID
-    });
-    
-    try {
-      const { data: result, error } = await supabase.functions.invoke('affiliates-management', {
-        body: data
-      });
+      const { data, error } = await supabase
+        .from('affiliates')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
 
-      if (error) {
-        console.error('Edge function error:', error);
-        
-        // Tratar diferentes tipos de erro
-        let errorMessage = 'Erro ao criar afiliado';
-        
-        if (error.message?.includes('FunctionsHttpError')) {
-          errorMessage = 'Erro de comunicação com o servidor. Tente novamente.';
-        } else if (error.message?.includes('unauthorized')) {
-          errorMessage = 'Sessão expirada. Faça login novamente.';
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-        
-        throw new Error(errorMessage);
+      if (error && error.code !== 'PGRST116') throw error;
+      return data as Affiliate | null;
+    },
+  });
+}
+
+// Hook para buscar indicações do afiliado
+export function useAffiliateReferrals(affiliateId?: string) {
+  return useQuery({
+    queryKey: ['affiliate-referrals', affiliateId],
+    queryFn: async () => {
+      if (!affiliateId) return [];
+
+      const { data, error } = await supabase
+        .from('affiliate_referrals')
+        .select(`
+          *,
+          referred_user:profiles!referred_user_id(
+            id,
+            nome_completo,
+            email
+          )
+        `)
+        .eq('affiliate_id', affiliateId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!affiliateId,
+  });
+}
+
+// Hook para buscar comissões do afiliado
+export function useAffiliateCommissions(affiliateId?: string) {
+  return useQuery({
+    queryKey: ['affiliate-commissions', affiliateId],
+    queryFn: async () => {
+      if (!affiliateId) return [];
+
+      const { data, error } = await supabase
+        .from('affiliate_commissions')
+        .select('*')
+        .eq('affiliate_id', affiliateId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!affiliateId,
+  });
+}
+
+// Hook para buscar estatísticas do afiliado
+export function useAffiliateStats(affiliateId?: string) {
+  return useQuery({
+    queryKey: ['affiliate-stats', affiliateId],
+    queryFn: async () => {
+      if (!affiliateId) {
+        return {
+          totalReferrals: 0,
+          activeReferrals: 0,
+          totalCommissions: 0,
+          pendingCommissions: 0,
+          paidCommissions: 0,
+        };
       }
 
-      if (result?.error) {
-        throw new Error(result.error);
-      }
+      // Buscar indicações
+      const { data: referrals } = await supabase
+        .from('affiliate_referrals')
+        .select('status, conversion_value')
+        .eq('affiliate_id', affiliateId);
 
-      if (!result?.success) {
-        throw new Error('Resposta inválida do servidor');
-      }
+      // Buscar comissões
+      const { data: commissions } = await supabase
+        .from('affiliate_commissions')
+        .select('amount, status')
+        .eq('affiliate_id', affiliateId);
 
-      console.log('Create affiliate result: success');
+      return {
+        totalReferrals: referrals?.length || 0,
+        activeReferrals: referrals?.filter(r => r.status === 'converted').length || 0,
+        totalCommissions: commissions?.reduce((sum, c) => sum + c.amount, 0) || 0,
+        pendingCommissions: commissions?.filter(c => c.status === 'pending')
+          .reduce((sum, c) => sum + c.amount, 0) || 0,
+        paidCommissions: commissions?.filter(c => c.status === 'paid')
+          .reduce((sum, c) => sum + c.amount, 0) || 0,
+      };
+    },
+    enabled: !!affiliateId,
+  });
+}
 
-      toast({
-        title: "Cadastro realizado com sucesso",
-        description: "Seu cadastro de afiliado foi criado e está em análise.",
-      });
+// Hook para criar afiliado
+export function useCreateAffiliate() {
+  const queryClient = useQueryClient();
 
-      return result.affiliate;
-    } catch (error: any) {
+  return useMutation({
+    mutationFn: async (data: AffiliateData) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Não autenticado');
+
+      const { data: result, error } = await supabase
+        .from('affiliates')
+        .insert({
+          user_id: user.id,
+          display_name: data.display_name,
+          cpf_cnpj: data.cpf_cnpj,
+          asaas_wallet_id: data.asaas_wallet_id,
+          contact_email: data.contact_email || user.email,
+          phone: data.phone,
+          status: 'pending',
+          is_adimplent: true,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-affiliate'] });
+      toast.success('Cadastro de afiliado criado com sucesso! Aguarde aprovação.');
+    },
+    onError: (error: any) => {
       console.error('Erro ao criar afiliado:', error);
-      
-      // Mensagens de erro mais específicas
-      let errorMessage = error.message || 'Ocorreu um erro inesperado';
-      
-      if (errorMessage.includes('Wallet ID')) {
-        errorMessage = 'Problema com o Wallet ID fornecido. Verifique se está correto.';
-      } else if (errorMessage.includes('já possui cadastro')) {
-        errorMessage = 'Você já possui um cadastro de afiliado.';
-      } else if (errorMessage.includes('obrigatório')) {
-        errorMessage = 'Dados obrigatórios não foram preenchidos. Complete seu perfil primeiro.';
-      }
-      
-      toast({
-        title: "Erro ao criar afiliado",
-        description: errorMessage,
-        variant: "destructive",
-      });
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
+      toast.error('Erro ao criar cadastro de afiliado: ' + error.message);
+    },
+  });
+}
 
-  const getAffiliate = async (): Promise<Affiliate | null> => {
-    setLoading(true);
-    console.log('Getting affiliate data...');
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('affiliates-management');
+// Hook para atualizar afiliado
+export function useUpdateAffiliate() {
+  const queryClient = useQueryClient();
 
-      if (error) {
-        console.error('Edge function error:', error);
-        throw new Error(error.message || 'Erro ao buscar afiliado');
-      }
+  return useMutation({
+    mutationFn: async (data: { id: string; updates: Partial<AffiliateData> }) => {
+      const { data: result, error } = await supabase
+        .from('affiliates')
+        .update(data.updates)
+        .eq('id', data.id)
+        .select()
+        .single();
 
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
-      console.log('Get affiliate result:', data);
-      return data?.affiliate || null;
-    } catch (error: any) {
-      console.error('Erro ao buscar afiliado:', error);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateAffiliate = async (data: AffiliateData) => {
-    setLoading(true);
-    console.log('Updating affiliate with data:', data);
-    
-    try {
-      const { data: result, error } = await supabase.functions.invoke('affiliates-management', {
-        body: data,
-        method: 'PUT'
-      });
-
-      if (error) {
-        console.error('Edge function error:', error);
-        throw new Error(error.message || 'Erro ao atualizar afiliado');
-      }
-
-      if (result?.error) {
-        throw new Error(result.error);
-      }
-
-      toast({
-        title: "Dados atualizados",
-        description: "Suas informações de afiliado foram atualizadas com sucesso.",
-      });
-
-      return result.affiliate;
-    } catch (error: any) {
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-affiliate'] });
+      toast.success('Dados atualizados com sucesso!');
+    },
+    onError: (error: any) => {
       console.error('Erro ao atualizar afiliado:', error);
-      toast({
-        title: "Erro ao atualizar dados",
-        description: error.message || 'Ocorreu um erro inesperado',
-        variant: "destructive",
-      });
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
+      toast.error('Erro ao atualizar dados: ' + error.message);
+    },
+  });
+}
 
-  const getReferrals = async (): Promise<Referral[]> => {
-    setLoading(true);
-    console.log('Getting referrals...');
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('affiliates-management');
-
-      if (error) {
-        console.error('Edge function error:', error);
-        return [];
-      }
-
-      if (data?.error) {
-        console.error('Function returned error:', data.error);
-        return [];
-      }
-
-      console.log('Get referrals result:', data?.referrals);
-      return data?.referrals || [];
-    } catch (error: any) {
-      console.error('Erro ao buscar indicações:', error);
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getTransactions = async (): Promise<Transaction[]> => {
-    setLoading(true);
-    console.log('Getting transactions...');
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('affiliates-management');
-
-      if (error) {
-        console.error('Edge function error:', error);
-        return [];
-      }
-
-      if (data?.error) {
-        console.error('Function returned error:', data.error);
-        return [];
-      }
-
-      console.log('Get transactions result:', data?.transactions);
-      return data?.transactions || [];
-    } catch (error: any) {
-      console.error('Erro ao buscar transações:', error);
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const generateReferralUrl = (referralCode: string): string => {
-    return `${window.location.origin}/filiacao?ref=${referralCode}`;
-  };
-
-  return {
-    createAffiliate,
-    getAffiliate,
-    updateAffiliate,
-    getReferrals,
-    getTransactions,
-    generateReferralUrl,
-    loading
-  };
-};
+// Função utilitária para gerar URL de indicação
+export function generateReferralUrl(referralCode: string): string {
+  return `${window.location.origin}/filiacao?ref=${referralCode}`;
+}

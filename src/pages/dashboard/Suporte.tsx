@@ -17,7 +17,7 @@ import {
   Plus,
   Ticket
 } from "lucide-react";
-import { useSuporteTickets } from "@/hooks/useSuporteTickets";
+import { useMyTickets } from "@/hooks/useSupport";
 import { TicketCard } from "@/components/suporte/TicketCard";
 import { TicketDetail } from "@/components/suporte/TicketDetail";
 import { NovoTicketModal } from "@/components/suporte/NovoTicketModal";
@@ -27,7 +27,7 @@ const Suporte = () => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showNovoTicket, setShowNovoTicket] = useState(false);
   
-  const { tickets, isLoading } = useSuporteTickets();
+  const { data: tickets = [], isLoading } = useMyTickets();
 
   const faqs = [
     {
@@ -81,8 +81,8 @@ const Suporte = () => {
   );
 
   const filteredTickets = tickets.filter(ticket =>
-    ticket.assunto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ticket.descricao.toLowerCase().includes(searchTerm.toLowerCase())
+    ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    ticket.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (selectedTicket) {

@@ -9,39 +9,44 @@ import {
   CheckCircle,
   Calendar
 } from "lucide-react";
-import { SuporteTicket } from "@/hooks/useSuporteTickets";
+import { SupportTicket } from "@/hooks/useSupport";
 
 interface TicketCardProps {
-  ticket: SuporteTicket;
+  ticket: SupportTicket;
   onClick: () => void;
 }
 
 export const TicketCard = ({ ticket, onClick }: TicketCardProps) => {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      'aberto': { 
+      'open': { 
         variant: 'destructive' as const, 
         icon: AlertCircle, 
         label: 'Aberto' 
       },
-      'em_andamento': { 
+      'in_progress': { 
         variant: 'default' as const, 
         icon: Clock, 
         label: 'Em Andamento' 
       },
-      'resolvido': { 
+      'waiting_user': { 
+        variant: 'default' as const, 
+        icon: Clock, 
+        label: 'Aguardando Usuário' 
+      },
+      'resolved': { 
         variant: 'secondary' as const, 
         icon: CheckCircle, 
         label: 'Resolvido' 
       },
-      'fechado': { 
+      'closed': { 
         variant: 'outline' as const, 
         icon: CheckCircle, 
         label: 'Fechado' 
       }
     };
     
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.aberto;
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.open;
     const Icon = config.icon;
     
     return (
@@ -52,15 +57,15 @@ export const TicketCard = ({ ticket, onClick }: TicketCardProps) => {
     );
   };
 
-  const getPriorityBadge = (prioridade: string) => {
+  const getPriorityBadge = (priority: string) => {
     const priorityConfig = {
-      'baixa': { color: 'bg-green-100 text-green-800', label: 'Baixa' },
-      'normal': { color: 'bg-blue-100 text-blue-800', label: 'Normal' },
-      'alta': { color: 'bg-yellow-100 text-yellow-800', label: 'Alta' },
-      'urgente': { color: 'bg-red-100 text-red-800', label: 'Urgente' }
+      'low': { color: 'bg-green-100 text-green-800', label: 'Baixa' },
+      'medium': { color: 'bg-blue-100 text-blue-800', label: 'Normal' },
+      'high': { color: 'bg-yellow-100 text-yellow-800', label: 'Alta' },
+      'urgent': { color: 'bg-red-100 text-red-800', label: 'Urgente' }
     };
     
-    const config = priorityConfig[prioridade as keyof typeof priorityConfig] || priorityConfig.normal;
+    const config = priorityConfig[priority as keyof typeof priorityConfig] || priorityConfig.medium;
     
     return (
       <Badge className={config.color}>
@@ -74,17 +79,17 @@ export const TicketCard = ({ ticket, onClick }: TicketCardProps) => {
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <CardTitle className="text-lg line-clamp-1">
-            {ticket.assunto}
+            {ticket.subject}
           </CardTitle>
           <div className="flex gap-2 ml-2">
             {getStatusBadge(ticket.status)}
-            {getPriorityBadge(ticket.prioridade)}
+            {getPriorityBadge(ticket.priority)}
           </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
         <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-          {ticket.descricao}
+          {ticket.description}
         </p>
         
         <div className="flex items-center justify-between text-xs text-muted-foreground">

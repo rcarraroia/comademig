@@ -1,20 +1,45 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-// Imports compartilhados
-import { createAsaasClient } from '../shared/asaas-client.ts'
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Cliente Asaas inline
+function createAsaasClient() {
+  const apiKey = Deno.env.get('ASAAS_API_KEY') || ''
+  const baseUrl = Deno.env.get('ASAAS_BASE_URL') || 'https://api-sandbox.asaas.com/v3'
+
+  if (!apiKey) {
+    throw new Error('ASAAS_API_KEY não configurada')
+  }
+
+  return {
+    async post(endpoint: string, body: any) {
+      const url = `${baseUrl}${endpoint}`
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'access_token': apiKey,
+        },
+        body: JSON.stringify(body)
+      })
+
+      return {
+        ok: response.ok,
+        json: async () => await response.json()
+      }
+    }
+  }
+}
+
 interface ConfigureSplitRequest {
-  paymentId: string;
-  affiliateId: string;
-  commissionPercentage: number;
-  serviceType: 'filiacao' | 'certidao' | 'regularizacao';
+  cobrancaId: string;
+  serviceType: 'filiacao' | 'servicos' | 'publicidade' | 'eventos' | 'outros';
   totalValue: number;
+  affiliateId?: string; // Opcional - apenas para filiação
 }
 
 serve(async (req) => {
@@ -32,204 +57,270 @@ serve(async (req) => {
     const asaasClient = createAsaasClient()
 
     const { 
-      paymentId, 
-      affiliateId, 
-      commissionPercentage, 
+      cobrancaId, 
       serviceType, 
-      totalValue 
+      totalValue,
+      affiliateId
     }: ConfigureSplitRequest = await req.json()
 
-    console.log('Configurando split de pagamento:', { 
-      paymentId, 
-      affiliateId, 
-      commissionPercentage, 
+    console.log('Configurando divisão tripla de pagamento:', { 
+      cobrancaId, 
       serviceType, 
-      totalValue 
+      totalValue,
+      affiliateId 
     })
 
-    if (!paymentId || !affiliateId || !commissionPercentage || !serviceType || !totalValue) {
-      throw new Error('Dados obrigatórios não fornecidos')
+    if (!cobrancaId || !serviceType || !totalValue) {
+      throw new Error('Dados obrigatórios não fornecidos (cobrancaId, serviceType, totalValue)')
     }
 
-    if (commissionPercentage <= 0 || commissionPercentage > 50) {
-      throw new Error('Percentual de comissão deve estar entre 0.1% e 50%')
+    // Buscar Wallet ID da RENUM das variáveis de ambiente
+    const RENUM_WALLET_ID = Deno.env.get('RENUM_WALLET_ID')
+    if (!RENUM_WALLET_ID) {
+      console.error('RENUM_WALLET_ID não configurado nas variáveis de ambiente')
+      throw new Error('Configuração de split incompleta - RENUM_WALLET_ID não encontrado')
     }
 
-    // 1. Buscar dados do afiliado
-    const { data: affiliate, error: affiliateError } = await supabase
-      .from('profiles')
-      .select(`
-        id,
-        nome_completo,
-        cpf,
-        email,
-        telefone,
-        asaas_customer_id,
-        affiliate_data
-      `)
-      .eq('id', affiliateId)
-      .single()
-
-    if (affiliateError || !affiliate) {
-      console.error('Afiliado não encontrado:', affiliateError)
-      throw new Error('Afiliado não encontrado')
+    // 1. Definir configuração de split baseado no tipo de serviço
+    const splitConfigs: Record<string, Array<{
+      identifier: 'comademig' | 'renum' | 'affiliate';
+      name: string;
+      percentage: number;
+    }>> = {
+      filiacao: [
+        { identifier: 'comademig', name: 'COMADEMIG', percentage: 40 },
+        { identifier: 'renum', name: 'RENUM', percentage: 40 },
+        { identifier: 'affiliate', name: 'Afiliado', percentage: 20 },
+      ],
+      servicos: [
+        { identifier: 'comademig', name: 'COMADEMIG', percentage: 60 },
+        { identifier: 'renum', name: 'RENUM', percentage: 40 },
+      ],
+      publicidade: [
+        { identifier: 'comademig', name: 'COMADEMIG', percentage: 100 },
+      ],
+      eventos: [
+        { identifier: 'comademig', name: 'COMADEMIG', percentage: 70 },
+        { identifier: 'renum', name: 'RENUM', percentage: 30 },
+      ],
+      outros: [
+        { identifier: 'comademig', name: 'COMADEMIG', percentage: 100 },
+      ],
     }
 
-    // 2. Verificar se afiliado tem conta no Asaas
-    let affiliateCustomerId = affiliate.asaas_customer_id
+    const config = splitConfigs[serviceType]
+    if (!config) {
+      throw new Error(`Tipo de serviço inválido: ${serviceType}`)
+    }
 
-    if (!affiliateCustomerId) {
-      console.log('Criando cliente Asaas para afiliado...')
-      
-      // Criar cliente no Asaas para o afiliado
-      const customerData = {
-        name: affiliate.nome_completo,
-        email: affiliate.email,
-        phone: affiliate.telefone,
-        cpfCnpj: affiliate.cpf,
-        notificationDisabled: false,
-        additionalEmails: affiliate.email,
-        municipalInscription: '',
-        stateInscription: '',
-        observations: `Afiliado COMADEMIG - ID: ${affiliate.id}`
-      }
+    console.log(`Configuração de split para ${serviceType}:`, config)
 
-      const customerResponse = await asaasClient.post('/customers', customerData)
-      
-      if (!customerResponse.ok) {
-        const errorData = await customerResponse.json()
-        console.error('Erro ao criar cliente afiliado:', errorData)
-        throw new Error(`Erro ao criar cliente afiliado: ${errorData.errors?.[0]?.description || 'Erro desconhecido'}`)
-      }
+    // 2. Buscar dados do afiliado (se houver)
+    let affiliateWalletId: string | null = null
+    let affiliateName = 'Afiliado'
 
-      const customerResult = await customerResponse.json()
-      affiliateCustomerId = customerResult.id
-
-      // Salvar customer_id do afiliado
-      await supabase
-        .from('profiles')
-        .update({ asaas_customer_id: affiliateCustomerId })
+    if (affiliateId) {
+      const { data: affiliate, error: affiliateError } = await supabase
+        .from('affiliates')
+        .select('id, display_name, asaas_wallet_id, user_id')
         .eq('id', affiliateId)
+        .eq('status', 'active')
+        .single()
 
-      console.log('Cliente Asaas criado para afiliado:', affiliateCustomerId)
+      if (affiliateError || !affiliate) {
+        console.warn('Afiliado não encontrado ou inativo:', affiliateError)
+        // Não falha - apenas não cria split para afiliado
+      } else {
+        affiliateWalletId = affiliate.asaas_wallet_id
+        affiliateName = affiliate.display_name
+        console.log('Afiliado encontrado:', { id: affiliate.id, name: affiliateName, walletId: affiliateWalletId })
+      }
     }
 
-    // 3. Calcular valor da comissão
-    const commissionValue = (totalValue * commissionPercentage) / 100
+    // 3. Criar splits para cada beneficiário
+    const createdSplits = []
 
-    // 4. Configurar split no Asaas
-    const splitData = {
-      walletId: affiliateCustomerId,
-      fixedValue: commissionValue, // Usar valor fixo em vez de percentual para maior controle
-      status: 'PENDING', // Será ativado quando pagamento for confirmado
-      description: `Comissão ${serviceType} - ${commissionPercentage}%`
-    }
-
-    console.log('Configurando split no Asaas:', splitData)
-
-    const splitResponse = await asaasClient.post(`/payments/${paymentId}/splits`, splitData)
-    
-    if (!splitResponse.ok) {
-      const errorData = await splitResponse.json()
-      console.error('Erro ao configurar split:', errorData)
-      throw new Error(`Erro ao configurar split: ${errorData.errors?.[0]?.description || 'Erro desconhecido'}`)
-    }
-
-    const splitResult = await splitResponse.json()
-
-    console.log('Split configurado no Asaas:', splitResult)
-
-    // 5. Registrar split localmente
-    const { data: localSplit, error: splitError } = await supabase
-      .from('asaas_splits')
-      .insert({
-        payment_id: paymentId,
-        affiliate_id: affiliateId,
-        asaas_split_id: splitResult.id,
-        commission_percentage: commissionPercentage,
-        commission_value: commissionValue,
-        total_value: totalValue,
-        service_type: serviceType,
-        status: 'PENDING',
-        wallet_id: affiliateCustomerId,
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single()
-
-    if (splitError) {
-      console.error('Erro ao registrar split localmente:', splitError)
-      throw new Error(`Erro ao registrar split: ${splitError.message}`)
-    }
-
-    // 6. Criar notificação para o afiliado
-    try {
-      const notificationData = {
-        user_id: affiliateId,
-        type: 'comissao_configurada',
-        title: 'Comissão Configurada',
-        message: `Uma comissão de ${commissionPercentage}% (${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(commissionValue)}) foi configurada para você.`,
-        data: {
-          split_id: localSplit.id,
-          payment_id: paymentId,
-          commission_percentage: commissionPercentage,
-          commission_value: commissionValue,
-          service_type: serviceType,
-          status: 'PENDING'
-        },
-        created_at: new Date().toISOString()
+    for (const recipient of config) {
+      // Pular afiliado se não houver wallet ID
+      if (recipient.identifier === 'affiliate' && !affiliateWalletId) {
+        console.log('Pulando split de afiliado - sem wallet ID')
+        continue
       }
 
-      await supabase
-        .from('notifications')
-        .insert([notificationData])
+      const amount = Math.round((totalValue * recipient.percentage) / 100 * 100) / 100
 
-      console.log('Notificação criada para afiliado:', affiliateId)
-    } catch (error) {
-      console.error('Erro ao criar notificação:', error)
-      // Não falha o processo principal
-    }
+      // COMADEMIG recebe direto (não cria split no Asaas)
+      if (recipient.identifier === 'comademig') {
+        console.log(`COMADEMIG receberá R$ ${amount.toFixed(2)} (${recipient.percentage}%) diretamente`)
+        
+        // Apenas registrar localmente
+        const { data: localSplit, error: splitError } = await supabase
+          .from('asaas_splits')
+          .insert({
+            cobranca_id: cobrancaId,
+            recipient_type: 'comademig',
+            recipient_name: 'COMADEMIG',
+            service_type: serviceType,
+            percentage: recipient.percentage,
+            commission_amount: amount,
+            total_value: totalValue,
+            wallet_id: null, // COMADEMIG não tem wallet (recebe direto)
+            asaas_split_id: null, // Não cria split no Asaas
+            status: 'PENDING',
+          })
+          .select()
+          .single()
 
-    // 7. Registrar log de auditoria
-    try {
-      const auditData = {
-        table_name: 'asaas_splits',
-        record_id: localSplit.id,
-        action: 'INSERT',
-        old_values: null,
-        new_values: {
+        if (splitError) {
+          console.error('Erro ao registrar split COMADEMIG:', splitError)
+          throw new Error(`Erro ao registrar split COMADEMIG: ${splitError.message}`)
+        }
+
+        createdSplits.push({
           ...localSplit,
-          asaas_split_data: splitResult
-        },
-        user_id: affiliateId,
-        created_at: new Date().toISOString()
+          needsAsaasSplit: false
+        })
+        continue
       }
 
-      await supabase
-        .from('audit_logs')
-        .insert([auditData])
+      // RENUM e Afiliado: criar split no Asaas
+      const walletId = recipient.identifier === 'renum' ? RENUM_WALLET_ID : affiliateWalletId
+      const recipientName = recipient.identifier === 'renum' ? 'RENUM' : affiliateName
 
-      console.log('Log de auditoria registrado')
+      console.log(`Criando split no Asaas para ${recipientName}: R$ ${amount.toFixed(2)} (${recipient.percentage}%)`)
+
+      // Criar split no Asaas
+      const splitData = {
+        walletId: walletId,
+        fixedValue: amount,
+        status: 'PENDING',
+        description: `${recipientName} - ${serviceType} - ${recipient.percentage}%`
+      }
+
+      const splitResponse = await asaasClient.post(`/payments/${cobrancaId}/splits`, splitData)
+      
+      if (!splitResponse.ok) {
+        const errorData = await splitResponse.json()
+        console.error(`Erro ao criar split no Asaas para ${recipientName}:`, errorData)
+        throw new Error(`Erro ao criar split para ${recipientName}: ${errorData.errors?.[0]?.description || 'Erro desconhecido'}`)
+      }
+
+      const splitResult = await splitResponse.json()
+      console.log(`Split criado no Asaas para ${recipientName}:`, splitResult.id)
+
+      // Registrar split localmente
+      const { data: localSplit, error: splitError } = await supabase
+        .from('asaas_splits')
+        .insert({
+          cobranca_id: cobrancaId,
+          recipient_type: recipient.identifier,
+          recipient_name: recipientName,
+          service_type: serviceType,
+          percentage: recipient.percentage,
+          commission_amount: amount,
+          total_value: totalValue,
+          wallet_id: walletId,
+          asaas_split_id: splitResult.id,
+          status: 'PENDING',
+          affiliate_id: recipient.identifier === 'affiliate' ? affiliateId : null,
+        })
+        .select()
+        .single()
+
+      if (splitError) {
+        console.error(`Erro ao registrar split ${recipientName}:`, splitError)
+        throw new Error(`Erro ao registrar split ${recipientName}: ${splitError.message}`)
+      }
+
+      createdSplits.push({
+        ...localSplit,
+        needsAsaasSplit: true
+      })
+    }
+
+    console.log(`${createdSplits.length} splits criados com sucesso`)
+
+    // 4. Criar notificação para o afiliado (se houver)
+    if (affiliateId && affiliateWalletId) {
+      try {
+        const affiliateSplit = createdSplits.find(s => s.recipient_type === 'affiliate')
+        if (affiliateSplit) {
+          const { data: affiliateProfile } = await supabase
+            .from('affiliates')
+            .select('user_id')
+            .eq('id', affiliateId)
+            .single()
+
+          if (affiliateProfile) {
+            const notificationData = {
+              user_id: affiliateProfile.user_id,
+              type: 'comissao_configurada',
+              title: 'Comissão Configurada',
+              message: `Uma comissão de ${affiliateSplit.percentage}% (${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(affiliateSplit.commission_amount)}) foi configurada para você.`,
+              action_url: '/dashboard/afiliados',
+            }
+
+            await supabase
+              .from('notifications')
+              .insert([notificationData])
+
+            console.log('Notificação criada para afiliado')
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao criar notificação:', error)
+        // Não falha o processo principal
+      }
+    }
+
+    // 5. Registrar log de auditoria
+    try {
+      for (const split of createdSplits) {
+        const auditData = {
+          table_name: 'asaas_splits',
+          record_id: split.id,
+          action: 'INSERT',
+          new_values: split,
+        }
+
+        await supabase
+          .from('audit_logs')
+          .insert([auditData])
+      }
+
+      console.log('Logs de auditoria registrados')
     } catch (error) {
       console.error('Erro ao registrar auditoria:', error)
       // Não falha o processo principal
     }
 
+    // 6. Calcular totais
+    const totalSplitAmount = createdSplits.reduce((sum, s) => sum + (s.commission_amount || 0), 0)
+    const splitsWithAsaas = createdSplits.filter(s => s.needsAsaasSplit).length
+
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Split configurado com sucesso',
+        message: `Divisão tripla configurada: ${createdSplits.length} beneficiários`,
         data: {
-          splitId: localSplit.id,
-          asaasSplitId: splitResult.id,
-          affiliateId: affiliateId,
-          affiliateName: affiliate.nome_completo,
-          commissionPercentage: commissionPercentage,
-          commissionValue: commissionValue,
-          totalValue: totalValue,
-          serviceType: serviceType,
-          status: 'PENDING',
-          walletId: affiliateCustomerId
+          cobrancaId,
+          serviceType,
+          totalValue,
+          totalSplitAmount,
+          splits: createdSplits.map(s => ({
+            id: s.id,
+            recipientType: s.recipient_type,
+            recipientName: s.recipient_name,
+            percentage: s.percentage,
+            amount: s.commission_amount,
+            asaasSplitId: s.asaas_split_id,
+            needsAsaasSplit: s.needsAsaasSplit,
+          })),
+          summary: {
+            totalSplits: createdSplits.length,
+            splitsWithAsaas: splitsWithAsaas,
+            splitsLocalOnly: createdSplits.length - splitsWithAsaas,
+          }
         }
       }),
       { 

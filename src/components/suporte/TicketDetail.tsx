@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,62 +12,88 @@ import {
   HeadphonesIcon,
   Clock
 } from "lucide-react";
-import { SuporteTicket, SuporteMensagem, useSuporteTickets } from "@/hooks/useSuporteTickets";
+import { SupportTicket, useTicket } from "@/hooks/useSupport";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface TicketDetailProps {
-  ticket: SuporteTicket;
+  ticket: SupportTicket;
   onBack: () => void;
 }
 
-export const TicketDetail = ({ ticket, onBack }: TicketDetailProps) => {
+export const TicketDetail = ({ ticket: initialTicket, onBack }: TicketDetailProps) => {
   const [novaMensagem, setNovaMensagem] = useState("");
-  const [mensagens, setMensagens] = useState<SuporteMensagem[]>([]);
-  const [loadingMensagens, setLoadingMensagens] = useState(true);
-  
-  const { getMensagens, enviarMensagem } = useSuporteTickets();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  
+  // Buscar ticket completo com mensagens
+  const { data: ticket, isLoading: loadingMensagens } = useTicket(initialTicket.id);
+  
+  // Mutation para enviar mensagem
+  const enviarMensagem = useMutation({
+    mutationFn: async (message: string) => {
+      const { data, error } = await supabase
+        .from('support_messages')
+        .insert({
+          ticket_id: initialTicket.id,
+          message: message,
+          is_staff_reply: false,
+          is_internal_note: false,
+        })
+        .select()
+        .single();
 
-  useEffect(() => {
-    carregarMensagens();
-  }, [ticket.id]);
-
-  const carregarMensagens = async () => {
-    try {
-      setLoadingMensagens(true);
-      const data = await getMensagens(ticket.id);
-      setMensagens(data);
-    } catch (error) {
-      console.error('Erro ao carregar mensagens:', error);
-    } finally {
-      setLoadingMensagens(false);
-    }
-  };
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket', initialTicket.id] });
+      toast.success('Mensagem enviada com sucesso!');
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao enviar mensagem: ' + error.message);
+    },
+  });
 
   const handleEnviarMensagem = async () => {
     if (!novaMensagem.trim()) return;
     
-    try {
-      await enviarMensagem.mutateAsync({
-        ticketId: ticket.id,
-        mensagem: novaMensagem.trim()
-      });
-      
-      setNovaMensagem("");
-      carregarMensagens(); // Recarregar mensagens após enviar
-    } catch (error) {
-      console.error('Erro ao enviar mensagem:', error);
-    }
+    await enviarMensagem.mutateAsync(novaMensagem.trim());
+    setNovaMensagem("");
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'aberto': return 'bg-red-100 text-red-800';
-      case 'em_andamento': return 'bg-blue-100 text-blue-800';
-      case 'resolvido': return 'bg-green-100 text-green-800';
-      case 'fechado': return 'bg-gray-100 text-gray-800';
+      case 'open': return 'bg-red-100 text-red-800';
+      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'waiting_user': return 'bg-yellow-100 text-yellow-800';
+      case 'resolved': return 'bg-green-100 text-green-800';
+      case 'closed': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+  
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      'open': 'ABERTO',
+      'in_progress': 'EM ANDAMENTO',
+      'waiting_user': 'AGUARDANDO USUÁRIO',
+      'resolved': 'RESOLVIDO',
+      'closed': 'FECHADO'
+    };
+    return labels[status] || status.toUpperCase();
+  };
+  
+  const getPriorityLabel = (priority: string) => {
+    const labels: Record<string, string> = {
+      'low': 'BAIXA',
+      'medium': 'NORMAL',
+      'high': 'ALTA',
+      'urgent': 'URGENTE'
+    };
+    return labels[priority] || priority.toUpperCase();
   };
 
   return (
@@ -79,16 +105,16 @@ export const TicketDetail = ({ ticket, onBack }: TicketDetailProps) => {
           Voltar
         </Button>
         <div className="flex-1">
-          <h1 className="text-xl font-semibold">{ticket.assunto}</h1>
+          <h1 className="text-xl font-semibold">{initialTicket.subject}</h1>
           <div className="flex items-center gap-2 mt-1">
-            <Badge className={getStatusColor(ticket.status)}>
-              {ticket.status.replace('_', ' ').toUpperCase()}
+            <Badge className={getStatusColor(initialTicket.status)}>
+              {getStatusLabel(initialTicket.status)}
             </Badge>
             <Badge variant="outline">
-              Prioridade: {ticket.prioridade.toUpperCase()}
+              Prioridade: {getPriorityLabel(initialTicket.priority)}
             </Badge>
             <span className="text-sm text-muted-foreground">
-              Criado em {new Date(ticket.created_at).toLocaleDateString('pt-BR')}
+              Criado em {new Date(initialTicket.created_at).toLocaleDateString('pt-BR')}
             </span>
           </div>
         </div>
@@ -100,7 +126,7 @@ export const TicketDetail = ({ ticket, onBack }: TicketDetailProps) => {
           <CardTitle className="text-lg">Descrição do Problema</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm whitespace-pre-wrap">{ticket.descricao}</p>
+          <p className="text-sm whitespace-pre-wrap">{initialTicket.description}</p>
         </CardContent>
       </Card>
 
@@ -118,9 +144,9 @@ export const TicketDetail = ({ ticket, onBack }: TicketDetailProps) => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-comademig-blue mx-auto"></div>
               <p className="text-sm text-muted-foreground mt-2">Carregando mensagens...</p>
             </div>
-          ) : mensagens.length > 0 ? (
+          ) : ticket?.messages && ticket.messages.length > 0 ? (
             <div className="space-y-4 max-h-80 overflow-y-auto">
-              {mensagens.map((mensagem) => (
+              {ticket.messages.map((mensagem: any) => (
                 <div key={mensagem.id} className="flex gap-3">
                   <div className="flex-shrink-0">
                     {mensagem.user_id === user?.id ? (
@@ -137,7 +163,7 @@ export const TicketDetail = ({ ticket, onBack }: TicketDetailProps) => {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm font-medium">
-                        {mensagem.user_id === user?.id ? 'Você' : 'Suporte'}
+                        {mensagem.user_id === user?.id ? 'Você' : (mensagem.user?.nome_completo || 'Suporte')}
                       </span>
                       <span className="text-xs text-muted-foreground">
                         {new Date(mensagem.created_at).toLocaleDateString('pt-BR', {
@@ -149,7 +175,7 @@ export const TicketDetail = ({ ticket, onBack }: TicketDetailProps) => {
                       </span>
                     </div>
                     <div className="bg-muted rounded-lg p-3">
-                      <p className="text-sm whitespace-pre-wrap">{mensagem.mensagem}</p>
+                      <p className="text-sm whitespace-pre-wrap">{mensagem.message}</p>
                     </div>
                   </div>
                 </div>

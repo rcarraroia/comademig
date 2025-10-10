@@ -1,12 +1,61 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
-import { AsaasClient } from '../shared/asaas-client.ts'
-import { validateRequest } from '../shared/validation.ts'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+// Função auxiliar de validação
+function validateRequest(body: any, requiredFields: string[]) {
+  const errors: string[] = []
+  for (const field of requiredFields) {
+    if (!body[field]) {
+      errors.push(`Campo obrigatório ausente: ${field}`)
+    }
+  }
+  return {
+    isValid: errors.length === 0,
+    errors
+  }
+}
+
+// Cliente Asaas inline
+function createAsaasClient() {
+  const apiKey = Deno.env.get('ASAAS_API_KEY') || ''
+  const baseUrl = Deno.env.get('ASAAS_BASE_URL') || 'https://api-sandbox.asaas.com/v3'
+
+  if (!apiKey) {
+    throw new Error('ASAAS_API_KEY não configurada')
+  }
+
+  return {
+    async request(endpoint: string, options: RequestInit = {}) {
+      const url = `${baseUrl}${endpoint}`
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'access_token': apiKey,
+          ...options.headers
+        }
+      })
+
+      const data = await response.json()
+
+      return {
+        success: response.ok,
+        data: response.ok ? data : null,
+        error: !response.ok ? (data.errors?.[0]?.description || `HTTP ${response.status}`) : null
+      }
+    }
+  }
+}
 
 interface ProcessSplitsRequest {
   cobrancaId: string
   paymentValue: number
+  serviceType: 'filiacao' | 'servicos' | 'publicidade' | 'eventos' | 'outros'
   affiliateId?: string
 }
 
@@ -23,8 +72,8 @@ serve(async (req) => {
 
     const asaasClient = new AsaasClient()
     const body = await req.json()
-    
-    const validation = validateRequest(body, ['cobrancaId', 'paymentValue'])
+
+    const validation = validateRequest(body, ['cobrancaId', 'paymentValue', 'serviceType'])
     if (!validation.isValid) {
       return new Response(
         JSON.stringify({ error: validation.errors }),
@@ -32,183 +81,223 @@ serve(async (req) => {
       )
     }
 
-    const { cobrancaId, paymentValue, affiliateId } = body as ProcessSplitsRequest
+    const { cobrancaId, paymentValue, serviceType, affiliateId } = body as ProcessSplitsRequest
 
-    console.log(`Processing splits for cobranca ${cobrancaId}, value: ${paymentValue}`)
+    console.log(`Processing triple splits for cobranca ${cobrancaId}, value: ${paymentValue}, type: ${serviceType}`)
 
-    // Buscar configuração de split ativa
-    const { data: splitConfig, error: splitError } = await supabase
+    // Buscar TODOS os splits pendentes desta cobrança
+    const { data: splitConfigs, error: splitError } = await supabase
       .from('asaas_splits')
       .select('*')
       .eq('cobranca_id', cobrancaId)
-      .eq('status', 'active')
-      .single()
+      .eq('status', 'PENDING')
 
-    if (splitError && splitError.code !== 'PGRST116') {
-      console.error('Error fetching split config:', splitError)
-      throw new Error('Erro ao buscar configuração de split')
+    if (splitError) {
+      console.error('Error fetching split configs:', splitError)
+      throw new Error('Erro ao buscar configurações de split')
     }
 
     // Se não há configuração de split, não há nada a processar
-    if (!splitConfig) {
-      console.log('No split configuration found for this payment')
+    if (!splitConfigs || splitConfigs.length === 0) {
+      console.log('No split configurations found for this payment')
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'No split configuration found',
-          processed: false 
+        JSON.stringify({
+          success: true,
+          message: 'No split configurations found',
+          processed: false
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Calcular valor da comissão
-    const commissionValue = (paymentValue * splitConfig.percentage) / 100
-    const minimumCommission = 5.00 // Valor mínimo de comissão
+    console.log(`Found ${splitConfigs.length} splits to process`)
 
-    if (commissionValue < minimumCommission) {
-      console.log(`Commission value ${commissionValue} below minimum ${minimumCommission}`)
-      
-      // Atualizar status do split
-      await supabase
-        .from('asaas_splits')
-        .update({ 
-          status: 'cancelled',
-          processed_at: new Date().toISOString(),
-          notes: `Comissão de R$ ${commissionValue.toFixed(2)} abaixo do mínimo de R$ ${minimumCommission.toFixed(2)}`
+    // Processar cada split individualmente
+    const processedSplits = []
+    const failedSplits = []
+
+    for (const splitConfig of splitConfigs) {
+      try {
+        console.log(`Processing split ${splitConfig.id} for ${splitConfig.recipient_name}`)
+
+        // COMADEMIG recebe direto - apenas marcar como processado
+        if (splitConfig.recipient_type === 'comademig') {
+          console.log('COMADEMIG split - marking as processed (receives directly)')
+
+          await supabase
+            .from('asaas_splits')
+            .update({
+              status: 'PROCESSED',
+              processed_at: new Date().toISOString(),
+            })
+            .eq('id', splitConfig.id)
+
+          processedSplits.push({
+            splitId: splitConfig.id,
+            recipientType: 'comademig',
+            recipientName: 'COMADEMIG',
+            amount: splitConfig.commission_amount,
+            status: 'PROCESSED',
+            note: 'Recebe diretamente (não precisa transferência)'
+          })
+          continue
+        }
+
+        // RENUM e Afiliado: processar transferência via Asaas
+        const amount = splitConfig.commission_amount
+        const minimumTransfer = 10.00 // Valor mínimo de transferência
+
+        if (amount < minimumTransfer) {
+          console.log(`Amount ${amount} below minimum ${minimumTransfer} for ${splitConfig.recipient_name}`)
+
+          await supabase
+            .from('asaas_splits')
+            .update({
+              status: 'CANCELLED',
+              processed_at: new Date().toISOString(),
+              error_message: `Valor de R$ ${amount.toFixed(2)} abaixo do mínimo de R$ ${minimumTransfer.toFixed(2)}`
+            })
+            .eq('id', splitConfig.id)
+
+          failedSplits.push({
+            splitId: splitConfig.id,
+            recipientName: splitConfig.recipient_name,
+            error: 'Valor abaixo do mínimo',
+            amount
+          })
+          continue
+        }
+
+        // Verificar se tem asaas_split_id (foi criado no Asaas)
+        if (!splitConfig.asaas_split_id) {
+          console.error(`Split ${splitConfig.id} não tem asaas_split_id`)
+
+          await supabase
+            .from('asaas_splits')
+            .update({
+              status: 'ERROR',
+              processed_at: new Date().toISOString(),
+              error_message: 'Split não foi criado no Asaas'
+            })
+            .eq('id', splitConfig.id)
+
+          failedSplits.push({
+            splitId: splitConfig.id,
+            recipientName: splitConfig.recipient_name,
+            error: 'Split não criado no Asaas'
+          })
+          continue
+        }
+
+        // Ativar split no Asaas (muda de PENDING para ACTIVE)
+        console.log(`Activating split ${splitConfig.asaas_split_id} in Asaas`)
+
+        const activateResponse = await asaasClient.request(`/splits/${splitConfig.asaas_split_id}/activate`, {
+          method: 'POST'
         })
-        .eq('id', splitConfig.id)
 
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'Commission below minimum value',
-          processed: false,
-          commissionValue,
-          minimumCommission
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+        if (!activateResponse.success) {
+          console.error(`Error activating split: ${activateResponse.error}`)
 
-    // Buscar dados do afiliado
-    const { data: affiliate, error: affiliateError } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, asaas_customer_id')
-      .eq('id', splitConfig.affiliate_id)
-      .single()
+          await supabase
+            .from('asaas_splits')
+            .update({
+              status: 'ERROR',
+              processed_at: new Date().toISOString(),
+              error_message: `Erro ao ativar split: ${activateResponse.error}`,
+              retry_count: (splitConfig.retry_count || 0) + 1
+            })
+            .eq('id', splitConfig.id)
 
-    if (affiliateError) {
-      console.error('Error fetching affiliate:', affiliateError)
-      throw new Error('Erro ao buscar dados do afiliado')
-    }
+          failedSplits.push({
+            splitId: splitConfig.id,
+            recipientName: splitConfig.recipient_name,
+            error: activateResponse.error,
+            amount
+          })
+          continue
+        }
 
-    // Verificar se afiliado tem customer_id no Asaas
-    if (!affiliate.asaas_customer_id) {
-      console.log('Affiliate does not have Asaas customer ID, creating...')
-      
-      // Criar customer para o afiliado
-      const customerData = {
-        name: affiliate.full_name,
-        email: affiliate.email,
-        externalReference: affiliate.id
-      }
+        // Atualizar split como processado
+        await supabase
+          .from('asaas_splits')
+          .update({
+            status: 'PROCESSED',
+            processed_at: new Date().toISOString(),
+          })
+          .eq('id', splitConfig.id)
 
-      const customerResponse = await asaasClient.createCustomer(customerData)
-      
-      if (!customerResponse.success) {
-        throw new Error(`Erro ao criar customer para afiliado: ${customerResponse.error}`)
-      }
+        // Se for afiliado, registrar comissão
+        if (splitConfig.recipient_type === 'affiliate' && splitConfig.affiliate_id) {
+          try {
+            await supabase
+              .from('affiliate_commissions')
+              .insert({
+                affiliate_id: splitConfig.affiliate_id,
+                payment_id: cobrancaId,
+                amount: amount,
+                status: 'pending',
+              })
 
-      // Atualizar profile com customer_id
-      await supabase
-        .from('profiles')
-        .update({ asaas_customer_id: customerResponse.data.id })
-        .eq('id', affiliate.id)
+            console.log(`Commission registered for affiliate ${splitConfig.affiliate_id}`)
+          } catch (error) {
+            console.error('Error registering commission:', error)
+            // Não falha o processo principal
+          }
+        }
 
-      affiliate.asaas_customer_id = customerResponse.data.id
-    }
-
-    // Criar transferência no Asaas
-    const transferData = {
-      value: commissionValue,
-      pixAddressKey: affiliate.email, // Usar email como chave PIX
-      description: `Comissão de afiliado - Cobrança ${cobrancaId}`,
-      scheduleDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] // +1 dia
-    }
-
-    console.log('Creating transfer in Asaas:', transferData)
-
-    const transferResponse = await asaasClient.request('/transfers', {
-      method: 'POST',
-      body: JSON.stringify(transferData)
-    })
-
-    if (!transferResponse.success) {
-      console.error('Error creating transfer:', transferResponse.error)
-      
-      // Marcar split como erro
-      await supabase
-        .from('asaas_splits')
-        .update({ 
-          status: 'error',
-          processed_at: new Date().toISOString(),
-          notes: `Erro ao criar transferência: ${transferResponse.error}`
+        processedSplits.push({
+          splitId: splitConfig.id,
+          recipientType: splitConfig.recipient_type,
+          recipientName: splitConfig.recipient_name,
+          amount: amount,
+          status: 'PROCESSED',
+          asaasSplitId: splitConfig.asaas_split_id
         })
-        .eq('id', splitConfig.id)
 
-      throw new Error(`Erro ao criar transferência: ${transferResponse.error}`)
+        console.log(`Split processed successfully: R$ ${amount.toFixed(2)} for ${splitConfig.recipient_name}`)
+
+      } catch (error) {
+        console.error(`Error processing split ${splitConfig.id}:`, error)
+
+        await supabase
+          .from('asaas_splits')
+          .update({
+            status: 'ERROR',
+            processed_at: new Date().toISOString(),
+            error_message: error.message,
+            retry_count: (splitConfig.retry_count || 0) + 1
+          })
+          .eq('id', splitConfig.id)
+
+        failedSplits.push({
+          splitId: splitConfig.id,
+          recipientName: splitConfig.recipient_name,
+          error: error.message
+        })
+      }
     }
 
-    // Atualizar split como processado
-    const { error: updateError } = await supabase
-      .from('asaas_splits')
-      .update({ 
-        status: 'processed',
-        processed_at: new Date().toISOString(),
-        transfer_id: transferResponse.data.id,
-        commission_value: commissionValue,
-        notes: `Transferência criada com sucesso - ID: ${transferResponse.data.id}`
-      })
-      .eq('id', splitConfig.id)
+    const totalProcessed = processedSplits.reduce((sum, s) => sum + (s.amount || 0), 0)
 
-    if (updateError) {
-      console.error('Error updating split status:', updateError)
-    }
-
-    // Registrar histórico de comissão
-    const { error: historyError } = await supabase
-      .from('affiliate_commissions')
-      .insert({
-        affiliate_id: splitConfig.affiliate_id,
-        cobranca_id: cobrancaId,
-        split_id: splitConfig.id,
-        commission_value: commissionValue,
-        payment_value: paymentValue,
-        percentage: splitConfig.percentage,
-        transfer_id: transferResponse.data.id,
-        status: 'pending',
-        created_at: new Date().toISOString()
-      })
-
-    if (historyError) {
-      console.error('Error creating commission history:', historyError)
-    }
-
-    console.log(`Split processed successfully: R$ ${commissionValue.toFixed(2)} for affiliate ${affiliate.full_name}`)
+    console.log(`Processing complete: ${processedSplits.length} successful, ${failedSplits.length} failed`)
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
-        message: 'Split processed successfully',
-        processed: true,
+        message: `${processedSplits.length} splits processados com sucesso`,
+        processed: processedSplits.length > 0,
         data: {
-          splitId: splitConfig.id,
-          affiliateId: splitConfig.affiliate_id,
-          affiliateName: affiliate.full_name,
-          commissionValue,
-          transferId: transferResponse.data.id,
-          percentage: splitConfig.percentage
+          cobrancaId,
+          totalValue: paymentValue,
+          totalProcessed,
+          processedSplits,
+          failedSplits,
+          summary: {
+            total: splitConfigs.length,
+            processed: processedSplits.length,
+            failed: failedSplits.length
+          }
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -217,9 +306,9 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error processing splits:', error)
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: 'Internal server error',
-        details: error.message 
+        details: error.message
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

@@ -12,12 +12,17 @@
 
 ### PROTOCOLO OBRIGATÓRIO
 
-#### 0. VERIFICAÇÃO PRÉVIA OBRIGATÓRIA
+#### 0. VERIFICAÇÃO PRÉVIA OBRIGATÓRIA - ANÁLISE DO ESTADO ATUAL DO BANCO
 - **SEMPRE verificar condições atuais do banco ANTES de qualquer implementação**
-- **Usar comandos Python, grepSearch, readFile para analisar estado atual**
+- **OBRIGATÓRIO: Analisar o que temos no banco atualmente para não apagar ou corromper nada que já esteja funcionando**
+- **Usar scripts Python com supabase-py para conectar e verificar estado real do banco**
+- **Usar comandos grepSearch, readFile para analisar código e referências**
 - **Avaliar se novas implementações podem prejudicar funcionalidades existentes**
-- **Identificar dependências e conflitos potenciais**
+- **Identificar dependências e relacionamentos entre tabelas**
+- **Verificar políticas RLS existentes antes de criar novas**
+- **Identificar conflitos potenciais com estruturas existentes**
 - **Documentar estado atual antes de propor alterações**
+- **NUNCA criar migrações que possam destruir dados existentes sem verificação prévia**
 
 #### 1. CRIAÇÃO DE SCRIPTS
 - Kiro cria scripts SQL completos e testados

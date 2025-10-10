@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useSuporteTickets } from "@/hooks/useSuporteTickets";
+import { useCreateTicket, useSupportCategories } from "@/hooks/useSupport";
 
 interface NovoTicketModalProps {
   open: boolean;
@@ -15,15 +15,17 @@ interface NovoTicketModalProps {
 
 export const NovoTicketModal = ({ open, onOpenChange }: NovoTicketModalProps) => {
   const [formData, setFormData] = useState({
-    assunto: "",
-    descricao: "",
-    prioridade: "normal"
+    subject: "",
+    description: "",
+    priority: "medium" as "low" | "medium" | "high" | "urgent",
+    category_id: ""
   });
 
-  const { criarTicket } = useSuporteTickets();
+  const criarTicket = useCreateTicket();
+  const { data: categories = [] } = useSupportCategories();
 
   const handleSubmit = async () => {
-    if (!formData.assunto.trim() || !formData.descricao.trim()) {
+    if (!formData.subject.trim() || !formData.description.trim() || !formData.category_id) {
       return;
     }
 
@@ -32,9 +34,10 @@ export const NovoTicketModal = ({ open, onOpenChange }: NovoTicketModalProps) =>
       
       // Reset form e fechar modal
       setFormData({
-        assunto: "",
-        descricao: "",
-        prioridade: "normal"
+        subject: "",
+        description: "",
+        priority: "medium",
+        category_id: ""
       });
       onOpenChange(false);
     } catch (error) {
@@ -51,41 +54,60 @@ export const NovoTicketModal = ({ open, onOpenChange }: NovoTicketModalProps) =>
         
         <div className="space-y-4">
           <div>
-            <Label htmlFor="assunto">Assunto *</Label>
-            <Input
-              id="assunto"
-              placeholder="Descreva brevemente o problema"
-              value={formData.assunto}
-              onChange={(e) => setFormData(prev => ({ ...prev, assunto: e.target.value }))}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="prioridade">Prioridade</Label>
+            <Label htmlFor="category">Categoria *</Label>
             <Select 
-              value={formData.prioridade} 
-              onValueChange={(value) => setFormData(prev => ({ ...prev, prioridade: value }))}
+              value={formData.category_id} 
+              onValueChange={(value) => setFormData(prev => ({ ...prev, category_id: value }))}
             >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="baixa">Baixa</SelectItem>
-                <SelectItem value="normal">Normal</SelectItem>
-                <SelectItem value="alta">Alta</SelectItem>
-                <SelectItem value="urgente">Urgente</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
           <div>
-            <Label htmlFor="descricao">Descrição do Problema *</Label>
+            <Label htmlFor="subject">Assunto *</Label>
+            <Input
+              id="subject"
+              placeholder="Descreva brevemente o problema"
+              value={formData.subject}
+              onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="priority">Prioridade</Label>
+            <Select 
+              value={formData.priority} 
+              onValueChange={(value: any) => setFormData(prev => ({ ...prev, priority: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Baixa</SelectItem>
+                <SelectItem value="medium">Normal</SelectItem>
+                <SelectItem value="high">Alta</SelectItem>
+                <SelectItem value="urgent">Urgente</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="description">Descrição do Problema *</Label>
             <Textarea
-              id="descricao"
+              id="description"
               placeholder="Descreva o problema em detalhes..."
               rows={6}
-              value={formData.descricao}
-              onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
             />
             <p className="text-xs text-muted-foreground mt-1">
               Seja específico sobre o problema para um atendimento mais rápido
@@ -102,7 +124,7 @@ export const NovoTicketModal = ({ open, onOpenChange }: NovoTicketModalProps) =>
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={!formData.assunto.trim() || !formData.descricao.trim() || criarTicket.isPending}
+              disabled={!formData.subject.trim() || !formData.description.trim() || !formData.category_id || criarTicket.isPending}
               className="bg-comademig-blue hover:bg-comademig-blue/90"
             >
               {criarTicket.isPending ? 'Criando...' : 'Criar Ticket'}

@@ -59,6 +59,92 @@ export type Database = {
         }
         Relationships: []
       }
+      affiliate_commissions: {
+        Row: {
+          affiliate_id: string
+          amount: number
+          created_at: string
+          id: string
+          payment_id: string
+          status: string
+        }
+        Insert: {
+          affiliate_id: string
+          amount: number
+          created_at?: string
+          id?: string
+          payment_id: string
+          status?: string
+        }
+        Update: {
+          affiliate_id?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          payment_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_commissions_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      affiliate_referrals: {
+        Row: {
+          affiliate_id: string
+          conversion_date: string | null
+          conversion_value: number | null
+          created_at: string
+          id: string
+          referral_code: string
+          referred_user_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          affiliate_id: string
+          conversion_date?: string | null
+          conversion_value?: number | null
+          created_at?: string
+          id?: string
+          referral_code: string
+          referred_user_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          affiliate_id?: string
+          conversion_date?: string | null
+          conversion_value?: number | null
+          created_at?: string
+          id?: string
+          referral_code?: string
+          referred_user_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_referrals_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_referrals_referred_user_id_fkey"
+            columns: ["referred_user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       asaas_cobrancas: {
         Row: {
           asaas_id: string
@@ -145,6 +231,161 @@ export type Database = {
           processed?: boolean | null
         }
         Relationships: []
+      }
+      asaas_splits: {
+        Row: {
+          affiliate_id: string | null
+          asaas_split_id: string | null
+          cobranca_id: string
+          commission_amount: number | null
+          created_at: string
+          error_message: string | null
+          fixed_value: number | null
+          id: string
+          percentage: number | null
+          processed_at: string | null
+          recipient_name: string | null
+          recipient_type: string | null
+          refusal_reason: string | null
+          retry_count: number | null
+          service_type: string | null
+          status: string
+          total_value: number | null
+          updated_at: string
+          wallet_id: string | null
+        }
+        Insert: {
+          affiliate_id?: string | null
+          asaas_split_id?: string | null
+          cobranca_id: string
+          commission_amount?: number | null
+          created_at?: string
+          error_message?: string | null
+          fixed_value?: number | null
+          id?: string
+          percentage?: number | null
+          processed_at?: string | null
+          recipient_name?: string | null
+          recipient_type?: string | null
+          refusal_reason?: string | null
+          retry_count?: number | null
+          service_type?: string | null
+          status?: string
+          total_value?: number | null
+          updated_at?: string
+          wallet_id?: string | null
+        }
+        Update: {
+          affiliate_id?: string | null
+          asaas_split_id?: string | null
+          cobranca_id?: string
+          commission_amount?: number | null
+          created_at?: string
+          error_message?: string | null
+          fixed_value?: number | null
+          id?: string
+          percentage?: number | null
+          processed_at?: string | null
+          recipient_name?: string | null
+          recipient_type?: string | null
+          refusal_reason?: string | null
+          retry_count?: number | null
+          service_type?: string | null
+          status?: string
+          total_value?: number | null
+          updated_at?: string
+          wallet_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asaas_splits_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asaas_splits_cobranca_id_fkey"
+            columns: ["cobranca_id"]
+            isOneToOne: false
+            referencedRelation: "asaas_cobrancas"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      split_configurations: {
+        Row: {
+          category: string
+          category_label: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          category_label: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          category_label?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      split_recipients: {
+        Row: {
+          configuration_id: string
+          created_at: string
+          id: string
+          percentage: number
+          recipient_identifier: string
+          recipient_name: string
+          recipient_type: string
+          sort_order: number
+          wallet_id: string | null
+        }
+        Insert: {
+          configuration_id: string
+          created_at?: string
+          id?: string
+          percentage: number
+          recipient_identifier: string
+          recipient_name: string
+          recipient_type: string
+          sort_order?: number
+          wallet_id?: string | null
+        }
+        Update: {
+          configuration_id?: string
+          created_at?: string
+          id?: string
+          percentage?: number
+          recipient_identifier?: string
+          recipient_name?: string
+          recipient_type?: string
+          sort_order?: number
+          wallet_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "split_recipients_configuration_id_fkey"
+            columns: ["configuration_id"]
+            isOneToOne: false
+            referencedRelation: "split_configurations"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       audit_logs: {
         Row: {
