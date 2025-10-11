@@ -207,47 +207,48 @@ export const MemberTypeSelector: React.FC<MemberTypeSelectorProps> = ({
                           />
                           <div className="flex-1">
                             <h5 className="font-medium text-gray-900">{plan.name}</h5>
-                          {plan.description && (
-                            <p className="text-sm text-gray-600 mt-1">{plan.description}</p>
-                          )}
-                          
-                          {/* Permissões do plano */}
-                          {Object.entries(plan.permissions || {}).filter(([_, value]) => value).length > 0 && (
-                            <div className="mt-2">
-                              <p className="text-xs font-medium text-gray-700 mb-1">Permissões incluídas:</p>
-                              <div className="flex flex-wrap gap-1">
-                                {Object.entries(plan.permissions || {})
-                                  .filter(([_, value]) => value === true)
-                                  .slice(0, 3)
-                                  .map(([key]) => (
-                                    <Badge key={key} variant="outline" className="text-xs">
-                                      {key.replace('_', ' ')}
+                            {plan.description && (
+                              <p className="text-sm text-gray-600 mt-1">{plan.description}</p>
+                            )}
+                            
+                            {/* Permissões do plano */}
+                            {Object.entries(plan.permissions || {}).filter(([_, value]) => value).length > 0 && (
+                              <div className="mt-2">
+                                <p className="text-xs font-medium text-gray-700 mb-1">Permissões incluídas:</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {Object.entries(plan.permissions || {})
+                                    .filter(([_, value]) => value === true)
+                                    .slice(0, 3)
+                                    .map(([key]) => (
+                                      <Badge key={key} variant="outline" className="text-xs">
+                                        {key.replace('_', ' ')}
+                                      </Badge>
+                                    ))}
+                                  {Object.values(plan.permissions || {}).filter(Boolean).length > 3 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      +{Object.values(plan.permissions || {}).filter(Boolean).length - 3} mais
                                     </Badge>
-                                  ))}
-                                {Object.values(plan.permissions || {}).filter(Boolean).length > 3 && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    +{Object.values(plan.permissions || {}).filter(Boolean).length - 3} mais
-                                  </Badge>
-                                )}
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="text-right ml-4">
-                          <div className="flex items-center gap-1">
-                            <DollarSign className="h-4 w-4 text-green-600" />
-                            <span className="text-lg font-bold text-green-800">
-                              R$ {plan.price.toFixed(2)}
-                            </span>
+                            )}
                           </div>
-                          <div className="flex items-center gap-1 mt-1">
-                            <Calendar className="h-3 w-3 text-gray-500" />
-                            <span className="text-xs text-gray-600">
-                              {plan.recurrence === 'monthly' ? 'Mensal' : 
-                               plan.recurrence === 'semestral' ? 'Semestral' : 
-                               plan.recurrence === 'annual' ? 'Anual' : plan.recurrence}
-                            </span>
+                        
+                          <div className="text-right ml-4">
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="h-4 w-4 text-green-600" />
+                              <span className="text-lg font-bold text-green-800">
+                                R$ {plan.price.toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 mt-1">
+                              <Calendar className="h-3 w-3 text-gray-500" />
+                              <span className="text-xs text-gray-600">
+                                {plan.recurrence === 'monthly' ? 'Mensal' : 
+                                 plan.recurrence === 'semestral' ? 'Semestral' : 
+                                 plan.recurrence === 'annual' ? 'Anual' : plan.recurrence}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
