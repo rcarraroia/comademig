@@ -89,8 +89,16 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
           }
         });
         
-        if (signUpError || !authData.user) {
-          throw new Error(`Erro ao criar conta: ${signUpError?.message || 'Erro desconhecido'}`);
+        if (signUpError) {
+          // Tratar erro de email já registrado
+          if (signUpError.message.includes('already registered') || signUpError.message.includes('User already registered')) {
+            throw new Error('Este email já está cadastrado. Por favor, faça login antes de prosseguir com a filiação.');
+          }
+          throw new Error(`Erro ao criar conta: ${signUpError.message}`);
+        }
+        
+        if (!authData.user) {
+          throw new Error('Erro ao criar conta: Dados do usuário não retornados');
         }
 
         currentUserId = authData.user.id;

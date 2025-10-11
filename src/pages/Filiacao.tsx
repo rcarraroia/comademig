@@ -161,13 +161,37 @@ export default function Filiacao() {
 
           {/* Formulário de Pagamento */}
           {showPaymentForm && selectedMemberType && (
-            <PaymentFormEnhanced 
-              selectedMemberType={selectedMemberType}
-              affiliateInfo={affiliateInfo}
-              onSuccess={() => {
-                toast.success('Filiação realizada com sucesso!');
-                navigate('/dashboard');
-              }}
+            <>
+              {/* Aviso sobre conta existente */}
+              {user && (
+                <Alert className="mb-6">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Você já está logado como:</strong> {user.email}
+                    <br />
+                    A filiação será vinculada a esta conta.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {!user && (
+                <Alert className="mb-6">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Criação de Conta:</strong> Uma nova conta será criada com o email informado.
+                    <br />
+                    Se você já tem uma conta, faça login antes de prosseguir.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <PaymentFormEnhanced 
+                selectedMemberType={selectedMemberType}
+                affiliateInfo={affiliateInfo}
+                onSuccess={() => {
+                  toast.success('Filiação realizada com sucesso!');
+                  navigate('/dashboard');
+                }}
               onCancel={() => setShowPaymentForm(false)}
             />
           )}
