@@ -47,17 +47,7 @@ export default function Filiacao() {
       return;
     }
 
-    if (!user) {
-      toast.info('Você precisa estar logado para prosseguir com a filiação');
-      navigate('/login', { 
-        state: { 
-          returnTo: '/filiacao',
-          memberType: selectedMemberType 
-        }
-      });
-      return;
-    }
-
+    // Permitir prosseguir sem estar logado (criará conta durante o processo)
     setShowPaymentForm(true);
   };
 
@@ -68,9 +58,9 @@ export default function Filiacao() {
       <div className="container mx-auto py-8 px-4">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold">🆕 Filiação COMADEMIG - Sistema Unificado</h1>
+            <h1 className="text-4xl font-bold">Sistema de Registro</h1>
             <p className="text-xl text-muted-foreground">
-              Novo processo simplificado: Escolha seu cargo e veja automaticamente o plano associado
+              Venha fazer parte da Comademig
             </p>
           </div>
 
@@ -91,7 +81,7 @@ export default function Filiacao() {
           {/* Benefícios da Filiação */}
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-center">
+              <CardTitle className="flex items-center justify-center gap-2 text-center">
                 <CheckCircle className="h-6 w-6 text-green-600" />
                 Benefícios da Filiação COMADEMIG
               </CardTitle>
@@ -142,18 +132,7 @@ export default function Filiacao() {
                 </div>
               </div>
 
-              <div className="mt-8 pt-6 border-t">
-                <Alert className="border-blue-200 bg-blue-50">
-                  <Info className="h-4 w-4 text-blue-600" />
-                  <AlertDescription className="text-blue-800">
-                    <strong>Sistema Unificado de Filiação!</strong><br />
-                    Escolha seu cargo ministerial e veja automaticamente o plano de contribuição associado.
-                    Processo simplificado em uma única etapa.
-                    <br /><br />
-                    <strong>Desconto PIX:</strong> 5% de desconto em todos os planos pagos via PIX.
-                  </AlertDescription>
-                </Alert>
-              </div>
+
             </CardContent>
           </Card>
 

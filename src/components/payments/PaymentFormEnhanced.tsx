@@ -70,6 +70,13 @@ const PaymentFormSchema = z.object({
   // Data de vencimento para boleto
   boleto_due_date: z.string().optional(),
   
+  // Senha (para criar conta)
+  password: z.string()
+    .min(6, 'Senha deve ter pelo menos 6 caracteres')
+    .regex(/[A-Z]/, 'Senha deve conter pelo menos uma letra maiúscula')
+    .regex(/[0-9]/, 'Senha deve conter pelo menos um número'),
+  password_confirmation: z.string(),
+  
   // Termos
   accept_terms: z.boolean().refine(val => val === true, {
     message: 'Você deve aceitar os termos e condições'
@@ -90,6 +97,9 @@ const PaymentFormSchema = z.object({
 }, {
   message: 'Todos os dados do cartão são obrigatórios',
   path: ['card_number']
+}).refine((data) => data.password === data.password_confirmation, {
+  message: 'As senhas não conferem',
+  path: ['password_confirmation']
 });
 
 type PaymentFormData = z.infer<typeof PaymentFormSchema>;
@@ -333,6 +343,48 @@ export default function PaymentFormEnhanced({
             </div>
           </CardContent>
         </Card>
+
+        {/* Criar Senha */}
+        {!user && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Criar Senha de Acesso
+              </CardTitle>
+              <CardDescription>
+                Crie uma senha para acessar sua conta após a filiação
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="password">Senha *</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  {...register('password')}
+                  placeholder="Mínimo 6 caracteres, 1 maiúscula e 1 número"
+                />
+                {errors.password && (
+                  <p className="text-sm text-destructive">{errors.password.message}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="password_confirmation">Confirmar Senha *</Label>
+                <Input
+                  id="password_confirmation"
+                  type="password"
+                  {...register('password_confirmation')}
+                  placeholder="Digite a senha novamente"
+                />
+                {errors.password_confirmation && (
+                  <p className="text-sm text-destructive">{errors.password_confirmation.message}</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Endereço */}
         <Card>
