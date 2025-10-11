@@ -202,10 +202,18 @@ export function useCreateTicket() {
       description: string;
       priority?: 'low' | 'medium' | 'high' | 'urgent';
     }) => {
+      // Pegar usuário atual autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+
       const { data: result, error } = await supabase
         .from('support_tickets')
         .insert({
           ...data,
+          user_id: user.id,  // Adicionar user_id do usuário autenticado
           priority: data.priority || 'medium',
           status: 'open',
         })
