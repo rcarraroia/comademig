@@ -24,7 +24,9 @@ import {
   Loader2,
   CheckCircle,
   Info,
-  AlertTriangle
+  AlertTriangle,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFiliacaoPayment, type FiliacaoPaymentData } from '@/hooks/useFiliacaoPayment';
@@ -55,7 +57,7 @@ const PaymentFormSchema = z.object({
   tempo_ministerio: z.string().optional(),
   
   // Método de pagamento
-  payment_method: z.enum(['pix', 'credit_card', 'boleto'], {
+  payment_method: z.enum(['pix', 'credit_card'], {
     errorMap: () => ({ message: 'Selecione um método de pagamento' })
   }),
   
@@ -66,9 +68,6 @@ const PaymentFormSchema = z.object({
   card_expiry_year: z.string().optional(),
   card_ccv: z.string().optional(),
   card_installments: z.string().optional(),
-  
-  // Data de vencimento para boleto
-  boleto_due_date: z.string().optional(),
   
   // Senha (para criar conta)
   password: z.string()
@@ -118,6 +117,9 @@ export default function PaymentFormEnhanced({
   onCancel
 }: PaymentFormEnhancedProps) {
   const { user } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
+  
   const { 
     processarFiliacaoComPagamento, 
     isProcessing, 
@@ -186,6 +188,7 @@ export default function PaymentFormEnhanced({
         cargo_igreja: data.cargo_igreja,
         tempo_ministerio: data.tempo_ministerio,
         payment_method: data.payment_method,
+        password: data.password, // Adicionar senha para criar conta
       };
 
       // Adicionar dados específicos do método de pagamento
@@ -200,20 +203,14 @@ export default function PaymentFormEnhanced({
         };
       }
 
-      if (data.payment_method === 'boleto' && data.boleto_due_date) {
-        filiacaoData.dueDate = data.boleto_due_date;
-      }
-
       const result = await processarFiliacaoComPagamento(filiacaoData);
       
       if (result) {
         // Mostrar informações específicas do pagamento
-        if (result.payment.pixQrCode) {
-          toast.success('PIX gerado! Use o QR Code para pagamento.');
-        } else if (result.payment.bankSlipUrl) {
-          toast.success('Boleto gerado! Você pode baixá-lo para pagamento.');
+        if (result.asaasSubscription) {
+          toast.success('Assinatura criada com sucesso! Você receberá as instruções de pagamento por email.');
         } else {
-          toast.success('Pagamento processado com sucesso!');
+          toast.success('Filiação processada com sucesso!');
         }
         onSuccess();
       }
@@ -245,10 +242,10 @@ export default function PaymentFormEnhanced({
               )}
             </div>
             
-            {selectedMemberType.plan_title && (
+            {selectedMemberType.plan_name && (
               <div>
                 <p className="text-sm font-medium text-green-700">Plano:</p>
-                <p className="text-lg font-semibold text-green-800">{selectedMemberType.plan_title}</p>
+                <p className="text-lg font-semibold text-green-800">{selectedMemberType.plan_name}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <Calendar className="h-4 w-4 text-green-600" />
                   <span className="text-sm text-green-600">{selectedMemberType.plan_recurrence}</span>
@@ -359,12 +356,26 @@ export default function PaymentFormEnhanced({
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="password">Senha *</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  {...register('password')}
-                  placeholder="Mínimo 6 caracteres, 1 maiúscula e 1 número"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    {...register('password')}
+                    placeholder="Mínimo 6 caracteres, 1 maiúscula e 1 número"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
                 {errors.password && (
                   <p className="text-sm text-destructive">{errors.password.message}</p>
                 )}
@@ -372,12 +383,26 @@ export default function PaymentFormEnhanced({
 
               <div>
                 <Label htmlFor="password_confirmation">Confirmar Senha *</Label>
-                <Input
-                  id="password_confirmation"
-                  type="password"
-                  {...register('password_confirmation')}
-                  placeholder="Digite a senha novamente"
-                />
+                <div className="relative">
+                  <Input
+                    id="password_confirmation"
+                    type={showPasswordConfirmation ? "text" : "password"}
+                    {...register('password_confirmation')}
+                    placeholder="Digite a senha novamente"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPasswordConfirmation ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
                 {errors.password_confirmation && (
                   <p className="text-sm text-destructive">{errors.password_confirmation.message}</p>
                 )}
@@ -534,6 +559,11 @@ export default function PaymentFormEnhanced({
               <CreditCard className="h-5 w-5" />
               Método de Pagamento
             </CardTitle>
+            <CardDescription>
+              {selectedMemberType.plan_recurrence?.toLowerCase() === 'anual' || selectedMemberType.plan_recurrence?.toLowerCase() === 'annual' 
+                ? 'Plano anual: PIX ou Cartão de Crédito'
+                : 'Planos mensais e semestrais: Apenas Cartão de Crédito (pagamento automático)'}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -543,18 +573,51 @@ export default function PaymentFormEnhanced({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pix">
+                  {/* PIX disponível apenas para planos anuais */}
+                  {(selectedMemberType.plan_recurrence?.toLowerCase() === 'anual' || 
+                    selectedMemberType.plan_recurrence?.toLowerCase() === 'annual') && (
+                    <SelectItem value="pix">
+                      <div className="flex items-center gap-2">
+                        <span>PIX</span>
+                        <Badge variant="secondary" className="text-xs">5% desconto</Badge>
+                      </div>
+                    </SelectItem>
+                  )}
+                  {/* Cartão disponível para todos os planos */}
+                  <SelectItem value="credit_card">
                     <div className="flex items-center gap-2">
-                      <span>PIX</span>
-                      <Badge variant="secondary" className="text-xs">5% desconto</Badge>
+                      <span>Cartão de Crédito</span>
+                      {(selectedMemberType.plan_recurrence?.toLowerCase() !== 'anual' && 
+                        selectedMemberType.plan_recurrence?.toLowerCase() !== 'annual') && (
+                        <Badge variant="default" className="text-xs">Pagamento Automático</Badge>
+                      )}
                     </div>
                   </SelectItem>
-                  <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
-                  <SelectItem value="boleto">Boleto Bancário</SelectItem>
                 </SelectContent>
               </Select>
               {errors.payment_method && (
                 <p className="text-sm text-destructive">{errors.payment_method.message}</p>
+              )}
+              
+              {/* Aviso sobre pagamento recorrente */}
+              {(selectedMemberType.plan_recurrence?.toLowerCase() === 'mensal' || 
+                selectedMemberType.plan_recurrence?.toLowerCase() === 'monthly' ||
+                selectedMemberType.plan_recurrence?.toLowerCase() === 'semestral') && (
+                <Alert className="mt-3">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Pagamento Recorrente Automático:</strong> O valor será cobrado automaticamente no cartão a cada {selectedMemberType.plan_recurrence?.toLowerCase() === 'mensal' || selectedMemberType.plan_recurrence?.toLowerCase() === 'monthly' ? 'mês' : 'semestre'}. Você pode cancelar a qualquer momento.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {paymentMethod === 'pix' && (
+                <Alert className="mt-3">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Pagamento Único Anual:</strong> Com PIX você paga uma única vez e sua filiação fica ativa por 1 ano. Após esse período, será necessário renovar manualmente.
+                  </AlertDescription>
+                </Alert>
               )}
             </div>
 
@@ -703,33 +766,6 @@ export default function PaymentFormEnhanced({
               </div>
             )}
 
-            {paymentMethod === 'boleto' && (
-              <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-                <h4 className="font-medium">Configurações do Boleto</h4>
-                
-                <div>
-                  <Label htmlFor="boleto_due_date">Data de Vencimento</Label>
-                  <Input
-                    id="boleto_due_date"
-                    type="date"
-                    {...register('boleto_due_date')}
-                    min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Se não informado, será gerado com vencimento em 7 dias
-                  </p>
-                </div>
-
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    Após a confirmação, você receberá o boleto por email e poderá baixá-lo.
-                    Multa de 2% e juros de 1% ao mês após o vencimento.
-                  </AlertDescription>
-                </Alert>
-              </div>
-            )}
-
             {paymentMethod === 'pix' && (
               <Alert>
                 <Info className="h-4 w-4" />
@@ -796,8 +832,9 @@ export default function PaymentFormEnhanced({
                 <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
                 <div>
                   <p className="font-medium text-blue-800">
+                    {paymentStatus === 'creating_account' && 'Criando conta...'}
                     {paymentStatus === 'creating_customer' && 'Criando cliente...'}
-                    {paymentStatus === 'processing_payment' && 'Processando pagamento...'}
+                    {paymentStatus === 'creating_subscription' && 'Criando assinatura...'}
                     {paymentStatus === 'updating_profile' && 'Atualizando perfil...'}
                     {paymentStatus === 'completed' && 'Finalizando...'}
                     {paymentStatus === 'idle' && 'Processando...'}
@@ -830,8 +867,9 @@ export default function PaymentFormEnhanced({
             {isProcessing ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {paymentStatus === 'creating_account' && 'Criando conta...'}
                 {paymentStatus === 'creating_customer' && 'Criando cliente...'}
-                {paymentStatus === 'processing_payment' && 'Processando pagamento...'}
+                {paymentStatus === 'creating_subscription' && 'Criando assinatura...'}
                 {paymentStatus === 'updating_profile' && 'Atualizando perfil...'}
                 {paymentStatus === 'completed' && 'Finalizando...'}
                 {paymentStatus === 'idle' && 'Processando...'}
@@ -851,9 +889,8 @@ export default function PaymentFormEnhanced({
           <AlertDescription>
             <strong>Sistema de Pagamentos Integrado:</strong> Processamento automático via gateway Asaas.
             Seus dados estão protegidos e o pagamento é processado de forma segura.
-            {paymentMethod === 'pix' && ' PIX disponível 24h com desconto de 5%.'}
-            {paymentMethod === 'credit_card' && ' Cartão processado instantaneamente.'}
-            {paymentMethod === 'boleto' && ' Boleto com confirmação automática em até 3 dias úteis.'}
+            {paymentMethod === 'pix' && ' PIX disponível 24h com desconto de 5% (apenas planos anuais).'}
+            {paymentMethod === 'credit_card' && ' Cartão processado instantaneamente com renovação automática.'}
           </AlertDescription>
         </Alert>
       </form>
