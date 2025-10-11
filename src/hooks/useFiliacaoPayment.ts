@@ -4,13 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useAsaasCustomers } from './useAsaasCustomers';
-import { useAsaasPixPayments } from './useAsaasPixPayments';
-import { useAsaasCardPayments } from './useAsaasCardPayments';
-import { useAsaasBoletoPayments } from './useAsaasBoletoPayments';
+import { useAsaasSubscriptions } from './useAsaasSubscriptions';
 import type { UnifiedMemberType } from './useMemberTypeWithPlan';
 import type { FiliacaoData } from './useFiliacaoFlow';
+import type { UserSubscriptionInsert, MinisterialData, ProfileExtension } from '@/integrations/supabase/types-extension';
 
 export interface FiliacaoPaymentData extends FiliacaoData {
+  // Senha para criar conta (obrigatória se usuário não estiver autenticado)
+  password?: string;
   // Dados específicos do cartão (se aplicável)
   cardData?: {
     holderName: string;
@@ -30,13 +31,11 @@ interface UseFiliacaoPaymentProps {
 }
 
 export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFiliacaoPaymentProps) {
-  const { user } = useAuth();
-  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'creating_customer' | 'processing_payment' | 'updating_profile' | 'completed'>('idle');
+  const { user, signUp } = useAuth();
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'creating_account' | 'creating_customer' | 'creating_subscription' | 'updating_profile' | 'completed'>('idle');
   
   const { createCustomer } = useAsaasCustomers();
-  const { createPixPayment } = useAsaasPixPayments();
-  const { processCardPayment } = useAsaasCardPayments();
-  const { createBoletoPayment } = useAsaasBoletoPayments();
+  const { createSubscription } = useAsaasSubscriptions();
 
   const calculateExpirationDate = (recurrence: string): string => {
     const now = new Date();
@@ -69,8 +68,33 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
 
   const processFiliacaoPaymentMutation = useMutation({
     mutationFn: async (data: FiliacaoPaymentData) => {
-      if (!user?.id) {
-        throw new Error('Usuário não autenticado');
+      let currentUserId = user?.id;
+
+      // 1. Criar conta se usuário não estiver autenticado
+      if (!currentUserId) {
+        if (!data.password) {
+          throw new Error('Senha é obrigatória para criar nova conta');
+        }
+
+        setPaymentStatus('creating_account');
+        
+        // Criar conta no Supabase Auth
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+          email: data.email,
+          password: data.password,
+          options: {
+            data: {
+              full_name: data.nome_completo,
+            }
+          }
+        });
+        
+        if (signUpError || !authData.user) {
+          throw new Error(`Erro ao criar conta: ${signUpError?.message || 'Erro desconhecido'}`);
+        }
+
+        currentUserId = authData.user.id;
+        toast.success('Conta criada com sucesso!');
       }
 
       if (!selectedMemberType.plan_id) {
@@ -81,7 +105,7 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
       const isPixPayment = data.payment_method === 'pix';
       const { finalPrice } = isPixPayment ? calculatePixDiscount(originalPrice) : { finalPrice: originalPrice };
 
-      // 1. Criar/verificar cliente no Asaas
+      // 2. Criar/verificar cliente no Asaas
       setPaymentStatus('creating_customer');
       const customerData = {
         name: data.nome_completo,
@@ -97,81 +121,74 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         state: data.estado,
       };
 
-      const customer = await createCustomer.mutateAsync(customerData);
+      const customerResponse = await createCustomer(customerData);
+      
+      if (!customerResponse || !customerResponse.success) {
+        throw new Error('Erro ao criar cliente no Asaas');
+      }
+      
+      const customer = { id: customerResponse.customer_id };
 
-      // 2. Processar pagamento baseado no método escolhido
-      setPaymentStatus('processing_payment');
-      let paymentResult;
-
-      switch (data.payment_method) {
-        case 'pix':
-          paymentResult = await createPixPayment.mutateAsync({
-            customer: customer.id,
-            billingType: 'PIX',
-            value: finalPrice,
-            description: `Filiação COMADEMIG - ${selectedMemberType.name}`,
-            dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 24h
-            externalReference: `filiacao_${user.id}_${Date.now()}`,
-            discount: {
-              value: isPixPayment ? (originalPrice - finalPrice) : 0,
-              dueDateLimitDays: 0
-            }
-          });
-          break;
-
-        case 'credit_card':
-          if (!data.cardData) {
-            throw new Error('Dados do cartão são obrigatórios para pagamento com cartão');
-          }
-          paymentResult = await processCardPayment.mutateAsync({
-            customer: customer.id,
-            billingType: 'CREDIT_CARD',
-            value: finalPrice,
-            description: `Filiação COMADEMIG - ${selectedMemberType.name}`,
-            dueDate: new Date().toISOString().split('T')[0],
-            externalReference: `filiacao_${user.id}_${Date.now()}`,
-            creditCard: {
-              holderName: data.cardData.holderName,
-              number: data.cardData.number,
-              expiryMonth: data.cardData.expiryMonth,
-              expiryYear: data.cardData.expiryYear,
-              ccv: data.cardData.ccv
-            },
-            creditCardHolderInfo: {
-              name: data.nome_completo,
-              email: data.email,
-              cpfCnpj: data.cpf,
-              postalCode: data.cep,
-              addressNumber: data.numero,
-              phone: data.telefone
-            },
-            installmentCount: data.cardData.installmentCount || 1
-          });
-          break;
-
-        case 'boleto':
-          const dueDate = data.dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 7 dias
-          paymentResult = await createBoletoPayment.mutateAsync({
-            customer: customer.id,
-            billingType: 'BOLETO',
-            value: finalPrice,
-            description: `Filiação COMADEMIG - ${selectedMemberType.name}`,
-            dueDate,
-            externalReference: `filiacao_${user.id}_${Date.now()}`,
-            fine: {
-              value: 2.0 // 2% de multa
-            },
-            interest: {
-              value: 1.0 // 1% de juros ao mês
-            }
-          });
-          break;
-
-        default:
-          throw new Error('Método de pagamento não suportado');
+      // 3. Criar assinatura recorrente no Asaas
+      setPaymentStatus('creating_subscription');
+      
+      // Mapear billingType baseado no método de pagamento
+      let billingType: 'BOLETO' | 'CREDIT_CARD' | 'UNDEFINED' = 'UNDEFINED';
+      if (data.payment_method === 'boleto') {
+        billingType = 'BOLETO';
+      } else if (data.payment_method === 'credit_card') {
+        billingType = 'CREDIT_CARD';
       }
 
-      // 3. Atualizar perfil do usuário
+      // Mapear cycle baseado na recorrência do plano
+      let cycle: 'MONTHLY' | 'QUARTERLY' | 'SEMIANNUALLY' | 'YEARLY' = 'MONTHLY';
+      const recurrence = selectedMemberType.plan_recurrence?.toLowerCase();
+      if (recurrence === 'semestral') {
+        cycle = 'SEMIANNUALLY';
+      } else if (recurrence === 'anual' || recurrence === 'annual') {
+        cycle = 'YEARLY';
+      }
+
+      const subscriptionData: any = {
+        customer: customer.id,
+        billingType,
+        value: finalPrice,
+        nextDueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 dias
+        cycle,
+        description: `Assinatura COMADEMIG - ${selectedMemberType.name}`,
+        externalReference: `subscription_${currentUserId}_${Date.now()}`,
+      };
+
+      // Adicionar dados do cartão se for pagamento com cartão
+      if (data.payment_method === 'credit_card' && data.cardData) {
+        subscriptionData.creditCard = {
+          holderName: data.cardData.holderName,
+          number: data.cardData.number,
+          expiryMonth: data.cardData.expiryMonth,
+          expiryYear: data.cardData.expiryYear,
+          ccv: data.cardData.ccv,
+        };
+        subscriptionData.creditCardHolderInfo = {
+          name: data.nome_completo,
+          email: data.email,
+          cpfCnpj: data.cpf,
+          postalCode: data.cep,
+          addressNumber: data.numero,
+          phone: data.telefone,
+        };
+      }
+
+      // Adicionar desconto PIX se aplicável
+      if (isPixPayment) {
+        subscriptionData.discount = {
+          value: originalPrice - finalPrice,
+          dueDateLimitDays: 0,
+        };
+      }
+
+      const subscriptionResult = await createSubscription.mutateAsync(subscriptionData);
+
+      // 4. Atualizar perfil do usuário
       setPaymentStatus('updating_profile');
       const profileUpdateData = {
         nome_completo: data.nome_completo,
@@ -188,35 +205,37 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         cargo: selectedMemberType.name,
         member_type_id: selectedMemberType.id,
         subscription_source: 'filiacao',
+        asaas_customer_id: customer.id,
+        asaas_subscription_id: subscriptionResult.id,
         updated_at: new Date().toISOString()
       };
 
       const { error: profileError } = await supabase
         .from('profiles')
         .update(profileUpdateData)
-        .eq('id', user.id);
+        .eq('id', currentUserId);
 
       if (profileError) {
         console.error('Erro ao atualizar perfil:', profileError);
         throw new Error(`Erro ao atualizar perfil: ${profileError.message}`);
       }
 
-      // 4. Criar assinatura do usuário (inicialmente pendente)
+      // 5. Criar registro de assinatura do usuário (inicialmente pendente)
       const expirationDate = calculateExpirationDate(selectedMemberType.plan_recurrence || 'Mensal');
       
-      const subscriptionData = {
-        user_id: user.id,
+      const userSubscriptionData: UserSubscriptionInsert = {
+        user_id: currentUserId,
         subscription_plan_id: selectedMemberType.plan_id,
         member_type_id: selectedMemberType.id,
-        status: 'pending' as const, // Será ativada via webhook quando pagamento for confirmado
-        payment_id: paymentResult.id,
+        status: 'pending', // Será ativada via webhook quando primeiro pagamento for confirmado
+        asaas_subscription_id: subscriptionResult.id,
         started_at: new Date().toISOString(),
         expires_at: expirationDate,
       };
 
-      const { data: subscription, error: subscriptionError } = await supabase
+      const { data: subscription, error: subscriptionError } = await (supabase as any)
         .from('user_subscriptions')
-        .insert([subscriptionData])
+        .insert([userSubscriptionData])
         .select(`
           *,
           subscription_plans(
@@ -238,17 +257,17 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         throw new Error(`Erro ao criar assinatura: ${subscriptionError.message}`);
       }
 
-      // 5. Registrar dados ministeriais adicionais se fornecidos
+      // 6. Registrar dados ministeriais adicionais se fornecidos
       if (data.cargo_igreja || data.tempo_ministerio) {
-        const ministerialData = {
-          user_id: user.id,
+        const ministerialData: MinisterialData = {
+          user_id: currentUserId,
           cargo_igreja: data.cargo_igreja,
           tempo_ministerio: data.tempo_ministerio,
           created_at: new Date().toISOString()
         };
 
         try {
-          await supabase
+          await (supabase as any)
             .from('ministerial_data')
             .insert([ministerialData]);
         } catch (error) {
@@ -256,13 +275,14 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         }
       }
 
-      // 6. Registrar afiliado se houver
-      if (affiliateInfo?.referralCode) {
+      // 7. Registrar afiliado se houver
+      if (affiliateInfo?.affiliateId && affiliateInfo?.referralCode) {
         try {
           const affiliateData = {
-            user_id: user.id,
+            affiliate_id: affiliateInfo.affiliateId,
             referral_code: affiliateInfo.referralCode,
-            subscription_id: subscription.id,
+            referred_user_id: currentUserId,
+            status: 'pending',
             created_at: new Date().toISOString()
           };
 
@@ -279,10 +299,11 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
       return {
         profile: profileUpdateData,
         subscription,
-        payment: paymentResult,
+        asaasSubscription: subscriptionResult,
         customer,
         memberType: selectedMemberType,
-        paymentMethod: data.payment_method
+        paymentMethod: data.payment_method,
+        userId: currentUserId
       };
     },
     onError: (error: Error) => {

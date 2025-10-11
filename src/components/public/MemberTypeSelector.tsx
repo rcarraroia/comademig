@@ -22,6 +22,7 @@ export const MemberTypeSelector: React.FC<MemberTypeSelectorProps> = ({
 }) => {
   const { memberTypes, isLoading, error } = useMemberTypeWithPlan();
   const [internalSelected, setInternalSelected] = useState<string>('');
+  const [selectedPlanId, setSelectedPlanId] = useState<string>('');
   
   // Hook para buscar planos filtrados pelo tipo selecionado
   const { data: filteredSubscriptions, isLoading: subscriptionsLoading } = useSubscriptionsByMemberType(
@@ -39,12 +40,34 @@ export const MemberTypeSelector: React.FC<MemberTypeSelectorProps> = ({
 
   const handleSelectionChange = (value: string) => {
     setInternalSelected(value);
+    setSelectedPlanId(''); // Reset plano ao mudar tipo
     
     const selectedType = memberTypes.find(type => type.id === value);
     if (selectedType) {
       onMemberTypeSelect(selectedType);
     } else {
       onMemberTypeSelect(null);
+    }
+  };
+
+  const handlePlanSelection = (planId: string) => {
+    setSelectedPlanId(planId);
+    
+    // Atualizar o memberType com o plano selecionado
+    const selectedType = memberTypes.find(type => type.id === internalSelected);
+    const selectedPlan = filteredSubscriptions?.find(p => p.id === planId);
+    
+    if (selectedType && selectedPlan) {
+      const updatedType: UnifiedMemberType = {
+        ...selectedType,
+        plan_id: selectedPlan.id,
+        plan_name: selectedPlan.name,
+        plan_value: selectedPlan.price,
+        plan_recurrence: selectedPlan.recurrence as 'monthly' | 'semestral' | 'annual',
+        plan_id_gateway: selectedPlan.plan_id_gateway,
+        plan_description: selectedPlan.description
+      };
+      onMemberTypeSelect(updatedType);
     }
   };
 
@@ -165,10 +188,25 @@ export const MemberTypeSelector: React.FC<MemberTypeSelectorProps> = ({
               ) : filteredSubscriptions && filteredSubscriptions.length > 0 ? (
                 <div className="space-y-3">
                   {filteredSubscriptions.map((plan) => (
-                    <div key={plan.id} className="p-3 bg-gray-50 rounded border">
+                    <div 
+                      key={plan.id} 
+                      className={`p-3 rounded border cursor-pointer transition-all ${
+                        selectedPlanId === plan.id 
+                          ? 'bg-green-100 border-green-500 shadow-md' 
+                          : 'bg-gray-50 border-gray-200 hover:border-green-300'
+                      }`}
+                      onClick={() => handlePlanSelection(plan.id)}
+                    >
                       <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h5 className="font-medium text-gray-900">{plan.name}</h5>
+                        <div className="flex items-start gap-3 flex-1">
+                          <input 
+                            type="radio" 
+                            checked={selectedPlanId === plan.id}
+                            onChange={() => handlePlanSelection(plan.id)}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <h5 className="font-medium text-gray-900">{plan.name}</h5>
                           {plan.description && (
                             <p className="text-sm text-gray-600 mt-1">{plan.description}</p>
                           )}
@@ -216,13 +254,13 @@ export const MemberTypeSelector: React.FC<MemberTypeSelectorProps> = ({
                     </div>
                   ))}
                   
-                  <div className="mt-3 p-3 bg-green-100 rounded border border-green-200">
-                    <p className="text-sm text-green-800 flex items-start gap-2">
+                  <div className="mt-3 p-3 bg-blue-100 rounded border border-blue-200">
+                    <p className="text-sm text-blue-800 flex items-start gap-2">
                       <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
                       <span>
-                        {filteredSubscriptions.length === 1 
-                          ? 'Este é o plano disponível para o tipo de membro selecionado.'
-                          : `${filteredSubscriptions.length} planos estão disponíveis para este tipo de membro. Você poderá escolher durante a filiação.`
+                        {selectedPlanId 
+                          ? 'Plano selecionado! Clique em "Prosseguir com a Filiação" para continuar.'
+                          : 'Selecione um plano acima para prosseguir com a filiação.'
                         }
                       </span>
                     </p>

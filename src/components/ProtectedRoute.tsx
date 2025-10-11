@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, profile, loading } = useAuth();
   const location = useLocation();
-  
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -19,16 +19,16 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       </div>
     );
   }
-  
+
   if (!user) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
-  
+
   // Redirecionar admins/super_admins para área administrativa
   if (profile && (profile.tipo_membro === 'admin' || profile.tipo_membro === 'super_admin')) {
     return <Navigate to="/admin/users" replace />;
   }
-  
+
   return (
     <DashboardLayout>
       {children}

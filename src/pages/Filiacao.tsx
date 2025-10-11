@@ -145,7 +145,7 @@ export default function Filiacao() {
             />
 
             {/* Botão para Prosseguir */}
-            {selectedMemberType && (
+            {selectedMemberType && selectedMemberType.plan_id && (
               <div className="text-center">
                 <Button
                   onClick={handleProceedToPayment}
