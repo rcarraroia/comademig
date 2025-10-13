@@ -296,10 +296,6 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
             price,
             recurrence,
             permissions
-          ),
-          member_types(
-            id,
-            name
           )
         `)
         .single();
