@@ -31,7 +31,7 @@ export const useProfileValidation = () => {
     const allFields = [
       'nome_completo', 'cpf', 'rg', 'data_nascimento',
       'endereco', 'cidade', 'estado', 'cep', 'telefone',
-      'igreja', 'cargo', 'data_ordenacao'
+      'igreja', 'cargo', 'data_ordenacao', 'tempo_ministerio'
     ];
     
     const filledFields = allFields.filter(field => 
