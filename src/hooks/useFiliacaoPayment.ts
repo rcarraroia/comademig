@@ -132,6 +132,11 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
 
       // 2. Criar/verificar cliente no Asaas
       setPaymentStatus('creating_customer');
+      
+      console.log('🔍 DEBUG useFiliacaoPayment - Criando cliente Asaas:');
+      console.log('  - currentUserId:', currentUserId);
+      console.log('  - isNewAccount:', isNewAccount);
+      
       const customerData = {
         name: data.nome_completo,
         email: data.email,
@@ -146,12 +151,19 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         state: data.estado,
       };
 
-      const customerResponse = await createCustomer(customerData);
+      // ✅ CORREÇÃO: Passar currentUserId explicitamente
+      // Isso evita dependência do contexto de autenticação que pode não estar atualizado
+      const customerResponse = await createCustomer(customerData, currentUserId);
+      
+      console.log('📥 Resposta createCustomer:', customerResponse);
       
       if (!customerResponse || !customerResponse.success) {
-        throw new Error('Erro ao criar cliente no Asaas');
+        const errorMsg = customerResponse?.message || 'Erro ao criar cliente no Asaas';
+        console.error('❌ Erro ao criar cliente:', errorMsg);
+        throw new Error(errorMsg);
       }
       
+      console.log('✅ Cliente Asaas criado:', customerResponse.customer_id);
       const customer = { id: customerResponse.customer_id };
 
       // 3. Criar assinatura recorrente no Asaas

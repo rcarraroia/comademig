@@ -51,9 +51,23 @@ export const useAsaasCustomers = () => {
 
   /**
    * Cria ou reutiliza cliente no Asaas
+   * @param customerData - Dados do cliente
+   * @param userId - ID do usuário (opcional, usa contexto se não fornecido)
    */
-  const createCustomer = async (customerData: CreateCustomerData): Promise<AsaasCustomerResponse | null> => {
-    if (!user) {
+  const createCustomer = async (
+    customerData: CreateCustomerData,
+    userId?: string
+  ): Promise<AsaasCustomerResponse | null> => {
+    // Usar userId fornecido ou pegar do contexto
+    const effectiveUserId = userId || user?.id;
+    
+    console.log('🔍 DEBUG createCustomer:');
+    console.log('  - userId fornecido:', userId);
+    console.log('  - user do contexto:', user?.id);
+    console.log('  - effectiveUserId:', effectiveUserId);
+    
+    if (!effectiveUserId) {
+      console.error('❌ Usuário não autenticado');
       toast({
         title: "Erro",
         description: "Usuário não autenticado",
@@ -65,14 +79,18 @@ export const useAsaasCustomers = () => {
     setIsLoading(true);
     
     try {
-      console.log('Criando cliente Asaas para usuário:', user.id);
+      console.log('✅ Criando cliente Asaas para usuário:', effectiveUserId);
       
       const { data, error } = await supabase.functions.invoke('asaas-create-customer', {
         body: {
-          user_id: user.id,
+          user_id: effectiveUserId,
           customer_data: customerData
         }
       });
+      
+      console.log('📥 Resposta da Edge Function:');
+      console.log('  - data:', data);
+      console.log('  - error:', error);
 
       if (error) {
         throw new Error(error.message || 'Erro ao comunicar com o servidor');
