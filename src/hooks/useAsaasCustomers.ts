@@ -81,16 +81,40 @@ export const useAsaasCustomers = () => {
     try {
       console.log('✅ Criando cliente Asaas para usuário:', effectiveUserId);
       
+      // 📤 LOG DETALHADO: Body enviado à Edge Function
+      const bodyToSend = {
+        user_id: effectiveUserId,
+        customer_data: customerData
+      };
+      
+      console.log('📤 ========================================');
+      console.log('📤 BODY COMPLETO ENVIADO À EDGE FUNCTION:');
+      console.log('📤 ========================================');
+      console.log(JSON.stringify(bodyToSend, null, 2));
+      console.log('📤 ========================================');
+      console.log('📤 CAMPOS INDIVIDUAIS:');
+      console.log('📤   user_id:', effectiveUserId);
+      console.log('� R  name:', customerData.name);
+      console.log('📤   email:', customerData.email);
+      console.log('📤   cpfCnpj:', customerData.cpfCnpj, '(length:', customerData.cpfCnpj?.length, ')');
+      console.log('📤   phone:', customerData.phone);
+      console.log('📤   postalCode:', customerData.postalCode);
+      console.log('📤   address:', customerData.address);
+      console.log('📤   addressNumber:', customerData.addressNumber);
+      console.log('📤   city:', customerData.city);
+      console.log('📤   state:', customerData.state);
+      console.log('📤 ========================================');
+      
       const { data, error } = await supabase.functions.invoke('asaas-create-customer', {
-        body: {
-          user_id: effectiveUserId,
-          customer_data: customerData
-        }
+        body: bodyToSend
       });
       
-      console.log('📥 Resposta da Edge Function:');
-      console.log('  - data:', data);
-      console.log('  - error:', error);
+      console.log('📥 ========================================');
+      console.log('📥 RESPOSTA DA EDGE FUNCTION:');
+      console.log('📥 ========================================');
+      console.log('📥 data:', JSON.stringify(data, null, 2));
+      console.log('📥 error:', JSON.stringify(error, null, 2));
+      console.log('📥 ========================================');
 
       if (error) {
         throw new Error(error.message || 'Erro ao comunicar com o servidor');

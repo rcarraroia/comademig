@@ -38,12 +38,18 @@ import type { UnifiedMemberType } from '@/hooks/useMemberTypeWithPlan';
 const PaymentFormSchema = z.object({
   // Dados pessoais
   nome_completo: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  cpf: z.string().min(11, 'CPF deve ter 11 dígitos').regex(/^\d{11}$/, 'CPF deve conter apenas números'),
-  telefone: z.string().min(10, 'Telefone deve ter pelo menos 10 dígitos'),
+  cpf: z.string()
+    .min(11, 'CPF deve ter 11 dígitos')
+    .refine((val) => val.replace(/\D/g, '').length === 11, 'CPF deve ter 11 dígitos'),
+  telefone: z.string()
+    .min(10, 'Telefone deve ter pelo menos 10 dígitos')
+    .refine((val) => val.replace(/\D/g, '').length >= 10, 'Telefone deve ter pelo menos 10 dígitos'),
   email: z.string().email('Email inválido'),
   
   // Endereço
-  cep: z.string().min(8, 'CEP deve ter 8 dígitos').regex(/^\d{8}$/, 'CEP deve conter apenas números'),
+  cep: z.string()
+    .min(8, 'CEP deve ter 8 dígitos')
+    .refine((val) => val.replace(/\D/g, '').length === 8, 'CEP deve ter 8 dígitos'),
   endereco: z.string().min(5, 'Endereço deve ter pelo menos 5 caracteres'),
   numero: z.string().min(1, 'Número é obrigatório'),
   complemento: z.string().optional(),
@@ -172,12 +178,17 @@ export default function PaymentFormEnhanced({
     }
 
     try {
+      // Função para limpar formatação (remover pontos, traços, espaços)
+      const cleanNumericField = (value: string | undefined): string => {
+        return value ? value.replace(/\D/g, '') : '';
+      };
+
       const filiacaoData: FiliacaoPaymentData = {
         nome_completo: data.nome_completo,
-        cpf: data.cpf,
-        telefone: data.telefone,
+        cpf: cleanNumericField(data.cpf), // Limpar formatação do CPF
+        telefone: cleanNumericField(data.telefone), // Limpar formatação do telefone
         email: data.email,
-        cep: data.cep,
+        cep: cleanNumericField(data.cep), // Limpar formatação do CEP
         endereco: data.endereco,
         numero: data.numero,
         complemento: data.complemento,
@@ -190,6 +201,12 @@ export default function PaymentFormEnhanced({
         payment_method: data.payment_method,
         password: data.password, // Adicionar senha para criar conta
       };
+
+      // LOG: Dados limpos antes de enviar
+      console.log('🧹 DADOS LIMPOS (sem formatação):');
+      console.log('  CPF original:', data.cpf, '→ limpo:', filiacaoData.cpf);
+      console.log('  Telefone original:', data.telefone, '→ limpo:', filiacaoData.telefone);
+      console.log('  CEP original:', data.cep, '→ limpo:', filiacaoData.cep);
 
       // Adicionar dados específicos do método de pagamento
       if (data.payment_method === 'credit_card' && data.card_holder_name) {

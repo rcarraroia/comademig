@@ -151,6 +151,21 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         state: data.estado,
       };
 
+      // 📤 LOG DETALHADO: Dados enviados ao createCustomer
+      console.log('📤 ========================================');
+      console.log('📤 useFiliacaoPayment - DADOS DO FORMULÁRIO:');
+      console.log('📤 ========================================');
+      console.log('📤 currentUserId:', currentUserId);
+      console.log('📤 customerData preparado:');
+      console.log(JSON.stringify(customerData, null, 2));
+      console.log('📤 ========================================');
+      console.log('📤 VALIDAÇÃO DE CAMPOS OBRIGATÓRIOS:');
+      console.log('📤   name:', customerData.name ? '✅' : '❌', customerData.name);
+      console.log('📤   email:', customerData.email ? '✅' : '❌', customerData.email);
+      console.log('📤   cpfCnpj:', customerData.cpfCnpj ? '✅' : '❌', customerData.cpfCnpj, '(length:', customerData.cpfCnpj?.length, ')');
+      console.log('📤   phone:', customerData.phone ? '✅' : '❌', customerData.phone);
+      console.log('📤 ========================================');
+
       // ✅ CORREÇÃO: Passar currentUserId explicitamente
       // Isso evita dependência do contexto de autenticação que pode não estar atualizado
       const customerResponse = await createCustomer(customerData, currentUserId);
