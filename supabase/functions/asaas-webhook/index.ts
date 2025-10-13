@@ -102,10 +102,16 @@ serve(async (req) => {
 
     if (fetchError && fetchError.code !== 'PGRST116') {
       console.error('Erro ao buscar cobrança:', fetchError)
+      // ⚠️ IMPORTANTE: Retornar 200 mesmo com erro para não pausar webhook
+      // O erro será logado e pode ser processado depois
       return new Response(
-        JSON.stringify({ error: 'Database error' }),
+        JSON.stringify({ 
+          success: true, 
+          message: 'Webhook received but not processed',
+          error: fetchError.message 
+        }),
         { 
-          status: 500, 
+          status: 200, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       )
@@ -147,10 +153,15 @@ serve(async (req) => {
 
       if (insertError) {
         console.error('Erro ao inserir cobrança:', insertError)
+        // ⚠️ IMPORTANTE: Retornar 200 mesmo com erro para não pausar webhook
         return new Response(
-          JSON.stringify({ error: 'Failed to create payment record' }),
+          JSON.stringify({ 
+            success: true, 
+            message: 'Webhook received but payment record not created',
+            error: insertError.message 
+          }),
           { 
-            status: 500, 
+            status: 200, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         )
