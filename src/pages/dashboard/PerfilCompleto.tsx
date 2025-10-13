@@ -52,6 +52,7 @@ const PerfilCompleto = () => {
     igreja: profile?.igreja || "",
     cargo: profile?.cargo || "",
     data_ordenacao: profile?.data_ordenacao || "",
+    tempo_ministerio: profile?.tempo_ministerio || "",
     bio: profile?.bio || "",
   });
 
@@ -126,6 +127,7 @@ const PerfilCompleto = () => {
         igreja: profile.igreja || "",
         cargo: profile.cargo || "",
         data_ordenacao: profile.data_ordenacao || "",
+        tempo_ministerio: profile.tempo_ministerio || "",
         bio: profile.bio || "",
       });
 
@@ -162,6 +164,7 @@ const PerfilCompleto = () => {
         ...formData,
         data_nascimento: formData.data_nascimento || null,
         data_ordenacao: formData.data_ordenacao || null,
+        tempo_ministerio: formData.tempo_ministerio || null,
       };
       
       const { error } = await updateProfile(dataToSave);
@@ -241,6 +244,7 @@ const PerfilCompleto = () => {
         igreja: profile.igreja || "",
         cargo: profile.cargo || "",
         data_ordenacao: profile.data_ordenacao || "",
+        tempo_ministerio: profile.tempo_ministerio || "",
         bio: profile.bio || "",
       });
     }
@@ -776,6 +780,16 @@ const PerfilCompleto = () => {
                       value={formData.data_ordenacao}
                       onChange={(e) => handleInputChange('data_ordenacao', e.target.value)}
                       disabled={!isEditing}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="tempo_ministerio">Tempo de Ministério</Label>
+                    <Input
+                      id="tempo_ministerio"
+                      value={formData.tempo_ministerio}
+                      onChange={(e) => handleInputChange('tempo_ministerio', e.target.value)}
+                      disabled={!isEditing}
+                      placeholder="Ex: 5 anos, 10 anos"
                     />
                   </div>
                 </div>
