@@ -294,8 +294,7 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
             id,
             name,
             price,
-            recurrence,
-            permissions
+            recurrence
           )
         `)
         .single();
