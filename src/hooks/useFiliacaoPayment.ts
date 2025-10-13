@@ -240,6 +240,73 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
 
       const subscriptionResult = await createSubscription.mutateAsync(subscriptionData);
 
+      // 3.4. Registrar cobrança no banco local (para vincular splits)
+      try {
+        console.log('📝 Registrando cobrança no banco local...');
+        
+        const { error: cobrancaError } = await (supabase as any)
+          .from('asaas_cobrancas')
+          .insert({
+            asaas_payment_id: subscriptionResult.id,
+            user_id: currentUserId,
+            customer_id: customer.id,
+            subscription_id: subscriptionResult.id,
+            value: finalPrice,
+            status: 'PENDING',
+            billing_type: billingType,
+            description: subscriptionData.description,
+            due_date: subscriptionData.nextDueDate,
+            service_type: 'filiacao',
+          });
+        
+        if (cobrancaError) {
+          console.error('❌ Erro ao registrar cobrança:', cobrancaError);
+          // Não falha o processo - apenas loga
+        } else {
+          console.log('✅ Cobrança registrada no banco local');
+        }
+      } catch (error) {
+        console.error('❌ Exceção ao registrar cobrança:', error);
+        // Não falha o processo principal
+      }
+
+      // 3.5. Configurar split de pagamento (divisão tripla)
+      try {
+        console.log('🔄 Configurando split de pagamento...');
+        console.log('  - Cobrança ID:', subscriptionResult.id);
+        console.log('  - Valor:', finalPrice);
+        console.log('  - Tipo:', 'filiacao');
+        console.log('  - Afiliado:', affiliateInfo?.affiliateId || 'Nenhum');
+        
+        const { data: splitData, error: splitError } = await supabase.functions.invoke(
+          'asaas-configure-split',
+          {
+            body: {
+              cobrancaId: subscriptionResult.id,
+              serviceType: 'filiacao',
+              totalValue: finalPrice,
+              affiliateId: affiliateInfo?.affiliateId || null
+            }
+          }
+        );
+        
+        if (splitError) {
+          console.error('❌ Erro ao configurar split:', splitError);
+          // Não falha o processo principal - apenas loga o erro
+          toast.error('Aviso: Split de pagamento não foi configurado. Entre em contato com o suporte.');
+        } else if (splitData?.success) {
+          console.log('✅ Split configurado com sucesso!');
+          console.log('  - Total de beneficiários:', splitData.data?.splits?.length || 0);
+          console.log('  - Splits:', splitData.data?.splits);
+          toast.success('Split de pagamento configurado com sucesso!');
+        } else {
+          console.warn('⚠️ Split retornou sem sucesso:', splitData);
+        }
+      } catch (error) {
+        console.error('❌ Exceção ao configurar split:', error);
+        // Não falha o processo principal
+      }
+
       // 4. Atualizar perfil do usuário
       setPaymentStatus('updating_profile');
       const profileUpdateData = {
