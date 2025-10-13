@@ -973,6 +973,7 @@ export type Database = {
           created_at: string | null
           data_nascimento: string | null
           data_ordenacao: string | null
+          tempo_ministerio: string | null
           endereco: string | null
           estado: string | null
           id: string
@@ -992,6 +993,7 @@ export type Database = {
           created_at?: string | null
           data_nascimento?: string | null
           data_ordenacao?: string | null
+          tempo_ministerio?: string | null
           endereco?: string | null
           estado?: string | null
           id: string
@@ -1011,6 +1013,7 @@ export type Database = {
           created_at?: string | null
           data_nascimento?: string | null
           data_ordenacao?: string | null
+          tempo_ministerio?: string | null
           endereco?: string | null
           estado?: string | null
           id?: string

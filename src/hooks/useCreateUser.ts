@@ -19,6 +19,7 @@ export interface CreateUserInput {
   estado?: string
   cep?: string
   data_ordenacao?: string
+  tempo_ministerio?: string
 }
 
 export const useCreateUser = () => {
@@ -52,6 +53,7 @@ export const useCreateUser = () => {
       if (userData.estado) insertData.estado = userData.estado
       if (userData.cep) insertData.cep = userData.cep
       if (userData.data_ordenacao) insertData.data_ordenacao = userData.data_ordenacao
+      if (userData.tempo_ministerio) insertData.tempo_ministerio = userData.tempo_ministerio
 
       const { data, error } = await supabase
         .from('profiles')

@@ -20,6 +20,7 @@ export interface UpdateUserInput {
   estado?: string
   cep?: string
   data_ordenacao?: string
+  tempo_ministerio?: string
 }
 
 export const useUpdateUser = () => {

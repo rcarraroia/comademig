@@ -17,6 +17,7 @@ export interface Profile {
   igreja?: string;
   cargo?: string;
   data_ordenacao?: string;
+  tempo_ministerio?: string;
   status: string;
   tipo_membro: string;
   foto_url?: string;

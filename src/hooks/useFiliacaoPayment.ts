@@ -322,7 +322,8 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         estado: data.estado,
         igreja: data.igreja,
         cargo: data.cargo_igreja || null, // ✅ CORRIGIDO: Salvar cargo na igreja informado pelo usuário
-        data_ordenacao: data.tempo_ministerio || null, // ✅ NOVO: Salvar tempo de ministério
+        data_ordenacao: null, // Manter como null (não coletamos data de ordenação no formulário)
+        tempo_ministerio: data.tempo_ministerio || null, // ✅ NOVO: Salvar tempo de ministério no campo correto
         member_type_id: selectedMemberType.id,
         asaas_customer_id: customer.id,
         asaas_subscription_id: subscriptionResult.id,

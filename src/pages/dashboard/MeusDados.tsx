@@ -36,6 +36,7 @@ const MeusDados = () => {
     igreja: profile?.igreja || "",
     cargo: profile?.cargo || "",
     data_ordenacao: profile?.data_ordenacao || "",
+    tempo_ministerio: profile?.tempo_ministerio || "",
   });
 
   // Calculate completion percentage - SINCRONIZADO COM DASHBOARD
@@ -45,7 +46,7 @@ const MeusDados = () => {
     const allFields = [
       'nome_completo', 'cpf', 'rg', 'data_nascimento',
       'endereco', 'cidade', 'estado', 'cep', 'telefone',
-      'igreja', 'cargo', 'data_ordenacao'
+      'igreja', 'cargo', 'data_ordenacao', 'tempo_ministerio'
     ];
     
     const filledFields = allFields.filter(field => 
@@ -109,6 +110,7 @@ const MeusDados = () => {
         igreja: profile.igreja || "",
         cargo: profile.cargo || "",
         data_ordenacao: profile.data_ordenacao || "",
+        tempo_ministerio: profile.tempo_ministerio || "",
       });
     }
     setIsEditing(false);
@@ -379,6 +381,16 @@ const MeusDados = () => {
                   value={formData.data_ordenacao}
                   onChange={(e) => handleInputChange('data_ordenacao', e.target.value)}
                   disabled={!isEditing}
+                />
+              </div>
+              <div>
+                <Label htmlFor="tempo_ministerio">Tempo de Ministério</Label>
+                <Input
+                  id="tempo_ministerio"
+                  value={formData.tempo_ministerio}
+                  onChange={(e) => handleInputChange('tempo_ministerio', e.target.value)}
+                  disabled={!isEditing}
+                  placeholder="Ex: 5 anos, 10 anos"
                 />
               </div>
             </div>

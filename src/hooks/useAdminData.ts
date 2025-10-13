@@ -21,6 +21,7 @@ export interface AdminProfile {
   estado?: string;
   cep?: string;
   data_ordenacao?: string;
+  tempo_ministerio?: string;
   foto_url?: string;
   updated_at?: string;
 }
