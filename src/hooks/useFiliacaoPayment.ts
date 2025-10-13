@@ -256,7 +256,7 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         igreja: data.igreja,
         cargo: selectedMemberType.name,
         member_type_id: selectedMemberType.id,
-        subscription_source: 'filiacao',
+        // subscription_source: 'filiacao', // ❌ Campo não existe na tabela profiles
         asaas_customer_id: customer.id,
         asaas_subscription_id: subscriptionResult.id,
         updated_at: new Date().toISOString()
