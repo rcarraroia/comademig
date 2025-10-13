@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Users, Info, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import MemberTypeSelector from '@/components/public/MemberTypeSelector';
 import PaymentFormEnhanced from '@/components/payments/PaymentFormEnhanced';
@@ -164,23 +165,49 @@ export default function Filiacao() {
             <>
               {/* Aviso sobre conta existente */}
               {user && (
-                <Alert className="mb-6">
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>Você já está logado como:</strong> {user.email}
+                <Alert className="mb-6 border-yellow-200 bg-yellow-50">
+                  <Info className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-yellow-800">
+                    <strong>⚠️ ATENÇÃO: Você já está logado como:</strong> {user.email}
                     <br />
-                    A filiação será vinculada a esta conta.
+                    <br />
+                    <strong>A filiação será vinculada a esta conta existente.</strong>
+                    <br />
+                    <br />
+                    Se você deseja criar uma nova conta para esta filiação, 
+                    <Button 
+                      variant="link" 
+                      className="text-yellow-800 underline p-0 h-auto font-semibold"
+                      onClick={async () => {
+                        await supabase.auth.signOut();
+                        toast.info('Você foi desconectado. Agora pode criar uma nova conta.');
+                        setShowPaymentForm(false);
+                        window.location.reload(); // Recarregar para atualizar estado
+                      }}
+                    >
+                      clique aqui para sair
+                    </Button> antes de prosseguir.
                   </AlertDescription>
                 </Alert>
               )}
               
               {!user && (
-                <Alert className="mb-6">
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>Criação de Conta:</strong> Uma nova conta será criada com o email informado.
+                <Alert className="mb-6 border-blue-200 bg-blue-50">
+                  <Info className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    <strong>✅ Criação de Nova Conta:</strong>
                     <br />
-                    Se você já tem uma conta, faça login antes de prosseguir.
+                    Uma nova conta será criada com o email que você informar no formulário.
+                    <br />
+                    <br />
+                    <strong>Já tem uma conta?</strong> 
+                    <Button 
+                      variant="link" 
+                      className="text-blue-800 underline p-0 h-auto font-semibold"
+                      onClick={() => navigate('/auth?redirect=/filiacao')}
+                    >
+                      Faça login primeiro
+                    </Button> para vincular a filiação à sua conta existente.
                   </AlertDescription>
                 </Alert>
               )}
@@ -192,8 +219,9 @@ export default function Filiacao() {
                   toast.success('Filiação realizada com sucesso!');
                   navigate('/dashboard');
                 }}
-              onCancel={() => setShowPaymentForm(false)}
-            />
+                onCancel={() => setShowPaymentForm(false)}
+              />
+            </>
           )}
         </div>
       </div>

@@ -1,6 +1,11 @@
 /**
  * Configuração do ambiente de testes (sandbox) para integração Asaas
  * Fornece dados de teste, credenciais sandbox e simulação de cenários
+ * 
+ * ⚠️ AVISO DE SEGURANÇA:
+ * Este arquivo contém credenciais de SANDBOX (ambiente de testes).
+ * NÃO use estas credenciais em produção.
+ * Em produção, todas as chamadas devem passar por Edge Functions.
  */
 
 export interface SandboxConfig {
@@ -55,6 +60,7 @@ export interface TestAddress {
 }
 
 // Configuração do sandbox Asaas
+// ⚠️ APENAS PARA TESTES - NÃO USAR EM PRODUÇÃO
 export const SANDBOX_CONFIG: SandboxConfig = {
   environment: 'sandbox',
   apiKey: '$aact_YTU5YTE0M2M2N2I4MTliNzk0YTI5N2U5MzdjNWZmODQ6OjAwMDAwMDAwMDAwMDAwODUxOTk6OiRhYWNoXzRlNTEzOGVhLTI0NWEtNGRjYi1iOGY4LWY4YzZhM2Q1NzI4Mw==',

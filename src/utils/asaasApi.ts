@@ -189,25 +189,20 @@ class AsaasAPI {
   }
 }
 
-// Instância singleton para uso na aplicação
+// ⚠️ AVISO: Este arquivo está OBSOLETO
+// A integração com Asaas deve ser feita via Edge Functions do Supabase
+// NÃO use este cliente diretamente no frontend por questões de segurança
+// Use os hooks: useAsaasCustomers, useAsaasSubscriptions, etc.
+
+// Instância singleton para uso na aplicação (OBSOLETO - NÃO USAR)
 let asaasInstance: AsaasAPI | null = null
 
 export function getAsaasAPI(): AsaasAPI {
-  if (!asaasInstance) {
-    const apiKey = import.meta.env.VITE_ASAAS_API_KEY
-    const environment = import.meta.env.VITE_ASAAS_ENVIRONMENT as 'sandbox' | 'production'
-    
-    if (!apiKey) {
-      throw new Error('VITE_ASAAS_API_KEY não configurada')
-    }
-
-    asaasInstance = new AsaasAPI({
-      apiKey,
-      environment: environment || 'sandbox'
-    })
-  }
-
-  return asaasInstance
+  throw new Error(
+    'getAsaasAPI() está obsoleto. Use Edge Functions via hooks: ' +
+    'useAsaasCustomers, useAsaasSubscriptions, etc. ' +
+    'A API Key do Asaas NÃO deve ser exposta no frontend.'
+  );
 }
 
 // Utilitários de formatação

@@ -1,6 +1,10 @@
 /**
  * Configuração e validação para deploy em produção
  * Verifica todas as dependências e configurações necessárias
+ * 
+ * ⚠️ OBSOLETO: Este arquivo verifica variáveis VITE_ASAAS_API_KEY que não existem mais.
+ * A validação de produção deve ser feita nas Edge Functions.
+ * Manter apenas para referência histórica.
  */
 
 export interface ProductionConfig {

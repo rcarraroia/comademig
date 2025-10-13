@@ -69,6 +69,7 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
   const processFiliacaoPaymentMutation = useMutation({
     mutationFn: async (data: FiliacaoPaymentData) => {
       let currentUserId = user?.id;
+      let isNewAccount = false;
 
       // 1. Criar conta se usuário não estiver autenticado
       if (!currentUserId) {
@@ -102,7 +103,23 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         }
 
         currentUserId = authData.user.id;
+        isNewAccount = true;
         toast.success('Conta criada com sucesso!');
+      } else {
+        // Usuário já está logado - verificar se já tem filiação ativa
+        const { data: existingSubscription } = await supabase
+          .from('user_subscriptions')
+          .select('id, status')
+          .eq('user_id', currentUserId)
+          .in('status', ['active', 'pending'])
+          .single();
+
+        if (existingSubscription) {
+          throw new Error(
+            'Você já possui uma filiação ativa. ' +
+            'Se deseja criar uma nova filiação, entre em contato com o suporte.'
+          );
+        }
       }
 
       if (!selectedMemberType.plan_id) {

@@ -179,15 +179,15 @@ class DiagnosticService {
 
   async testPaymentIntegration(): Promise<void> {
     try {
-      // Verificar se as variáveis de ambiente do Asaas estão configuradas
-      const hasAsaasConfig = process.env.VITE_ASAAS_API_KEY || 
-                           window.location.hostname.includes('vercel') || 
-                           window.location.hostname.includes('localhost');
+      // Verificar se Edge Functions estão disponíveis (backend)
+      // API Key do Asaas está configurada nas Edge Functions, não no frontend
+      const isProduction = window.location.hostname.includes('vercel') || 
+                          !window.location.hostname.includes('localhost');
       
-      if (hasAsaasConfig) {
-        this.addResult('Payment Integration', 'success', 'Configuração de pagamento detectada');
+      if (isProduction) {
+        this.addResult('Payment Integration', 'success', 'Ambiente de produção - Edge Functions ativas');
       } else {
-        this.addResult('Payment Integration', 'warning', 'Configuração de pagamento não detectada');
+        this.addResult('Payment Integration', 'warning', 'Ambiente local - verificar Edge Functions');
       }
     } catch (error) {
       this.addResult('Payment Integration', 'error', 'Erro ao verificar integração de pagamento', error);

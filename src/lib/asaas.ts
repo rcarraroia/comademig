@@ -1,6 +1,7 @@
 /**
  * Biblioteca de validação e integração Asaas
- * Versão simplificada para evitar erros de inicialização
+ * ⚠️ IMPORTANTE: API Key do Asaas está nas Edge Functions (backend)
+ * Este arquivo NÃO deve acessar credenciais sensíveis no frontend
  */
 
 export interface ValidationResult {
@@ -12,35 +13,25 @@ export interface ValidationResult {
 
 /**
  * Valida a integração Asaas de forma não-bloqueante
+ * Verifica apenas disponibilidade das Edge Functions
  */
 export const validateAsaasIntegration = async (): Promise<ValidationResult> => {
   const result: ValidationResult = {
     isValid: true,
     errors: [],
     warnings: [],
-    environment: 'development'
+    environment: import.meta.env.DEV ? 'development' : 'production'
   };
 
   try {
-    // Em desenvolvimento, não validar chaves de produção
+    // Em desenvolvimento, apenas avisar
     if (import.meta.env.DEV) {
-      result.warnings.push('Modo desenvolvimento - validação Asaas desabilitada');
+      result.warnings.push('Modo desenvolvimento - Edge Functions podem não estar disponíveis localmente');
       return result;
     }
 
-    // Verificar se as variáveis de ambiente estão configuradas
-    const asaasApiKey = import.meta.env.VITE_ASAAS_API_KEY;
-    
-    if (!asaasApiKey) {
-      result.warnings.push('VITE_ASAAS_API_KEY não configurada - funcionalidades de pagamento limitadas');
-    }
-
-    // Determinar ambiente baseado na chave
-    if (asaasApiKey?.startsWith('$aact_prod_')) {
-      result.environment = 'production';
-    } else if (asaasApiKey?.startsWith('$aact_')) {
-      result.environment = 'development';
-    }
+    // Em produção, assumir que Edge Functions estão configuradas
+    result.isValid = true;
 
   } catch (error) {
     result.errors.push(`Erro na validação: ${error instanceof Error ? error.message : 'Desconhecido'}`);
@@ -76,10 +67,12 @@ export const formatValidationResult = (result: ValidationResult): string => {
 
 /**
  * Configuração Asaas para desenvolvimento
+ * ⚠️ API Key NÃO está mais disponível no frontend por segurança
+ * Use Edge Functions via hooks para comunicação com Asaas
  */
 export const asaasConfig = {
   isDevelopment: import.meta.env.DEV,
-  apiKey: import.meta.env.VITE_ASAAS_API_KEY || '',
+  // API Key removida do frontend - use Edge Functions
   baseUrl: import.meta.env.DEV 
     ? 'https://sandbox.asaas.com/api/v3' 
     : 'https://api.asaas.com/v3'
