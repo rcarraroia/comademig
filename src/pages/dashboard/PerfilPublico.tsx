@@ -31,6 +31,7 @@ interface PublicProfile {
   cidade?: string;
   estado?: string;
   data_ordenacao?: string;
+  tempo_ministerio?: string;
   telefone?: string;
   email?: string;
   bio?: string;
@@ -82,6 +83,7 @@ export default function PerfilPublico() {
           cidade,
           estado,
           data_ordenacao,
+          tempo_ministerio,
           telefone,
           bio,
           show_contact,
@@ -273,6 +275,13 @@ export default function PerfilPublico() {
                       <div>
                         <p className="text-sm text-gray-600">Data de Ordenação</p>
                         <p className="font-medium">{formatDate(publicProfile.data_ordenacao)}</p>
+                      </div>
+                    )}
+                    
+                    {publicProfile.tempo_ministerio && (
+                      <div>
+                        <p className="text-sm text-gray-600">Tempo de Ministério</p>
+                        <p className="font-medium">{publicProfile.tempo_ministerio}</p>
                       </div>
                     )}
                   </div>
