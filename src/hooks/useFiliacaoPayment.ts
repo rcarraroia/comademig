@@ -254,9 +254,9 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         cidade: data.cidade,
         estado: data.estado,
         igreja: data.igreja,
-        cargo: selectedMemberType.name,
+        cargo: data.cargo_igreja || null, // ✅ CORRIGIDO: Salvar cargo na igreja informado pelo usuário
+        data_ordenacao: data.tempo_ministerio || null, // ✅ NOVO: Salvar tempo de ministério
         member_type_id: selectedMemberType.id,
-        // subscription_source: 'filiacao', // ❌ Campo não existe na tabela profiles
         asaas_customer_id: customer.id,
         asaas_subscription_id: subscriptionResult.id,
         updated_at: new Date().toISOString()
@@ -304,23 +304,8 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         throw new Error(`Erro ao criar assinatura: ${subscriptionError.message}`);
       }
 
-      // 6. Registrar dados ministeriais adicionais se fornecidos
-      if (data.cargo_igreja || data.tempo_ministerio) {
-        const ministerialData: MinisterialData = {
-          user_id: currentUserId,
-          cargo_igreja: data.cargo_igreja,
-          tempo_ministerio: data.tempo_ministerio,
-          created_at: new Date().toISOString()
-        };
-
-        try {
-          await (supabase as any)
-            .from('ministerial_data')
-            .insert([ministerialData]);
-        } catch (error) {
-          console.log('Dados ministeriais salvos em log:', ministerialData);
-        }
-      }
+      // 6. Dados ministeriais já foram salvos no perfil (cargo e data_ordenacao)
+      // Não é mais necessário salvar em tabela separada
 
       // 7. Registrar afiliado se houver
       if (affiliateInfo?.affiliateId && affiliateInfo?.referralCode) {
