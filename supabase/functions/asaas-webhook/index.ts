@@ -43,6 +43,21 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  // Handle GET requests (health check / validation)
+  if (req.method === 'GET') {
+    return new Response(
+      JSON.stringify({ 
+        status: 'ok', 
+        message: 'Webhook endpoint is active',
+        timestamp: new Date().toISOString()
+      }),
+      { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    )
+  }
+
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
