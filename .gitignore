@@ -22,3 +22,18 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Arquivos de análise e testes (não versionar)
+ANALISE_*.md
+RELATORIO_*.md
+PARECER_*.md
+CHECKLIST_*.md
+COMPARACAO_*.md
+INSTRUCOES_*.md
+SOLUCAO_*.md
+CORRECAO_*.md
+IMPLEMENTACAO_*.md
+*.py
+test_*.py
+verify_*.py
+analyze_*.py
