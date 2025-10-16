@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { logInfo, logError, logWarning } from '../shared/logger.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -78,10 +79,29 @@ serve(async (req) => {
     // Parse do payload do webhook
     const payload: AsaasWebhookPayload = await req.json()
     
+    // Log: Webhook recebido
+    await logInfo({
+      source: 'webhook',
+      functionName: 'asaas-webhook',
+      message: `Webhook recebido: ${payload.event}`,
+      details: {
+        event: payload.event,
+        payment_id: payload.payment?.id,
+        payment_status: payload.payment?.status
+      }
+    })
+    
     console.log('Webhook recebido:', payload)
 
     // Verificar se é um evento de pagamento
     if (!payload.event || !payload.payment) {
+      await logWarning({
+        source: 'webhook',
+        functionName: 'asaas-webhook',
+        message: 'Webhook com payload inválido',
+        details: { payload }
+      })
+      
       return new Response(
         JSON.stringify({ error: 'Invalid webhook payload' }),
         { 
@@ -263,6 +283,17 @@ serve(async (req) => {
     )
 
   } catch (error) {
+    // Log: Erro crítico no webhook
+    await logError({
+      source: 'webhook',
+      functionName: 'asaas-webhook',
+      message: 'Erro crítico ao processar webhook',
+      error: error as Error,
+      details: {
+        error_type: error instanceof Error ? error.constructor.name : 'Unknown'
+      }
+    })
+    
     console.error('Erro no webhook:', error)
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
@@ -276,8 +307,18 @@ serve(async (req) => {
 
 async function handlePaymentConfirmed(supabaseClient: any, payment: any) {
   try {
-    // Atualizar status da assinatura do usuário se aplicável
+    console.log('💰 ========================================');
+    console.log('💰 PAGAMENTO CONFIRMADO');
+    console.log('💰 Payment ID:', payment.id);
+    console.log('💰 Subscription ID:', payment.subscription || 'N/A');
+    console.log('💰 ========================================');
+    
+    // ============================================
+    // CASO 1: Pagamento de RENOVAÇÃO (tem subscription)
+    // ============================================
     if (payment.subscription) {
+      console.log('🔄 É uma renovação de assinatura');
+      
       const { error } = await supabaseClient
         .from('user_subscriptions')
         .update({
@@ -288,10 +329,58 @@ async function handlePaymentConfirmed(supabaseClient: any, payment: any) {
         .eq('asaas_subscription_id', payment.subscription)
 
       if (error) {
-        console.error('Erro ao atualizar assinatura:', error)
+        console.error('❌ Erro ao atualizar assinatura:', error)
+      } else {
+        console.log('✅ Assinatura renovada com sucesso');
+      }
+    }
+    
+    // ============================================
+    // CASO 2: Pagamento INICIAL (não tem subscription)
+    // ============================================
+    else {
+      console.log('💳 É um pagamento inicial (primeira mensalidade)');
+      
+      // Buscar assinatura pelo initial_payment_id
+      const { data: subscription, error: fetchError } = await supabaseClient
+        .from('user_subscriptions')
+        .select('*')
+        .eq('initial_payment_id', payment.id)
+        .single()
+      
+      if (fetchError) {
+        console.log('⚠️ Assinatura não encontrada para pagamento inicial:', payment.id);
+        console.log('   Isso é normal se o pagamento já ativou o usuário no momento da criação');
+      } else if (subscription) {
+        console.log('✅ Assinatura encontrada:', subscription.id);
+        console.log('   Status atual:', subscription.status);
+        
+        // Se ainda não está ativa, ativar agora (redundância/segurança)
+        if (subscription.status !== 'active') {
+          const { error: updateError } = await supabaseClient
+            .from('user_subscriptions')
+            .update({
+              status: 'active',
+              last_payment_date: payment.paymentDate || payment.confirmedDate,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', subscription.id);
+          
+          if (updateError) {
+            console.error('❌ Erro ao ativar assinatura:', updateError);
+          } else {
+            console.log('✅ Assinatura ativada via webhook');
+          }
+        } else {
+          console.log('✅ Assinatura já está ativa (ativada no momento da criação)');
+        }
       }
     }
 
+    // ============================================
+    // PROCESSAR SPLITS E SERVIÇOS (código existente)
+    // ============================================
+    
     // Buscar dados da cobrança para verificar se é uma solicitação de serviço
     const { data: cobranca, error: cobrancaError } = await supabaseClient
       .from('asaas_cobrancas')
@@ -300,7 +389,8 @@ async function handlePaymentConfirmed(supabaseClient: any, payment: any) {
       .single()
 
     if (cobrancaError) {
-      console.error('Erro ao buscar cobrança:', cobrancaError)
+      console.log('⚠️ Cobrança não encontrada em asaas_cobrancas:', payment.id);
+      console.log('   Isso é normal para pagamentos de filiação (processados diretamente)');
       return
     }
 

@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useAsaasCustomers } from './useAsaasCustomers';
 import { useAsaasSubscriptions } from './useAsaasSubscriptions';
+import { useAsaasCardPayments } from './useAsaasCardPayments';
 import type { UnifiedMemberType } from './useMemberTypeWithPlan';
 import type { FiliacaoData } from './useFiliacaoFlow';
 import type { UserSubscriptionInsert, MinisterialData, ProfileExtension } from '@/integrations/supabase/types-extension';
@@ -32,10 +33,30 @@ interface UseFiliacaoPaymentProps {
 
 export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFiliacaoPaymentProps) {
   const { user, signUp } = useAuth();
-  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'creating_account' | 'creating_customer' | 'creating_subscription' | 'updating_profile' | 'completed'>('idle');
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'creating_account' | 'creating_customer' | 'processing_payment' | 'creating_subscription' | 'updating_profile' | 'completed'>('idle');
   
   const { createCustomer } = useAsaasCustomers();
   const { createSubscription } = useAsaasSubscriptions();
+  const { processCardPayment } = useAsaasCardPayments();
+
+  // Função auxiliar para calcular próximo vencimento com validação anti-duplicação
+  const calculateNextDueDate = (days: number = 30): string => {
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + days);
+    
+    const nextDateStr = nextDate.toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    // VALIDAÇÃO CRÍTICA: Garantir que nextDueDate > hoje
+    if (nextDateStr <= todayStr) {
+      throw new Error(
+        `ERRO CRÍTICO: nextDueDate (${nextDateStr}) deve ser maior que hoje (${todayStr})`
+      );
+    }
+    
+    console.log('📅 Próximo vencimento calculado:', nextDateStr);
+    return nextDateStr;
+  };
 
   const calculateExpirationDate = (recurrence: string): string => {
     const now = new Date();
@@ -57,13 +78,6 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
     }
     
     return now.toISOString();
-  };
-
-  const calculatePixDiscount = (originalPrice: number) => {
-    const discountPercentage = 0.05; // 5%
-    const discount = originalPrice * discountPercentage;
-    const finalPrice = originalPrice - discount;
-    return { discount, finalPrice, discountPercentage };
   };
 
   const processFiliacaoPaymentMutation = useMutation({
@@ -107,7 +121,7 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         toast.success('Conta criada com sucesso!');
       } else {
         // Usuário já está logado - verificar se já tem filiação ativa
-        const { data: existingSubscription } = await supabase
+        const { data: existingSubscription } = await (supabase as any)
           .from('user_subscriptions')
           .select('id, status')
           .eq('user_id', currentUserId)
@@ -127,8 +141,7 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
       }
 
       const originalPrice = selectedMemberType.plan_value || 0;
-      const isPixPayment = data.payment_method === 'pix';
-      const { finalPrice } = isPixPayment ? calculatePixDiscount(originalPrice) : { finalPrice: originalPrice };
+      const finalPrice = originalPrice; // Sem desconto PIX
 
       // 2. Criar/verificar cliente no Asaas
       setPaymentStatus('creating_customer');
@@ -181,16 +194,73 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
       console.log('✅ Cliente Asaas criado:', customerResponse.customer_id);
       const customer = { id: customerResponse.customer_id };
 
-      // 3. Criar assinatura recorrente no Asaas
+      // ============================================
+      // 3. PROCESSAR PAGAMENTO INICIAL (PRIMEIRA MENSALIDADE)
+      // ============================================
+      setPaymentStatus('processing_payment');
+      
+      console.log('💳 ========================================');
+      console.log('💳 PROCESSANDO PAGAMENTO INICIAL');
+      console.log('💳 ========================================');
+      
+      if (!data.cardData) {
+        throw new Error('Dados do cartão são obrigatórios para filiação');
+      }
+
+      const initialPaymentData = {
+        value: finalPrice,
+        dueDate: new Date().toISOString().split('T')[0], // HOJE - Processamento imediato
+        description: `Primeira mensalidade COMADEMIG - ${selectedMemberType.name}`,
+        service_type: 'filiacao' as const,
+        service_data: {
+          member_type_id: selectedMemberType.id,
+          subscription_plan_id: selectedMemberType.plan_id,
+          user_id: currentUserId
+        },
+        installmentCount: 1,
+        creditCard: {
+          holderName: data.cardData.holderName,
+          number: data.cardData.number,
+          expiryMonth: data.cardData.expiryMonth,
+          expiryYear: data.cardData.expiryYear,
+          ccv: data.cardData.ccv,
+        },
+        creditCardHolderInfo: {
+          name: data.nome_completo,
+          email: data.email,
+          cpfCnpj: data.cpf,
+          postalCode: data.cep,
+          addressNumber: data.numero,
+          phone: data.telefone,
+        },
+        saveCard: true // IMPORTANTE: Salvar cartão para renovações futuras
+      };
+
+      console.log('💳 Processando pagamento inicial...');
+      const initialPaymentResult = await processCardPayment(initialPaymentData);
+
+      if (!initialPaymentResult || !initialPaymentResult.success) {
+        throw new Error('Pagamento recusado. Verifique os dados do cartão e tente novamente.');
+      }
+
+      console.log('✅ Pagamento inicial processado com sucesso!');
+      console.log('   Payment ID:', initialPaymentResult.asaas_id);
+      console.log('   Status:', initialPaymentResult.status);
+      console.log('   Token do cartão:', initialPaymentResult.credit_card_token);
+
+      // Validar que cartão foi tokenizado
+      if (!initialPaymentResult.credit_card_token) {
+        console.warn('⚠️ Cartão não foi tokenizado. Renovação automática pode não funcionar.');
+      }
+
+      // ============================================
+      // 4. CRIAR ASSINATURA PARA RENOVAÇÃO AUTOMÁTICA
+      // ============================================
       setPaymentStatus('creating_subscription');
       
-      // Mapear billingType baseado no método de pagamento
-      let billingType: 'BOLETO' | 'CREDIT_CARD' | 'UNDEFINED' = 'UNDEFINED';
-      if (data.payment_method === 'boleto') {
-        billingType = 'BOLETO';
-      } else if (data.payment_method === 'credit_card') {
-        billingType = 'CREDIT_CARD';
-      }
+      console.log('📅 ========================================');
+      console.log('📅 CRIANDO ASSINATURA PARA RENOVAÇÃO');
+      console.log('📅 ========================================');
 
       // Mapear cycle baseado na recorrência do plano
       let cycle: 'MONTHLY' | 'QUARTERLY' | 'SEMIANNUALLY' | 'YEARLY' = 'MONTHLY';
@@ -201,73 +271,61 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         cycle = 'YEARLY';
       }
 
+      // Calcular próximo vencimento (30 dias) com validação anti-duplicação
+      const nextDueDate = calculateNextDueDate(30);
+
       const subscriptionData: any = {
         customer: customer.id,
-        billingType,
+        billingType: 'CREDIT_CARD',
         value: finalPrice,
-        nextDueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 dias
+        nextDueDate: nextDueDate, // +30 DIAS (não hoje!)
         cycle,
         description: `Assinatura COMADEMIG - ${selectedMemberType.name}`,
         externalReference: `subscription_${currentUserId}_${Date.now()}`,
+        // NÃO enviar dados do cartão (já foi tokenizado no pagamento inicial)
       };
 
-      // Adicionar dados do cartão se for pagamento com cartão
-      if (data.payment_method === 'credit_card' && data.cardData) {
-        subscriptionData.creditCard = {
-          holderName: data.cardData.holderName,
-          number: data.cardData.number,
-          expiryMonth: data.cardData.expiryMonth,
-          expiryYear: data.cardData.expiryYear,
-          ccv: data.cardData.ccv,
-        };
-        subscriptionData.creditCardHolderInfo = {
-          name: data.nome_completo,
-          email: data.email,
-          cpfCnpj: data.cpf,
-          postalCode: data.cep,
-          addressNumber: data.numero,
-          phone: data.telefone,
-        };
-      }
+      console.log('📅 Dados da assinatura:');
+      console.log('   Customer:', customer.id);
+      console.log('   Valor:', finalPrice);
+      console.log('   Próximo vencimento:', nextDueDate);
+      console.log('   Ciclo:', cycle);
 
-      // Adicionar desconto PIX se aplicável
-      if (isPixPayment) {
-        subscriptionData.discount = {
-          value: originalPrice - finalPrice,
-          dueDateLimitDays: 0,
-        };
-      }
-
-      const subscriptionResult = await createSubscription.mutateAsync(subscriptionData);
-
-      // 3.4. Registrar cobrança no banco local (para vincular splits)
+      let subscriptionResult;
       try {
-        console.log('📝 Registrando cobrança no banco local...');
+        subscriptionResult = await createSubscription.mutateAsync(subscriptionData);
+        console.log('✅ Assinatura criada com sucesso!');
+        console.log('   Subscription ID:', subscriptionResult.id);
+      } catch (subscriptionError) {
+        console.error('⚠️ Erro ao criar assinatura:', subscriptionError);
         
-        const { error: cobrancaError } = await (supabase as any)
-          .from('asaas_cobrancas')
-          .insert({
-            asaas_payment_id: subscriptionResult.id,
-            user_id: currentUserId,
-            customer_id: customer.id,
-            subscription_id: subscriptionResult.id,
-            value: finalPrice,
-            status: 'PENDING',
-            billing_type: billingType,
-            description: subscriptionData.description,
-            due_date: subscriptionData.nextDueDate,
-            service_type: 'filiacao',
-          });
+        // IMPORTANTE: Pagamento já foi processado, usuário JÁ ESTÁ ATIVO
+        // Mas não terá renovação automática - notificar admin
         
-        if (cobrancaError) {
-          console.error('❌ Erro ao registrar cobrança:', cobrancaError);
-          // Não falha o processo - apenas loga
-        } else {
-          console.log('✅ Cobrança registrada no banco local');
+        try {
+          await (supabase as any)
+            .from('admin_tasks')
+            .insert({
+              type: 'subscription_creation_failed',
+              user_id: currentUserId,
+              payment_id: initialPaymentResult.asaas_id,
+              error_message: subscriptionError instanceof Error ? subscriptionError.message : 'Erro desconhecido',
+              status: 'pending',
+              created_at: new Date().toISOString()
+            });
+          
+          console.log('📧 Admin notificado sobre falha na criação da assinatura');
+        } catch (notifyError) {
+          console.error('Erro ao notificar admin:', notifyError);
         }
-      } catch (error) {
-        console.error('❌ Exceção ao registrar cobrança:', error);
-        // Não falha o processo principal
+        
+        // Criar assinatura "fake" para não quebrar o fluxo
+        subscriptionResult = {
+          id: `MANUAL_${Date.now()}`,
+          status: 'PENDING_MANUAL_CREATION'
+        };
+        
+        console.log('⚠️ Usuário será ativado mas precisará de intervenção manual para renovação');
       }
 
       // 3.5. Configurar split de pagamento (divisão tripla)
@@ -320,10 +378,10 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         bairro: data.bairro,
         cidade: data.cidade,
         estado: data.estado,
-        igreja: data.igreja,
-        cargo: data.cargo_igreja || null, // ✅ CORRIGIDO: Salvar cargo na igreja informado pelo usuário
-        data_ordenacao: null, // Manter como null (não coletamos data de ordenação no formulário)
-        tempo_ministerio: data.tempo_ministerio || null, // ✅ NOVO: Salvar tempo de ministério no campo correto
+        igreja: null, // Será preenchido no perfil posteriormente
+        cargo: null, // Será preenchido no perfil posteriormente
+        data_ordenacao: null, // Será preenchido no perfil posteriormente
+        tempo_ministerio: null, // Será preenchido no perfil posteriormente
         member_type_id: selectedMemberType.id,
         asaas_customer_id: customer.id,
         asaas_subscription_id: subscriptionResult.id,
@@ -340,15 +398,16 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         throw new Error(`Erro ao atualizar perfil: ${profileError.message}`);
       }
 
-      // 5. Criar registro de assinatura do usuário (inicialmente pendente)
+      // 5. Criar registro de assinatura do usuário (JÁ ATIVO!)
       const expirationDate = calculateExpirationDate(selectedMemberType.plan_recurrence || 'Mensal');
       
       const userSubscriptionData: UserSubscriptionInsert = {
         user_id: currentUserId,
         subscription_plan_id: selectedMemberType.plan_id,
         member_type_id: selectedMemberType.id,
-        status: 'pending', // Será ativada via webhook quando primeiro pagamento for confirmado
+        status: 'active', // JÁ ATIVO! Pagamento inicial foi confirmado
         asaas_subscription_id: subscriptionResult.id,
+        initial_payment_id: initialPaymentResult.asaas_id, // ID do pagamento inicial
         started_at: new Date().toISOString(),
         expires_at: expirationDate,
       };

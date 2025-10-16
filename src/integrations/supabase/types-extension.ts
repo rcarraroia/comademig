@@ -8,8 +8,9 @@ export interface UserSubscription {
   user_id: string;
   subscription_plan_id: string;
   member_type_id: string;
-  status: 'pending' | 'active' | 'cancelled' | 'expired';
+  status: 'pending' | 'active' | 'cancelled' | 'expired' | 'overdue';
   asaas_subscription_id: string | null;
+  initial_payment_id: string | null; // ID do pagamento inicial (primeira mensalidade)
   started_at: string;
   expires_at: string;
   created_at?: string;
@@ -21,8 +22,9 @@ export interface UserSubscriptionInsert {
   user_id: string;
   subscription_plan_id: string;
   member_type_id: string;
-  status?: 'pending' | 'active' | 'cancelled' | 'expired';
+  status?: 'pending' | 'active' | 'cancelled' | 'expired' | 'overdue';
   asaas_subscription_id?: string | null;
+  initial_payment_id?: string | null; // ID do pagamento inicial (primeira mensalidade)
   started_at?: string;
   expires_at: string;
   created_at?: string;
