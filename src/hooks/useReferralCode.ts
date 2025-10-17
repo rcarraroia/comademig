@@ -56,7 +56,8 @@ export function useReferralCode() {
         display_name: data.display_name,
       });
 
-      toast.success(`Você foi indicado por ${data.display_name}!`);
+      // Validação silenciosa - não exibir toast
+      console.log('✅ Código de indicação válido:', code, 'Afiliado:', data.display_name);
     } catch (error) {
       console.error('Erro ao validar código de indicação:', error);
     }

@@ -64,7 +64,7 @@ export function useFinancialDashboard(userId?: string) {
           .from('asaas_cobrancas' as any)
           .select(`
             *,
-            user:profiles!user_id(full_name, email)
+            user:profiles!user_id(nome_completo, email)
           `)
           .gte('created_at', start.toISOString())
           .lte('created_at', end.toISOString())
@@ -171,7 +171,7 @@ export function useFinancialDashboard(userId?: string) {
           .from('asaas_cobrancas' as any)
           .select(`
             *,
-            user:profiles!user_id(full_name, email)
+            user:profiles!user_id(nome_completo, email)
           `)
           .order('created_at', { ascending: false })
           .limit(limit)
@@ -198,7 +198,7 @@ export function useFinancialDashboard(userId?: string) {
           payment_method: item.payment_method,
           created_at: item.created_at,
           data_pagamento: item.data_pagamento,
-          user_name: item.user?.full_name,
+          user_name: item.user?.nome_completo,
           user_email: item.user?.email
         }))
       },
@@ -215,7 +215,7 @@ export function useFinancialDashboard(userId?: string) {
           .from('asaas_cobrancas' as any)
           .select(`
             *,
-            user:profiles!user_id(full_name, email)
+            user:profiles!user_id(nome_completo, email)
           `)
           .eq('status', 'PENDING')
           .order('created_at', { ascending: false })
@@ -242,7 +242,7 @@ export function useFinancialDashboard(userId?: string) {
           payment_method: item.payment_method,
           created_at: item.created_at,
           data_pagamento: item.data_pagamento,
-          user_name: item.user?.full_name,
+          user_name: item.user?.nome_completo,
           user_email: item.user?.email
         }))
       },
@@ -259,7 +259,7 @@ export function useFinancialDashboard(userId?: string) {
           .from('affiliate_commissions' as any)
           .select(`
             *,
-            affiliate:profiles!affiliate_id(full_name, email),
+            affiliate:profiles!affiliate_id(nome_completo, email),
             cobranca:asaas_cobrancas!cobranca_id(description)
           `)
           .order('created_at', { ascending: false })
@@ -272,7 +272,7 @@ export function useFinancialDashboard(userId?: string) {
 
         return (data || []).map((item: any) => ({
           id: item.id,
-          affiliate_name: item.affiliate?.full_name || 'N/A',
+          affiliate_name: item.affiliate?.nome_completo || 'N/A',
           affiliate_email: item.affiliate?.email || 'N/A',
           commission_value: item.commission_value,
           payment_value: item.payment_value,

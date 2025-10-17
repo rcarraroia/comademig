@@ -1,41 +1,27 @@
 
-import { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Users, Info, ArrowRight } from 'lucide-react';
+import { CheckCircle, Info, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import MemberTypeSelector from '@/components/public/MemberTypeSelector';
 import PaymentFormEnhanced from '@/components/payments/PaymentFormEnhanced';
 import type { UnifiedMemberType } from '@/hooks/useMemberTypeWithPlan';
+import { useReferralCode } from '@/hooks/useReferralCode';
 
 export default function Filiacao() {
-  const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [affiliateInfo, setAffiliateInfo] = useState<any>(null);
   const [selectedMemberType, setSelectedMemberType] = useState<UnifiedMemberType | null>(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
-
-  useEffect(() => {
-    // Verificar se há código de referral na URL
-    const params = new URLSearchParams(location.search);
-    const referralCode = params.get('ref');
-
-    if (referralCode) {
-      loadAffiliateInfo(referralCode);
-    }
-  }, [location]);
-
-  const loadAffiliateInfo = async (referralCode: string) => {
-    // TODO: Implementar busca de afiliado quando sistema de pagamentos for reconstruído
-    console.log('Código de referral:', referralCode);
-  };
+  
+  // Captura automática e silenciosa do código de referral da URL
+  const { referralCode, affiliateInfo } = useReferralCode();
 
   const handleMemberTypeSelect = (memberType: UnifiedMemberType | null) => {
     setSelectedMemberType(memberType);
@@ -64,20 +50,6 @@ export default function Filiacao() {
               Venha fazer parte da Comademig
             </p>
           </div>
-
-          {/* Indicação de Afiliado */}
-          {affiliateInfo && (
-            <Alert className="border-green-200 bg-green-50">
-              <Users className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800">
-                <strong>Você foi indicado por um afiliado!</strong>
-                <br />
-                Código de indicação: <Badge variant="secondary">{affiliateInfo.referralCode}</Badge>
-                <br />
-                <small>O afiliado receberá uma comissão pela sua filiação.</small>
-              </AlertDescription>
-            </Alert>
-          )}
 
           {/* Benefícios da Filiação */}
           <Card className="mb-8">

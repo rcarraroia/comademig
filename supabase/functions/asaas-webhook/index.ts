@@ -1,50 +1,37 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { logInfo, logError, logWarning } from '../shared/logger.ts'
+import { logWebhookReceived, logWebhookProcessed, logError } from '../shared/logger.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, asaas-access-token',
 }
+
+const ASAAS_WEBHOOK_TOKEN = Deno.env.get('ASAAS_WEBHOOK_TOKEN')
 
 interface AsaasWebhookPayload {
   event: string
-  payment: {
-    id: string
-    customer: string
-    subscription?: string
-    installment?: string
-    value: number
-    netValue: number
-    originalValue?: number
-    interestValue?: number
-    description: string
-    billingType: string
-    status: string
-    pixTransaction?: string
-    confirmedDate?: string
-    paymentDate?: string
-    clientPaymentDate?: string
-    installmentNumber?: number
-    invoiceUrl?: string
-    bankSlipUrl?: string
-    transactionReceiptUrl?: string
-    invoiceNumber?: string
-    externalReference?: string
-    originalDueDate?: string
-    paymentLink?: string
-    dueDate: string
-    dateCreated: string
-  }
+  payment?: any
+  subscription?: any
+  split?: any
 }
 
+/**
+ * Edge Function para receber e processar webhooks do Asaas
+ * 
+ * Implementa:
+ * - Validação de autenticidade (asaas-access-token)
+ * - Verificação de idempotência (asaas_event_id)
+ * - Salvamento em webhook_events
+ * - Processamento assíncrono de eventos
+ */
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  // Handle GET requests (health check / validation)
+  // Health check
   if (req.method === 'GET') {
     return new Response(
       JSON.stringify({ 
@@ -60,12 +47,7 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    // Verificar se é uma requisição POST
+    // 1. Validar método
     if (req.method !== 'POST') {
       return new Response(
         JSON.stringify({ error: 'Method not allowed' }),
@@ -76,34 +58,37 @@ serve(async (req) => {
       )
     }
 
-    // Parse do payload do webhook
-    const payload: AsaasWebhookPayload = await req.json()
+    // 2. Validar autenticidade (asaas-access-token)
+    const accessToken = req.headers.get('asaas-access-token')
     
-    // Log: Webhook recebido
-    await logInfo({
-      source: 'webhook',
-      functionName: 'asaas-webhook',
-      message: `Webhook recebido: ${payload.event}`,
-      details: {
-        event: payload.event,
-        payment_id: payload.payment?.id,
-        payment_status: payload.payment?.status
-      }
-    })
-    
-    console.log('Webhook recebido:', payload)
-
-    // Verificar se é um evento de pagamento
-    if (!payload.event || !payload.payment) {
-      await logWarning({
+    if (ASAAS_WEBHOOK_TOKEN && accessToken !== ASAAS_WEBHOOK_TOKEN) {
+      console.error('❌ Token de webhook inválido')
+      
+      await logError({
         source: 'webhook',
         functionName: 'asaas-webhook',
-        message: 'Webhook com payload inválido',
-        details: { payload }
+        message: 'Tentativa de acesso com token inválido',
+        details: {
+          received_token: accessToken ? '[REDACTED]' : 'null',
+          ip: req.headers.get('x-forwarded-for') || 'unknown'
+        }
       })
       
       return new Response(
-        JSON.stringify({ error: 'Invalid webhook payload' }),
+        JSON.stringify({ error: 'Unauthorized' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // 3. Parse do payload
+    const payload: AsaasWebhookPayload = await req.json()
+    
+    if (!payload.event) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid webhook payload: missing event' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -111,24 +96,131 @@ serve(async (req) => {
       )
     }
 
-    const { event, payment } = payload
+    // 4. Gerar ID único do evento (para idempotência)
+    const eventId = generateEventId(payload)
+    
+    console.log('📨 Webhook recebido:', {
+      event: payload.event,
+      eventId,
+      paymentId: payload.payment?.id,
+      subscriptionId: payload.subscription?.id
+    })
 
-    // Buscar a cobrança no banco de dados
-    const { data: cobranca, error: fetchError } = await supabaseClient
-      .from('asaas_cobrancas')
-      .select('*')
-      .eq('asaas_payment_id', payment.id)
+    // Log estruturado
+    await logWebhookReceived({
+      eventType: payload.event,
+      eventId,
+      paymentId: payload.payment?.id,
+      subscriptionId: payload.subscription?.id
+    })
+
+    // 5. Conectar ao Supabase
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // 6. Verificar idempotência (se evento já foi processado)
+    const { data: existingEvent } = await supabaseClient
+      .from('webhook_events')
+      .select('id, processed')
+      .eq('asaas_event_id', eventId)
       .single()
 
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      console.error('Erro ao buscar cobrança:', fetchError)
+    if (existingEvent) {
+      console.log('⚠️ Evento já foi recebido anteriormente:', eventId)
+      
+      if (existingEvent.processed) {
+        console.log('✅ Evento já foi processado, retornando sucesso')
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'Event already processed',
+            eventId 
+          }),
+          { 
+            status: 200, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      } else {
+        console.log('🔄 Evento existe mas não foi processado, reprocessando...')
+      }
+    }
+
+    // 7. Salvar evento em webhook_events (se não existir)
+    if (!existingEvent) {
+      const { error: insertError } = await supabaseClient
+        .from('webhook_events')
+        .insert({
+          asaas_event_id: eventId,
+          event_type: payload.event,
+          payload: payload,
+          processed: false,
+          retry_count: 0
+        })
+
+      if (insertError) {
+        console.error('❌ Erro ao salvar webhook_event:', insertError)
+        // Continuar mesmo com erro - não bloquear processamento
+      } else {
+        console.log('✅ Evento salvo em webhook_events')
+      }
+    }
+
+    // 8. Processar evento
+    let processResult = { success: false, message: 'Not processed' }
+    
+    try {
+      processResult = await processWebhookEvent(supabaseClient, payload, eventId)
+      
+      // 9. Marcar como processado
+      await supabaseClient
+        .from('webhook_events')
+        .update({
+          processed: true,
+          processed_at: new Date().toISOString()
+        })
+        .eq('asaas_event_id', eventId)
+
+      // Log de sucesso
+      await logWebhookProcessed({
+        eventType: payload.event,
+        eventId,
+        success: true,
+        action: processResult.message
+      })
+
+      console.log('✅ Webhook processado com sucesso')
+
+    } catch (processError) {
+      console.error('❌ Erro ao processar webhook:', processError)
+      
+      // Incrementar retry_count
+      await supabaseClient
+        .from('webhook_events')
+        .update({
+          retry_count: (existingEvent?.retry_count || 0) + 1,
+          last_error: processError.message
+        })
+        .eq('asaas_event_id', eventId)
+
+      // Log de erro
+      await logWebhookProcessed({
+        eventType: payload.event,
+        eventId,
+        success: false,
+        error: processError as Error
+      })
+
       // ⚠️ IMPORTANTE: Retornar 200 mesmo com erro para não pausar webhook
-      // O erro será logado e pode ser processado depois
+      // O erro foi registrado e pode ser reprocessado depois
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'Webhook received but not processed',
-          error: fetchError.message 
+          message: 'Webhook received but processing failed',
+          eventId,
+          error: processError.message
         }),
         { 
           status: 200, 
@@ -137,145 +229,14 @@ serve(async (req) => {
       )
     }
 
-    // Se a cobrança não existe, criar uma nova entrada
-    if (!cobranca) {
-      const { error: insertError } = await supabaseClient
-        .from('asaas_cobrancas')
-        .insert({
-          asaas_payment_id: payment.id,
-          asaas_customer_id: payment.customer,
-          subscription_id: payment.subscription,
-          installment_id: payment.installment,
-          value: payment.value,
-          net_value: payment.netValue,
-          original_value: payment.originalValue,
-          interest_value: payment.interestValue,
-          description: payment.description,
-          billing_type: payment.billingType,
-          status: payment.status,
-          pix_transaction: payment.pixTransaction,
-          confirmed_date: payment.confirmedDate,
-          payment_date: payment.paymentDate,
-          client_payment_date: payment.clientPaymentDate,
-          installment_number: payment.installmentNumber,
-          invoice_url: payment.invoiceUrl,
-          bank_slip_url: payment.bankSlipUrl,
-          transaction_receipt_url: payment.transactionReceiptUrl,
-          invoice_number: payment.invoiceNumber,
-          external_reference: payment.externalReference,
-          original_due_date: payment.originalDueDate,
-          payment_link: payment.paymentLink,
-          due_date: payment.dueDate,
-          date_created: payment.dateCreated,
-          webhook_event: event,
-          processed_at: new Date().toISOString()
-        })
-
-      if (insertError) {
-        console.error('Erro ao inserir cobrança:', insertError)
-        // ⚠️ IMPORTANTE: Retornar 200 mesmo com erro para não pausar webhook
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            message: 'Webhook received but payment record not created',
-            error: insertError.message 
-          }),
-          { 
-            status: 200, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        )
-      }
-    } else {
-      // Atualizar cobrança existente
-      const { error: updateError } = await supabaseClient
-        .from('asaas_cobrancas')
-        .update({
-          status: payment.status,
-          confirmed_date: payment.confirmedDate,
-          payment_date: payment.paymentDate,
-          client_payment_date: payment.clientPaymentDate,
-          invoice_url: payment.invoiceUrl,
-          bank_slip_url: payment.bankSlipUrl,
-          transaction_receipt_url: payment.transactionReceiptUrl,
-          invoice_number: payment.invoiceNumber,
-          pix_transaction: payment.pixTransaction,
-          webhook_event: event,
-          processed_at: new Date().toISOString()
-        })
-        .eq('asaas_payment_id', payment.id)
-
-      if (updateError) {
-        console.error('Erro ao atualizar cobrança:', updateError)
-        return new Response(
-          JSON.stringify({ error: 'Failed to update payment record' }),
-          { 
-            status: 500, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        )
-      }
-    }
-
-    // Registrar transação financeira
-    const { error: transactionError } = await supabaseClient
-      .from('financial_transactions')
-      .insert({
-        user_id: cobranca?.user_id,
-        asaas_payment_id: payment.id,
-        transaction_type: 'payment',
-        amount: payment.value,
-        status: payment.status,
-        description: payment.description,
-        payment_method: payment.billingType,
-        external_reference: payment.externalReference,
-        due_date: payment.dueDate,
-        payment_date: payment.paymentDate,
-        metadata: {
-          webhook_event: event,
-          asaas_customer_id: payment.customer,
-          subscription_id: payment.subscription,
-          installment_id: payment.installment,
-          net_value: payment.netValue,
-          invoice_url: payment.invoiceUrl,
-          bank_slip_url: payment.bankSlipUrl
-        }
-      })
-
-    if (transactionError) {
-      console.error('Erro ao registrar transação:', transactionError)
-    }
-
-    // Processar webhook e criar notificações
-    const { error: webhookError } = await supabaseClient.rpc('process_payment_webhook', {
-      p_payment_id: payment.id,
-      p_event: event,
-      p_payment_data: payment
-    })
-
-    if (webhookError) {
-      console.error('Erro ao processar webhook:', webhookError)
-    }
-
-    // Processar eventos específicos
-    switch (event) {
-      case 'PAYMENT_RECEIVED':
-      case 'PAYMENT_CONFIRMED':
-        await handlePaymentConfirmed(supabaseClient, payment)
-        break
-      
-      case 'PAYMENT_OVERDUE':
-        await handlePaymentOverdue(supabaseClient, payment)
-        break
-      
-      case 'PAYMENT_DELETED':
-      case 'PAYMENT_REFUNDED':
-        await handlePaymentCancelled(supabaseClient, payment)
-        break
-    }
-
+    // 10. Retornar sucesso
     return new Response(
-      JSON.stringify({ success: true, message: 'Webhook processed successfully' }),
+      JSON.stringify({ 
+        success: true, 
+        message: 'Webhook processed successfully',
+        eventId,
+        result: processResult
+      }),
       { 
         status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -283,398 +244,298 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    // Log: Erro crítico no webhook
+    console.error('❌ Erro crítico no webhook:', error)
+    
     await logError({
       source: 'webhook',
       functionName: 'asaas-webhook',
       message: 'Erro crítico ao processar webhook',
-      error: error as Error,
-      details: {
-        error_type: error instanceof Error ? error.constructor.name : 'Unknown'
-      }
+      error: error as Error
     })
     
-    console.error('Erro no webhook:', error)
+    // ⚠️ IMPORTANTE: Retornar 200 para não pausar webhook
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ 
+        success: true, 
+        message: 'Webhook received but critical error occurred',
+        error: error.message 
+      }),
       { 
-        status: 500, 
+        status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     )
   }
 })
 
-async function handlePaymentConfirmed(supabaseClient: any, payment: any) {
-  try {
-    console.log('💰 ========================================');
-    console.log('💰 PAGAMENTO CONFIRMADO');
-    console.log('💰 Payment ID:', payment.id);
-    console.log('💰 Subscription ID:', payment.subscription || 'N/A');
-    console.log('💰 ========================================');
-    
-    // ============================================
-    // CASO 1: Pagamento de RENOVAÇÃO (tem subscription)
-    // ============================================
-    if (payment.subscription) {
-      console.log('🔄 É uma renovação de assinatura');
-      
-      const { error } = await supabaseClient
-        .from('user_subscriptions')
-        .update({
-          status: 'active',
-          last_payment_date: payment.paymentDate || payment.confirmedDate,
-          updated_at: new Date().toISOString()
-        })
-        .eq('asaas_subscription_id', payment.subscription)
+/**
+ * Gera ID único para o evento (para idempotência)
+ */
+function generateEventId(payload: AsaasWebhookPayload): string {
+  const parts = [
+    payload.event,
+    payload.payment?.id || '',
+    payload.subscription?.id || '',
+    payload.split?.id || ''
+  ].filter(Boolean)
+  
+  return parts.join('-')
+}
 
-      if (error) {
-        console.error('❌ Erro ao atualizar assinatura:', error)
-      } else {
-        console.log('✅ Assinatura renovada com sucesso');
-      }
-    }
+/**
+ * Processa o evento do webhook
+ */
+async function processWebhookEvent(
+  supabaseClient: any, 
+  payload: AsaasWebhookPayload,
+  eventId: string
+): Promise<{ success: boolean; message: string }> {
+  
+  console.log(`🔄 Processando evento: ${payload.event}`)
+  
+  switch (payload.event) {
+    case 'PAYMENT_RECEIVED':
+    case 'PAYMENT_CONFIRMED':
+      return await handlePaymentReceived(supabaseClient, payload)
     
-    // ============================================
-    // CASO 2: Pagamento INICIAL (não tem subscription)
-    // ============================================
-    else {
-      console.log('💳 É um pagamento inicial (primeira mensalidade)');
-      
-      // Buscar assinatura pelo initial_payment_id
-      const { data: subscription, error: fetchError } = await supabaseClient
-        .from('user_subscriptions')
-        .select('*')
-        .eq('initial_payment_id', payment.id)
-        .single()
-      
-      if (fetchError) {
-        console.log('⚠️ Assinatura não encontrada para pagamento inicial:', payment.id);
-        console.log('   Isso é normal se o pagamento já ativou o usuário no momento da criação');
-      } else if (subscription) {
-        console.log('✅ Assinatura encontrada:', subscription.id);
-        console.log('   Status atual:', subscription.status);
-        
-        // Se ainda não está ativa, ativar agora (redundância/segurança)
-        if (subscription.status !== 'active') {
-          const { error: updateError } = await supabaseClient
-            .from('user_subscriptions')
-            .update({
-              status: 'active',
-              last_payment_date: payment.paymentDate || payment.confirmedDate,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', subscription.id);
-          
-          if (updateError) {
-            console.error('❌ Erro ao ativar assinatura:', updateError);
-          } else {
-            console.log('✅ Assinatura ativada via webhook');
-          }
-        } else {
-          console.log('✅ Assinatura já está ativa (ativada no momento da criação)');
-        }
+    case 'PAYMENT_OVERDUE':
+      return await handlePaymentOverdue(supabaseClient, payload)
+    
+    case 'PAYMENT_DELETED':
+    case 'PAYMENT_REFUNDED':
+      return await handlePaymentCancelled(supabaseClient, payload)
+    
+    case 'SUBSCRIPTION_UPDATED':
+      return await handleSubscriptionUpdated(supabaseClient, payload)
+    
+    case 'TRANSFER_DONE':
+    case 'TRANSFER_FAILED':
+    case 'TRANSFER_CANCELLED':
+      return await handleTransferEvent(supabaseClient, payload)
+    
+    default:
+      console.log(`⚠️ Evento não tratado: ${payload.event}`)
+      return { 
+        success: true, 
+        message: `Event ${payload.event} received but not processed` 
       }
-    }
+  }
+}
 
-    // ============================================
-    // PROCESSAR SPLITS E SERVIÇOS (código existente)
-    // ============================================
-    
-    // Buscar dados da cobrança para verificar se é uma solicitação de serviço
-    const { data: cobranca, error: cobrancaError } = await supabaseClient
-      .from('asaas_cobrancas')
+/**
+ * Processa PAYMENT_RECEIVED e PAYMENT_CONFIRMED
+ */
+async function handlePaymentReceived(
+  supabaseClient: any, 
+  payload: AsaasWebhookPayload
+): Promise<{ success: boolean; message: string }> {
+  
+  const payment = payload.payment
+  
+  if (!payment) {
+    throw new Error('Payment data missing in webhook payload')
+  }
+
+  console.log('💰 Processando pagamento confirmado:', payment.id)
+
+  // Buscar assinatura pelo asaas_subscription_id OU initial_payment_id
+  let subscription = null
+  
+  if (payment.subscription) {
+    // É uma renovação
+    const { data } = await supabaseClient
+      .from('user_subscriptions')
       .select('*')
-      .eq('asaas_payment_id', payment.id)
+      .eq('asaas_subscription_id', payment.subscription)
       .single()
+    
+    subscription = data
+  } else {
+    // É pagamento inicial
+    const { data } = await supabaseClient
+      .from('user_subscriptions')
+      .select('*')
+      .eq('initial_payment_id', payment.id)
+      .single()
+    
+    subscription = data
+  }
 
-    if (cobrancaError) {
-      console.log('⚠️ Cobrança não encontrada em asaas_cobrancas:', payment.id);
-      console.log('   Isso é normal para pagamentos de filiação (processados diretamente)');
-      return
+  if (!subscription) {
+    console.log('⚠️ Assinatura não encontrada para pagamento:', payment.id)
+    return { 
+      success: true, 
+      message: 'Payment received but no subscription found' 
     }
+  }
 
-    // INTEGRAÇÃO: Processar splits automaticamente
-    await processPaymentSplits(supabaseClient, cobranca, payment)
+  // Atualizar status para 'active'
+  const updateData: any = {
+    status: 'active',
+    updated_at: new Date().toISOString()
+  }
 
-    // Verificar se há service_data (indica solicitação de serviço)
-    if (cobranca?.service_data) {
-      await createServiceRequest(supabaseClient, cobranca, payment)
-    }
+  // Se é o primeiro pagamento, definir started_at
+  if (!subscription.started_at) {
+    updateData.started_at = payment.paymentDate || payment.confirmedDate || new Date().toISOString()
+  }
 
-  } catch (error) {
-    console.error('Erro em handlePaymentConfirmed:', error)
+  const { error } = await supabaseClient
+    .from('user_subscriptions')
+    .update(updateData)
+    .eq('id', subscription.id)
+
+  if (error) {
+    throw new Error(`Failed to update subscription: ${error.message}`)
+  }
+
+  console.log('✅ Assinatura atualizada para active:', subscription.id)
+
+  return { 
+    success: true, 
+    message: 'Subscription activated' 
   }
 }
 
 /**
- * Processa splits automaticamente após confirmação de pagamento
+ * Processa PAYMENT_OVERDUE
  */
-async function processPaymentSplits(supabaseClient: any, cobranca: any, payment: any) {
-  try {
-    console.log('Processing payment splits for:', payment.id)
+async function handlePaymentOverdue(
+  supabaseClient: any, 
+  payload: AsaasWebhookPayload
+): Promise<{ success: boolean; message: string }> {
+  
+  const payment = payload.payment
+  
+  if (!payment || !payment.subscription) {
+    return { success: true, message: 'No subscription to update' }
+  }
 
-    // Determinar tipo de serviço baseado na descrição ou metadata
-    let serviceType = 'outros'
-    const description = payment.description?.toLowerCase() || ''
-    
-    if (description.includes('filiação') || description.includes('filiacao') || description.includes('anuidade')) {
-      serviceType = 'filiacao'
-    } else if (description.includes('certidão') || description.includes('certidao') || description.includes('regularização')) {
-      serviceType = 'servicos'
-    } else if (description.includes('publicidade') || description.includes('patrocínio')) {
-      serviceType = 'publicidade'
-    } else if (description.includes('evento') || description.includes('curso')) {
-      serviceType = 'eventos'
-    }
-
-    // Chamar Edge Function para processar splits
-    const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/asaas-process-splits`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-      },
-      body: JSON.stringify({
-        cobrancaId: cobranca.id,
-        paymentValue: payment.value,
-        serviceType: serviceType,
-      }),
+  const { error } = await supabaseClient
+    .from('user_subscriptions')
+    .update({
+      status: 'overdue',
+      updated_at: new Date().toISOString()
     })
+    .eq('asaas_subscription_id', payment.subscription)
 
-    const result = await response.json()
-
-    if (!result.success) {
-      console.error('Failed to process splits:', result)
-      return
-    }
-
-    console.log('Splits processed successfully:', result)
-
-    // Se houver afiliado, atualizar status da indicação e enviar notificação
-    if (result.data?.processedSplits) {
-      const affiliateSplit = result.data.processedSplits.find(
-        (s: any) => s.recipientType === 'affiliate'
-      )
-
-      if (affiliateSplit) {
-        await updateReferralAndNotify(supabaseClient, cobranca, payment, affiliateSplit)
-      }
-    }
-
-  } catch (error) {
-    console.error('Error processing payment splits:', error)
-    // Não falha o processo principal - apenas loga o erro
+  if (error) {
+    throw new Error(`Failed to mark subscription as overdue: ${error.message}`)
   }
+
+  console.log('⚠️ Assinatura marcada como vencida')
+
+  return { success: true, message: 'Subscription marked as overdue' }
 }
 
 /**
- * Atualiza status da indicação e notifica o afiliado
+ * Processa PAYMENT_DELETED e PAYMENT_REFUNDED
  */
-async function updateReferralAndNotify(supabaseClient: any, cobranca: any, payment: any, affiliateSplit: any) {
-  try {
-    // Buscar indicação
-    const { data: referral } = await supabaseClient
-      .from('affiliate_referrals')
-      .select(`
-        *,
-        affiliate:affiliates!affiliate_id(
-          id,
-          user_id,
-          display_name
-        )
-      `)
-      .eq('referred_user_id', cobranca.user_id)
-      .eq('status', 'pending')
-      .single()
-
-    if (!referral) {
-      console.log('No pending referral found for user:', cobranca.user_id)
-      return
-    }
-
-    // Atualizar status para 'converted'
-    await supabaseClient
-      .from('affiliate_referrals')
-      .update({
-        status: 'converted',
-        conversion_date: new Date().toISOString(),
-        conversion_value: payment.value,
-      })
-      .eq('id', referral.id)
-
-    console.log('Referral status updated to converted:', referral.id)
-
-    // Enviar notificação para o afiliado
-    if (referral.affiliate?.user_id) {
-      await supabaseClient
-        .from('notifications')
-        .insert({
-          user_id: referral.affiliate.user_id,
-          type: 'comissao_recebida',
-          title: 'Nova Comissão Recebida!',
-          message: `Você recebeu uma comissão de R$ ${affiliateSplit.amount?.toFixed(2)} referente ao pagamento de ${referral.affiliate.display_name || 'um indicado'}.`,
-          action_url: '/dashboard/afiliados',
-        })
-
-      console.log('Commission notification sent to affiliate:', referral.affiliate.id)
-    }
-
-  } catch (error) {
-    console.error('Error updating referral and notifying:', error)
-    // Não falha o processo principal
+async function handlePaymentCancelled(
+  supabaseClient: any, 
+  payload: AsaasWebhookPayload
+): Promise<{ success: boolean; message: string }> {
+  
+  const payment = payload.payment
+  
+  if (!payment || !payment.subscription) {
+    return { success: true, message: 'No subscription to cancel' }
   }
+
+  const { error } = await supabaseClient
+    .from('user_subscriptions')
+    .update({
+      status: 'cancelled',
+      updated_at: new Date().toISOString()
+    })
+    .eq('asaas_subscription_id', payment.subscription)
+
+  if (error) {
+    throw new Error(`Failed to cancel subscription: ${error.message}`)
+  }
+
+  console.log('❌ Assinatura cancelada')
+
+  return { success: true, message: 'Subscription cancelled' }
 }
 
-async function createServiceRequest(supabaseClient: any, cobranca: any, payment: any) {
-  try {
-    const serviceData = cobranca.service_data
-    
-    // Gerar número de protocolo único
-    const protocolo = `SRV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
-    
-    // Criar solicitação de serviço
-    const { data: solicitacao, error: solicitacaoError } = await supabaseClient
-      .from('solicitacoes_servicos')
-      .insert({
-        user_id: cobranca.user_id,
-        servico_id: serviceData.servico_id,
-        protocolo: protocolo,
-        status: 'pendente',
-        valor: payment.value,
-        dados_adicionais: serviceData.dados_formulario || {},
-        documentos: serviceData.documentos || [],
-        payment_id: payment.id,
-        payment_status: payment.status,
-        payment_method: payment.billingType,
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single()
-
-    if (solicitacaoError) {
-      console.error('Erro ao criar solicitação:', solicitacaoError)
-      throw solicitacaoError
-    }
-
-    console.log('Solicitação criada com sucesso:', solicitacao)
-
-    // Criar notificação para o usuário
-    await supabaseClient
-      .from('notifications')
-      .insert({
-        user_id: cobranca.user_id,
-        title: 'Pagamento Confirmado',
-        message: `Seu pagamento foi confirmado! Protocolo: ${protocolo}. Sua solicitação está sendo processada.`,
-        type: 'payment_confirmed',
-        link: `/dashboard/solicitacao-servicos?protocolo=${protocolo}`,
-        read: false,
-        created_at: new Date().toISOString()
-      })
-
-    // Criar notificação para admins
-    const { data: admins } = await supabaseClient
-      .from('profiles')
-      .select('id')
-      .in('tipo_membro', ['admin', 'super_admin'])
-
-    if (admins && admins.length > 0) {
-      const adminNotifications = admins.map((admin: any) => ({
-        user_id: admin.id,
-        title: 'Nova Solicitação de Serviço',
-        message: `Nova solicitação recebida. Protocolo: ${protocolo}`,
-        type: 'new_service_request',
-        link: `/admin/solicitacoes?protocolo=${protocolo}`,
-        read: false,
-        created_at: new Date().toISOString()
-      }))
-
-      await supabaseClient
-        .from('notifications')
-        .insert(adminNotifications)
-    }
-
-    // Registrar em audit_logs
-    await supabaseClient
-      .from('audit_logs')
-      .insert({
-        user_id: cobranca.user_id,
-        action: 'service_request_created',
-        table_name: 'solicitacoes_servicos',
-        record_id: solicitacao.id,
-        changes: {
-          protocolo: protocolo,
-          servico_id: serviceData.servico_id,
-          payment_id: payment.id,
-          valor: payment.value
-        },
-        created_at: new Date().toISOString()
-      })
-
-    console.log('Notificações e logs criados com sucesso')
-
-  } catch (error) {
-    console.error('Erro ao criar solicitação de serviço:', error)
-    
-    // Tentar registrar erro para retry posterior
-    await supabaseClient
-      .from('webhook_errors')
-      .insert({
-        payment_id: payment.id,
-        error_message: error.message,
-        error_stack: error.stack,
-        payload: { cobranca, payment },
-        retry_count: 0,
-        created_at: new Date().toISOString()
-      })
-      .catch((logError: any) => {
-        console.error('Erro ao registrar erro de webhook:', logError)
-      })
-    
-    throw error
+/**
+ * Processa SUBSCRIPTION_UPDATED
+ */
+async function handleSubscriptionUpdated(
+  supabaseClient: any, 
+  payload: AsaasWebhookPayload
+): Promise<{ success: boolean; message: string }> {
+  
+  const subscription = payload.subscription
+  
+  if (!subscription) {
+    throw new Error('Subscription data missing in webhook payload')
   }
+
+  // Sincronizar dados da assinatura
+  const { error } = await supabaseClient
+    .from('user_subscriptions')
+    .update({
+      status: subscription.status,
+      value: subscription.value,
+      cycle: subscription.cycle,
+      updated_at: new Date().toISOString()
+    })
+    .eq('asaas_subscription_id', subscription.id)
+
+  if (error) {
+    throw new Error(`Failed to sync subscription: ${error.message}`)
+  }
+
+  console.log('🔄 Assinatura sincronizada')
+
+  return { success: true, message: 'Subscription synced' }
 }
 
-async function handlePaymentOverdue(supabaseClient: any, payment: any) {
-  // Marcar assinatura como vencida
-  if (payment.subscription) {
-    const { error } = await supabaseClient
-      .from('user_subscriptions')
-      .update({
-        status: 'overdue',
-        updated_at: new Date().toISOString()
-      })
-      .eq('asaas_subscription_id', payment.subscription)
-
-    if (error) {
-      console.error('Erro ao marcar assinatura como vencida:', error)
-    }
+/**
+ * Processa eventos de transferência (splits)
+ */
+async function handleTransferEvent(
+  supabaseClient: any, 
+  payload: AsaasWebhookPayload
+): Promise<{ success: boolean; message: string }> {
+  
+  const transfer = payload.split || payload.transfer
+  
+  if (!transfer) {
+    throw new Error('Transfer data missing in webhook payload')
   }
 
-  // Aqui você pode adicionar lógica para:
-  // - Enviar notificação de vencimento
-  // - Suspender benefícios temporariamente
-}
-
-async function handlePaymentCancelled(supabaseClient: any, payment: any) {
-  // Cancelar assinatura se aplicável
-  if (payment.subscription) {
-    const { error } = await supabaseClient
-      .from('user_subscriptions')
-      .update({
-        status: 'cancelled',
-        cancelled_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .eq('asaas_subscription_id', payment.subscription)
-
-    if (error) {
-      console.error('Erro ao cancelar assinatura:', error)
-    }
+  // Mapear status do evento para status do banco
+  let newStatus = 'pending'
+  
+  switch (payload.event) {
+    case 'TRANSFER_DONE':
+      newStatus = 'done'
+      break
+    case 'TRANSFER_FAILED':
+      newStatus = 'failed'
+      break
+    case 'TRANSFER_CANCELLED':
+      newStatus = 'cancelled'
+      break
   }
 
-  // Aqui você pode adicionar lógica para:
-  // - Processar reembolso
-  // - Cancelar benefícios
-  // - Notificar usuário
+  // Atualizar status da transferência
+  const { error } = await supabaseClient
+    .from('asaas_splits')
+    .update({
+      status: newStatus,
+      processed_at: new Date().toISOString()
+    })
+    .eq('asaas_split_id', transfer.id)
+
+  if (error) {
+    throw new Error(`Failed to update transfer status: ${error.message}`)
+  }
+
+  console.log(`✅ Transferência atualizada para ${newStatus}`)
+
+  return { success: true, message: `Transfer ${newStatus}` }
 }

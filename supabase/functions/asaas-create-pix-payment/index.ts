@@ -10,6 +10,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // Imports compartilhados
 import { asaasClient } from '../shared/asaas-client.ts';
+import { logInfo, logError, logWarning } from '../shared/logger.ts';
 import type { 
   CreatePaymentData,
   AsaasPayment,
@@ -28,7 +29,7 @@ interface CreatePixPaymentRequest {
     description: string;
     externalReference?: string;
   };
-  user_id: string;
+  user_id: string; // OBRIGATÓRIO - Conta deve ser criada antes do pagamento
 }
 
 interface PixPaymentResponse {
@@ -95,17 +96,17 @@ async function createPixPaymentAsaas(
  * Salva cobrança no banco local
  */
 async function savePaymentLocally(
-  userId: string,
+  userId: string, // OBRIGATÓRIO - conta deve existir antes do pagamento
   asaasPayment: AsaasPayment,
   serviceType: ServiceType,
   serviceData: ServiceData,
   originalValue: number
 ): Promise<string> {
   
-  const { data, error } = await supabase
+  const { data, error} = await supabase
     .from('asaas_cobrancas')
     .insert({
-      user_id: userId,
+      user_id: userId, // Sempre obrigatório
       asaas_id: asaasPayment.id,
       customer_id: asaasPayment.customer,
       valor: originalValue, // Valor original
@@ -143,7 +144,7 @@ function validatePixPaymentData(data: CreatePixPaymentRequest): string[] {
   }
 
   if (!data.user_id) {
-    errors.push('user_id é obrigatório');
+    errors.push('user_id é obrigatório - conta deve ser criada antes do pagamento');
   }
 
   if (!data.service_type) {
@@ -186,8 +187,13 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🚀 Edge Function PIX iniciada');
+    console.log('Método:', req.method);
+    console.log('URL:', req.url);
+    
     // Verificar método
     if (req.method !== 'POST') {
+      console.log('❌ Método não permitido:', req.method);
       return new Response(
         JSON.stringify({ error: 'Método não permitido' }),
         { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -195,16 +201,39 @@ serve(async (req) => {
     }
 
     // Parse do body
+    console.log('📦 Fazendo parse do body...');
     const requestData: CreatePixPaymentRequest = await req.json();
+    console.log('✅ Body parseado:', JSON.stringify(requestData, null, 2));
 
     // Validar dados de entrada
     const validationErrors = validatePixPaymentData(requestData);
     if (validationErrors.length > 0) {
+      await logWarning({
+        source: 'edge_function',
+        functionName: 'asaas-create-pix-payment',
+        message: 'Dados inválidos para criação de PIX',
+        details: { errors: validationErrors },
+        userId: requestData.user_id
+      });
+      
       return new Response(
         JSON.stringify({ error: 'Dados inválidos', details: validationErrors }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Log: Iniciando criação de PIX
+    await logInfo({
+      source: 'edge_function',
+      functionName: 'asaas-create-pix-payment',
+      message: 'Iniciando criação de pagamento PIX',
+      details: {
+        customer_id: requestData.customer_id,
+        original_value: requestData.payment_data.value,
+        service_type: requestData.service_type
+      },
+      userId: requestData.user_id
+    });
 
     console.log('Criando pagamento PIX no Asaas...');
     console.log('Customer ID:', requestData.customer_id);
@@ -222,10 +251,13 @@ serve(async (req) => {
     );
 
     console.log('Pagamento PIX criado no Asaas:', asaasPayment.id);
+    console.log('Resposta completa do Asaas:', JSON.stringify(asaasPayment, null, 2));
 
     // Verificar se o PIX foi gerado corretamente
     if (!asaasPayment.pixTransaction?.qrCode?.payload) {
-      throw new Error('QR Code PIX não foi gerado pelo Asaas');
+      console.warn('⚠️ QR Code PIX não foi gerado imediatamente pelo Asaas');
+      console.warn('pixTransaction:', asaasPayment.pixTransaction);
+      // Não vamos lançar erro, vamos salvar mesmo assim e o QR Code pode ser gerado depois
     }
 
     // Salvar no banco local
@@ -239,18 +271,36 @@ serve(async (req) => {
 
     console.log('Pagamento salvo localmente:', localPaymentId);
 
+    // Log: PIX criado com sucesso
+    await logInfo({
+      source: 'edge_function',
+      functionName: 'asaas-create-pix-payment',
+      message: 'Pagamento PIX criado com sucesso',
+      details: {
+        payment_id: localPaymentId,
+        asaas_id: asaasPayment.id,
+        original_value: requestData.payment_data.value,
+        discounted_value: discountedValue,
+        discount_amount: discountAmount,
+        has_qr_code: !!asaasPayment.pixTransaction?.qrCode?.payload
+      },
+      userId: requestData.user_id
+    });
+
     // Resposta de sucesso
     const response: PixPaymentResponse = {
       success: true,
       payment_id: localPaymentId,
       asaas_id: asaasPayment.id,
-      qr_code: asaasPayment.pixTransaction.qrCode.encodedImage || asaasPayment.pixTransaction.qrCode.payload,
-      copy_paste_code: asaasPayment.pixTransaction.qrCode.payload,
-      expiration_date: asaasPayment.pixTransaction.expirationDate,
+      qr_code: asaasPayment.pixTransaction?.qrCode?.encodedImage || asaasPayment.pixTransaction?.qrCode?.payload || '',
+      copy_paste_code: asaasPayment.pixTransaction?.qrCode?.payload || '',
+      expiration_date: asaasPayment.pixTransaction?.expirationDate || '',
       original_value: requestData.payment_data.value,
       discounted_value: discountedValue,
       discount_percentage: 5,
-      message: 'Pagamento PIX criado com sucesso'
+      message: asaasPayment.pixTransaction?.qrCode?.payload 
+        ? 'Pagamento PIX criado com sucesso' 
+        : 'Pagamento PIX criado. QR Code será gerado em instantes.'
     };
 
     return new Response(
@@ -259,12 +309,30 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Erro na Edge Function PIX:', error);
+    // Log detalhado do erro
+    console.error('❌ ERRO CRÍTICO NA EDGE FUNCTION PIX');
+    console.error('Tipo do erro:', error instanceof Error ? error.constructor.name : typeof error);
+    console.error('Mensagem:', error instanceof Error ? error.message : String(error));
+    console.error('Stack:', error instanceof Error ? error.stack : 'N/A');
+    console.error('Erro completo:', JSON.stringify(error, null, 2));
+    
+    // Log: Erro ao criar PIX
+    try {
+      await logError({
+        source: 'edge_function',
+        functionName: 'asaas-create-pix-payment',
+        message: 'Erro ao criar pagamento PIX',
+        error: error as Error
+      });
+    } catch (logErr) {
+      console.error('Erro ao salvar log:', logErr);
+    }
     
     return new Response(
       JSON.stringify({ 
         error: 'Erro interno do servidor',
-        message: error instanceof Error ? error.message : 'Erro desconhecido'
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        details: error instanceof Error ? error.stack : String(error)
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

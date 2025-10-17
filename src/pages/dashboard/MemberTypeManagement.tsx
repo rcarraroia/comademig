@@ -27,9 +27,11 @@ import {
   useMemberTypes, 
   useCreateMemberTypeWithPlans, 
   useUpdateMemberType,
+  useUpdateSubscriptionPlan,
   useToggleMemberTypeStatus,
   useDeleteMemberType,
-  type MemberTypeWithPlans 
+  type MemberTypeWithPlans,
+  type SubscriptionPlan
 } from '@/hooks/useMemberTypes';
 
 // Interfaces movidas para o hook useMemberTypes
@@ -66,6 +68,23 @@ const MemberTypeManagement: React.FC = () => {
       { name: '', price: 0, duration_months: 12 }, // Anual
     ],
   });
+  
+  // Estado para edição de tipo de membro
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    description: '',
+    sort_order: 0,
+  });
+
+  // Estado para edição de plano
+  const [editingPlan, setEditingPlan] = useState<string | null>(null);
+  const [editPlanFormData, setEditPlanFormData] = useState({
+    name: '',
+    price: 0,
+    duration_months: 1,
+    features: {} as Record<string, any>,
+    sort_order: 0,
+  });
 
   // Query para buscar tipos de membro com planos associados
   const { data: memberTypesWithPlans, isLoading, error } = useMemberTypes({
@@ -75,6 +94,8 @@ const MemberTypeManagement: React.FC = () => {
 
   // Mutations usando os hooks corrigidos
   const createUnifiedMutation = useCreateMemberTypeWithPlans();
+  const updateMutation = useUpdateMemberType();
+  const updatePlanMutation = useUpdateSubscriptionPlan();
   const toggleStatusMutation = useToggleMemberTypeStatus();
   const deleteMutation = useDeleteMemberType();
 
@@ -147,9 +168,130 @@ const MemberTypeManagement: React.FC = () => {
   };
 
   const handleDelete = (id: string, name: string) => {
-    if (confirm(`Tem certeza que deseja remover o cargo "${name}"?`)) {
+    const confirmMessage = `⚠️ ATENÇÃO: Esta ação irá EXCLUIR PERMANENTEMENTE o tipo de membro "${name}" e todos os planos associados.\n\nEsta operação NÃO PODE SER DESFEITA.\n\nSe houver usuários ou assinaturas ativas vinculadas a este tipo, a exclusão será bloqueada.\n\nTem certeza que deseja continuar?`;
+    
+    if (confirm(confirmMessage)) {
       deleteMutation.mutate(id);
     }
+  };
+
+  const handleEdit = (memberType: MemberTypeWithPlans) => {
+    setEditingItem(memberType.id);
+    setEditFormData({
+      name: memberType.name,
+      description: memberType.description || '',
+      sort_order: memberType.sort_order || 0,
+    });
+    setShowCreateForm(false); // Fechar formulário de criação se estiver aberto
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItem(null);
+    setEditFormData({
+      name: '',
+      description: '',
+      sort_order: 0,
+    });
+  };
+
+  const handleUpdateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editingItem) return;
+    
+    if (!editFormData.name.trim()) {
+      toast.error('Nome do tipo de membro é obrigatório');
+      return;
+    }
+    
+    updateMutation.mutate({
+      id: editingItem,
+      updates: {
+        name: editFormData.name,
+        description: editFormData.description,
+        sort_order: editFormData.sort_order,
+      }
+    }, {
+      onSuccess: () => {
+        handleCancelEdit();
+      }
+    });
+  };
+
+  // Funções para edição de planos
+  const handleEditPlan = (plan: SubscriptionPlan) => {
+    setEditingPlan(plan.id);
+    setEditPlanFormData({
+      name: plan.name,
+      price: plan.price,
+      duration_months: plan.duration_months,
+      features: plan.features || {},
+      sort_order: plan.sort_order || 0,
+    });
+    setShowCreateForm(false); // Fechar formulário de criação
+    setEditingItem(null); // Fechar edição de tipo
+  };
+
+  const handleCancelEditPlan = () => {
+    setEditingPlan(null);
+    setEditPlanFormData({
+      name: '',
+      price: 0,
+      duration_months: 1,
+      features: {},
+      sort_order: 0,
+    });
+  };
+
+  const handleUpdatePlanSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editingPlan) return;
+    
+    if (!editPlanFormData.name.trim()) {
+      toast.error('Nome do plano é obrigatório');
+      return;
+    }
+
+    if (editPlanFormData.price < 0) {
+      toast.error('Preço não pode ser negativo');
+      return;
+    }
+
+    if (![1, 6, 12].includes(editPlanFormData.duration_months)) {
+      toast.error('Duração deve ser 1, 6 ou 12 meses');
+      return;
+    }
+
+    // Validar features (JSON)
+    try {
+      JSON.stringify(editPlanFormData.features);
+    } catch {
+      toast.error('Features devem ser um JSON válido');
+      return;
+    }
+    
+    updatePlanMutation.mutate({
+      id: editingPlan,
+      updates: {
+        name: editPlanFormData.name,
+        price: editPlanFormData.price,
+        duration_months: editPlanFormData.duration_months,
+        features: editPlanFormData.features,
+        sort_order: editPlanFormData.sort_order,
+      }
+    }, {
+      onSuccess: () => {
+        handleCancelEditPlan();
+      }
+    });
+  };
+
+  const handleEditPlanInputChange = (field: keyof typeof editPlanFormData, value: any) => {
+    setEditPlanFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   if (!isAdmin()) {
@@ -207,6 +349,210 @@ const MemberTypeManagement: React.FC = () => {
           Criar Novo Tipo + Plano
         </Button>
       </div>
+
+      {/* Formulário de Edição */}
+      {editingItem && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Edit className="h-5 w-5" />
+              Editar Tipo de Membro
+            </CardTitle>
+            <CardDescription>
+              Edite as informações básicas do tipo de membro
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleUpdateSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit_name">Nome do Tipo *</Label>
+                  <Input
+                    id="edit_name"
+                    value={editFormData.name}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Ex: Pastor, Diácono, Membro"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="edit_sort_order">Ordem de Exibição</Label>
+                  <Input
+                    id="edit_sort_order"
+                    type="number"
+                    value={editFormData.sort_order}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, sort_order: parseInt(e.target.value) || 0 }))}
+                    min="0"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="edit_description">Descrição</Label>
+                <Textarea
+                  id="edit_description"
+                  value={editFormData.description}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Descreva as responsabilidades e características deste tipo de membro"
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancelEdit}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={updateMutation.isPending}
+                  className="bg-comademig-blue hover:bg-comademig-blue/90"
+                >
+                  {updateMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  Salvar Alterações
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Formulário de Edição de Plano */}
+      {editingPlan && (
+        <Card className="border-purple-200 bg-purple-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Editar Plano de Assinatura
+            </CardTitle>
+            <CardDescription>
+              Edite todas as informações do plano de assinatura
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleUpdatePlanSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit_plan_name">Nome do Plano *</Label>
+                  <Input
+                    id="edit_plan_name"
+                    value={editPlanFormData.name}
+                    onChange={(e) => handleEditPlanInputChange('name', e.target.value)}
+                    placeholder="Ex: Pastor - Mensal"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="edit_plan_price">Preço (R$) *</Label>
+                  <Input
+                    id="edit_plan_price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={editPlanFormData.price}
+                    onChange={(e) => handleEditPlanInputChange('price', parseFloat(e.target.value) || 0)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit_plan_duration">Duração (meses) *</Label>
+                  <Select
+                    value={editPlanFormData.duration_months.toString()}
+                    onValueChange={(value) => handleEditPlanInputChange('duration_months', parseInt(value))}
+                  >
+                    <SelectTrigger id="edit_plan_duration">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 mês (Mensal)</SelectItem>
+                      <SelectItem value="6">6 meses (Semestral)</SelectItem>
+                      <SelectItem value="12">12 meses (Anual)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="edit_plan_sort_order">Ordem de Exibição</Label>
+                  <Input
+                    id="edit_plan_sort_order"
+                    type="number"
+                    min="0"
+                    value={editPlanFormData.sort_order}
+                    onChange={(e) => handleEditPlanInputChange('sort_order', parseInt(e.target.value) || 0)}
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="edit_plan_features">Features (JSON)</Label>
+                <Textarea
+                  id="edit_plan_features"
+                  value={JSON.stringify(editPlanFormData.features, null, 2)}
+                  onChange={(e) => {
+                    try {
+                      const parsed = JSON.parse(e.target.value);
+                      handleEditPlanInputChange('features', parsed);
+                    } catch {
+                      // Permite edição mesmo com JSON inválido temporariamente
+                      // Validação será feita no submit
+                    }
+                  }}
+                  placeholder='{"certidoes": 5, "suporte": "email", "carteira_digital": true}'
+                  rows={6}
+                  className="font-mono text-sm"
+                />
+                <p className="text-sm text-gray-600 mt-2">
+                  💡 Formato JSON. Exemplo: {`{"certidoes": 5, "suporte": "email", "carteira_digital": true}`}
+                </p>
+              </div>
+
+              <Alert>
+                <CheckCircle2 className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>✅ Sistema em Configuração:</strong> Como o sistema ainda não tem usuários ativos, 
+                  você pode editar todos os campos sem restrições.
+                </AlertDescription>
+              </Alert>
+
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancelEditPlan}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={updatePlanMutation.isPending}
+                  className="bg-comademig-blue hover:bg-comademig-blue/90"
+                >
+                  {updatePlanMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  Salvar Plano
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Formulário de Criação */}
       {showCreateForm && (
@@ -399,6 +745,15 @@ const MemberTypeManagement: React.FC = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
+                          onClick={() => handleEdit(memberType)}
+                          disabled={updateMutation.isPending}
+                          className="text-blue-600 hover:text-blue-700"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
                           onClick={() => handleToggleStatus(memberType.id, memberType.is_active)}
                           disabled={toggleStatusMutation.isPending}
                         >
@@ -425,8 +780,8 @@ const MemberTypeManagement: React.FC = () => {
                       </h4>
                       <div className="space-y-2">
                         {associatedPlans.map((plan) => (
-                          <div key={plan.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div>
+                          <div key={plan.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                            <div className="flex-1">
                               <p className="font-medium">{plan.name}</p>
                               <div className="flex items-center gap-2 text-sm text-gray-600">
                                 <Calendar className="h-3 w-3" />
@@ -438,14 +793,25 @@ const MemberTypeManagement: React.FC = () => {
                                 )}
                               </div>
                             </div>
-                            <div className="text-right">
-                              <p className="font-bold text-comademig-blue">R$ {plan.price.toFixed(2)}</p>
-                              <p className="text-xs text-gray-500">
-                                {plan.duration_months === 1 ? '/mês' : 
-                                 plan.duration_months === 6 ? '/semestre' : 
-                                 plan.duration_months === 12 ? '/ano' : 
-                                 `/${plan.duration_months} meses`}
-                              </p>
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <p className="font-bold text-comademig-blue">R$ {plan.price.toFixed(2)}</p>
+                                <p className="text-xs text-gray-500">
+                                  {plan.duration_months === 1 ? '/mês' : 
+                                   plan.duration_months === 6 ? '/semestre' : 
+                                   plan.duration_months === 12 ? '/ano' : 
+                                   `/${plan.duration_months} meses`}
+                                </p>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditPlan(plan)}
+                                disabled={updatePlanMutation.isPending}
+                                className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
                             </div>
                           </div>
                         ))}

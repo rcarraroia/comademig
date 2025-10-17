@@ -37,3 +37,6 @@ IMPLEMENTACAO_*.md
 test_*.py
 verify_*.py
 analyze_*.py
+
+# Pasta de arquivos temporários (NÃO COMMITAR!)
+_archive/

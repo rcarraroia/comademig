@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCheckoutTransparente } from '@/hooks/useCheckoutTransparente';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,11 +41,43 @@ export default function CheckoutServico() {
 
   // Dados do cliente (pré-preenchidos do perfil)
   const [dadosCliente, setDadosCliente] = useState({
-    nome: user?.user_metadata?.full_name || '',
+    nome: user?.user_metadata?.nome_completo || '',
     cpf: '',
     email: user?.email || '',
     telefone: '',
+    cep: '',
+    numero: '',
   });
+
+  // Buscar dados completos do perfil
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('nome_completo, cpf, telefone, cep')
+          .eq('id', user.id)
+          .single();
+        
+        if (!error && profile) {
+          setDadosCliente({
+            nome: profile.nome_completo || user.user_metadata?.nome_completo || '',
+            cpf: profile.cpf || '',
+            email: user.email || '',
+            telefone: profile.telefone || '',
+            cep: profile.cep || '30130100', // CEP padrão de BH se não tiver
+            numero: '100', // Número padrão (coluna numero pode não existir ainda)
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao buscar dados do perfil:', error);
+      }
+    };
+    
+    fetchProfileData();
+  }, [user]);
 
   // Validações
   useEffect(() => {

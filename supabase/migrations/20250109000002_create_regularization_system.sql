@@ -48,8 +48,15 @@ ALTER TABLE public.solicitacoes_regularizacao ENABLE ROW LEVEL SECURITY;
 -- 3. CRIAR POLÍTICAS RLS
 -- ============================================================================
 
+-- Remover políticas existentes se houver
+DROP POLICY IF EXISTS "Usuários podem ver suas próprias solicitações de regulariza" ON public.solicitacoes_regularizacao;
+DROP POLICY IF EXISTS "Usuários podem criar solicitações de regularização" ON public.solicitacoes_regularizacao;
+DROP POLICY IF EXISTS "Usuários podem atualizar suas observações" ON public.solicitacoes_regularizacao;
+DROP POLICY IF EXISTS "Administradores podem ver todas as solicitações de regulariza" ON public.solicitacoes_regularizacao;
+DROP POLICY IF EXISTS "Administradores podem atualizar solicitações de regularização" ON public.solicitacoes_regularizacao;
+
 -- Usuários podem ver suas próprias solicitações
-CREATE POLICY "Usuários podem ver suas próprias solicitações de regularização" 
+CREATE POLICY "Usuários podem ver suas próprias solicitações de regulariza" 
     ON public.solicitacoes_regularizacao 
     FOR SELECT 
     USING (auth.uid() = user_id);
@@ -68,7 +75,7 @@ CREATE POLICY "Usuários podem atualizar suas observações"
     WITH CHECK (auth.uid() = user_id);
 
 -- Administradores podem ver todas as solicitações
-CREATE POLICY "Administradores podem ver todas as solicitações de regularização" 
+CREATE POLICY "Administradores podem ver todas as solicitações de regulariza" 
     ON public.solicitacoes_regularizacao 
     FOR SELECT 
     TO authenticated

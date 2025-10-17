@@ -21,13 +21,8 @@ export interface FiliacaoData {
   cidade: string;
   estado: string;
   
-  // Igreja
-  igreja: string;
-  cargo_igreja?: string;
-  tempo_ministerio?: string;
-  
-  // Pagamento
-  payment_method: 'pix' | 'credit_card' | 'boleto';
+  // Pagamento (apenas cartão de crédito)
+  payment_method: 'credit_card';
 }
 
 interface UseFiliacaoFlowProps {

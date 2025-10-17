@@ -2,6 +2,7 @@ import React from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRoleAccess, UserRole } from '@/hooks/useRoleAccess'
+import { useProfileStatus } from '@/hooks/useProfileStatus'
 import AccessDenied from './AccessDenied'
 
 interface ProtectedRouteProps {
@@ -23,10 +24,11 @@ export default function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { user, loading } = useAuth()
   const { hasRole, hasAnyRole, hasPermission, hasAnyPermission } = useRoleAccess()
+  const { profile, loading: profileLoading, isPending } = useProfileStatus()
   const location = useLocation()
 
   // Mostrar loading enquanto carrega
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
@@ -37,6 +39,11 @@ export default function ProtectedRoute({
   // Redirecionar para login se não estiver autenticado
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />
+  }
+
+  // ✅ NOVA VERIFICAÇÃO: Redirecionar usuários PENDING para página de pagamento pendente
+  if (isPending) {
+    return <Navigate to="/pagamento-pendente" replace />
   }
 
   // Verificar permissões de role

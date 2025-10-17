@@ -115,7 +115,7 @@ export const useAdminNotifications = () => {
           data_pagamento,
           created_at,
           profiles!inner(
-            full_name,
+            nome_completo,
             email
           )
         `)
@@ -132,7 +132,7 @@ export const useAdminNotifications = () => {
       return (data || []).map(item => ({
         id: item.id,
         service_type: item.tipo_cobranca,
-        user_name: item.profiles?.full_name || 'Usuário não encontrado',
+        user_name: item.profiles?.nome_completo || 'Usuário não encontrado',
         user_email: item.profiles?.email || 'Email não encontrado',
         value: item.valor,
         status: item.status,

@@ -20,7 +20,6 @@ import {
   Phone, 
   Mail, 
   MapPin, 
-  Building, 
   Loader2,
   CheckCircle,
   Info,
@@ -57,15 +56,8 @@ const PaymentFormSchema = z.object({
   cidade: z.string().min(2, 'Cidade deve ter pelo menos 2 caracteres'),
   estado: z.string().length(2, 'Estado deve ter 2 caracteres'),
   
-  // Igreja
-  igreja: z.string().min(2, 'Nome da igreja deve ter pelo menos 2 caracteres'),
-  cargo_igreja: z.string().optional(),
-  tempo_ministerio: z.string().optional(),
-  
-  // Método de pagamento
-  payment_method: z.enum(['pix', 'credit_card'], {
-    errorMap: () => ({ message: 'Selecione um método de pagamento' })
-  }),
+  // Método de pagamento (apenas cartão de crédito)
+  payment_method: z.literal('credit_card'),
   
   // Dados do cartão (condicionais)
   card_holder_name: z.string().optional(),
@@ -147,7 +139,7 @@ export default function PaymentFormEnhanced({
     defaultValues: {
       nome_completo: user?.user_metadata?.nome_completo || '',
       email: user?.email || '',
-      payment_method: 'pix',
+      payment_method: 'credit_card',
       card_installments: '1',
       accept_terms: false,
       accept_privacy: false,
@@ -158,18 +150,9 @@ export default function PaymentFormEnhanced({
   const acceptTerms = watch('accept_terms');
   const acceptPrivacy = watch('accept_privacy');
 
-  // Calcular desconto PIX
+  // Valor do plano (sem desconto PIX)
   const originalPrice = selectedMemberType.plan_value || 0;
-  const calculatePixDiscount = (price: number) => {
-    const discountPercentage = 0.05; // 5%
-    const discount = price * discountPercentage;
-    const finalPrice = price - discount;
-    return { discount, finalPrice, discountPercentage };
-  };
-  
-  const { discount: pixDiscount, finalPrice } = paymentMethod === 'pix' 
-    ? calculatePixDiscount(originalPrice)
-    : { discount: 0, finalPrice: originalPrice };
+  const finalPrice = originalPrice;
 
   const onSubmit = async (data: PaymentFormData) => {
     if (!selectedMemberType.plan_id) {
@@ -195,9 +178,6 @@ export default function PaymentFormEnhanced({
         bairro: data.bairro,
         cidade: data.cidade,
         estado: data.estado,
-        igreja: data.igreja,
-        cargo_igreja: data.cargo_igreja,
-        tempo_ministerio: data.tempo_ministerio,
         payment_method: data.payment_method,
         password: data.password, // Adicionar senha para criar conta
       };
@@ -271,13 +251,7 @@ export default function PaymentFormEnhanced({
             )}
           </div>
 
-          {/* Indicação de Afiliado */}
-          {affiliateInfo && (
-            <div className="mt-4 p-3 bg-white rounded border border-green-200">
-              <p className="text-sm font-medium text-green-700">Indicado por:</p>
-              <Badge variant="secondary">{affiliateInfo.referralCode}</Badge>
-            </div>
-          )}
+
         </CardContent>
       </Card>
 
@@ -526,49 +500,6 @@ export default function PaymentFormEnhanced({
           </CardContent>
         </Card>
 
-        {/* Dados Ministeriais */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building className="h-5 w-5" />
-              Dados Ministeriais
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="igreja">Igreja *</Label>
-              <Input
-                id="igreja"
-                {...register('igreja')}
-                placeholder="Nome da sua igreja"
-              />
-              {errors.igreja && (
-                <p className="text-sm text-destructive">{errors.igreja.message}</p>
-              )}
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="cargo_igreja">Cargo na Igreja</Label>
-                <Input
-                  id="cargo_igreja"
-                  {...register('cargo_igreja')}
-                  placeholder="Ex: Pastor, Diácono, Membro"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="tempo_ministerio">Tempo de Ministério</Label>
-                <Input
-                  id="tempo_ministerio"
-                  {...register('tempo_ministerio')}
-                  placeholder="Ex: 5 anos, 10 anos"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Método de Pagamento */}
         <Card>
           <CardHeader>
@@ -577,66 +508,24 @@ export default function PaymentFormEnhanced({
               Método de Pagamento
             </CardTitle>
             <CardDescription>
-              {selectedMemberType.plan_recurrence?.toLowerCase() === 'anual' || selectedMemberType.plan_recurrence?.toLowerCase() === 'annual' 
-                ? 'Plano anual: PIX ou Cartão de Crédito'
-                : 'Planos mensais e semestrais: Apenas Cartão de Crédito (pagamento automático)'}
+              Pagamento seguro via Cartão de Crédito com renovação automática
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label>Escolha o método de pagamento</Label>
-              <Select value={paymentMethod} onValueChange={(value) => setValue('payment_method', value as any)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {/* PIX disponível apenas para planos anuais */}
-                  {(selectedMemberType.plan_recurrence?.toLowerCase() === 'anual' || 
-                    selectedMemberType.plan_recurrence?.toLowerCase() === 'annual') && (
-                    <SelectItem value="pix">
-                      <div className="flex items-center gap-2">
-                        <span>PIX</span>
-                        <Badge variant="secondary" className="text-xs">5% desconto</Badge>
-                      </div>
-                    </SelectItem>
-                  )}
-                  {/* Cartão disponível para todos os planos */}
-                  <SelectItem value="credit_card">
-                    <div className="flex items-center gap-2">
-                      <span>Cartão de Crédito</span>
-                      {(selectedMemberType.plan_recurrence?.toLowerCase() !== 'anual' && 
-                        selectedMemberType.plan_recurrence?.toLowerCase() !== 'annual') && (
-                        <Badge variant="default" className="text-xs">Pagamento Automático</Badge>
-                      )}
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.payment_method && (
-                <p className="text-sm text-destructive">{errors.payment_method.message}</p>
-              )}
-              
-              {/* Aviso sobre pagamento recorrente */}
-              {(selectedMemberType.plan_recurrence?.toLowerCase() === 'mensal' || 
-                selectedMemberType.plan_recurrence?.toLowerCase() === 'monthly' ||
-                selectedMemberType.plan_recurrence?.toLowerCase() === 'semestral') && (
-                <Alert className="mt-3">
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>Pagamento Recorrente Automático:</strong> O valor será cobrado automaticamente no cartão a cada {selectedMemberType.plan_recurrence?.toLowerCase() === 'mensal' || selectedMemberType.plan_recurrence?.toLowerCase() === 'monthly' ? 'mês' : 'semestre'}. Você pode cancelar a qualquer momento.
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              {paymentMethod === 'pix' && (
-                <Alert className="mt-3">
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>Pagamento Único Anual:</strong> Com PIX você paga uma única vez e sua filiação fica ativa por 1 ano. Após esse período, será necessário renovar manualmente.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
+            {/* Informação sobre método de pagamento */}
+            <Alert>
+              <CreditCard className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Pagamento via Cartão de Crédito</strong>
+                <br />
+                Parcelamento em até 12x sem juros. 
+                {(selectedMemberType.plan_recurrence?.toLowerCase() === 'mensal' || 
+                  selectedMemberType.plan_recurrence?.toLowerCase() === 'monthly' ||
+                  selectedMemberType.plan_recurrence?.toLowerCase() === 'semestral') && (
+                  <span> Renovação automática a cada {selectedMemberType.plan_recurrence?.toLowerCase() === 'mensal' || selectedMemberType.plan_recurrence?.toLowerCase() === 'monthly' ? 'mês' : 'semestre'}.</span>
+                )}
+              </AlertDescription>
+            </Alert>
 
             {/* Resumo de Valores */}
             <div className="p-4 bg-gray-50 rounded-lg">
@@ -650,13 +539,6 @@ export default function PaymentFormEnhanced({
                   <span>Valor do plano:</span>
                   <span>{formatCurrency(originalPrice)}</span>
                 </div>
-                
-                {pixDiscount > 0 && (
-                  <div className="flex justify-between text-green-600">
-                    <span>Desconto PIX (5%):</span>
-                    <span>-{formatCurrency(pixDiscount)}</span>
-                  </div>
-                )}
                 
                 <Separator />
                 
@@ -783,15 +665,7 @@ export default function PaymentFormEnhanced({
               </div>
             )}
 
-            {paymentMethod === 'pix' && (
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Após confirmar, você receberá o código PIX para pagamento. 
-                  O desconto de 5% já está aplicado no valor final.
-                </AlertDescription>
-              </Alert>
-            )}
+
           </CardContent>
         </Card>
 
@@ -906,8 +780,7 @@ export default function PaymentFormEnhanced({
           <AlertDescription>
             <strong>Sistema de Pagamentos Integrado:</strong> Processamento automático via gateway Asaas.
             Seus dados estão protegidos e o pagamento é processado de forma segura.
-            {paymentMethod === 'pix' && ' PIX disponível 24h com desconto de 5% (apenas planos anuais).'}
-            {paymentMethod === 'credit_card' && ' Cartão processado instantaneamente com renovação automática.'}
+            Cartão processado instantaneamente com parcelamento em até 12x sem juros.
           </AlertDescription>
         </Alert>
       </form>

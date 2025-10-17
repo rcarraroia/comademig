@@ -20,7 +20,7 @@ interface SplitManagerProps {
 
 interface Affiliate {
   id: string
-  full_name: string
+  nome_completo: string
   email: string
 }
 
@@ -38,10 +38,10 @@ export default function SplitManager({ cobrancaId, paymentValue, onSplitConfigur
     queryFn: async (): Promise<Affiliate[]> => {
       const { data, error } = await supabase
         .from('profiles' as any)
-        .select('id, full_name, email')
+        .select('id, nome_completo, email')
         .eq('role', 'affiliate')
         .eq('status', 'active')
-        .order('full_name')
+        .order('nome_completo')
 
       if (error) {
         console.error('Error fetching affiliates:', error)
@@ -141,7 +141,7 @@ export default function SplitManager({ cobrancaId, paymentValue, onSplitConfigur
                 <SelectContent>
                   {affiliates.map((affiliate) => (
                     <SelectItem key={affiliate.id} value={affiliate.id}>
-                      {affiliate.full_name} ({affiliate.email})
+                      {affiliate.nome_completo} ({affiliate.email})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -216,7 +216,7 @@ export default function SplitManager({ cobrancaId, paymentValue, onSplitConfigur
                 <div key={split.id} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <div>
-                      <p className="font-medium">{split.affiliate?.full_name}</p>
+                      <p className="font-medium">{split.affiliate?.nome_completo}</p>
                       <p className="text-sm text-muted-foreground">{split.affiliate?.email}</p>
                     </div>
                     {getStatusBadge(split.status)}

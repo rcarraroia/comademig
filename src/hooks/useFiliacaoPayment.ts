@@ -4,11 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useAsaasCustomers } from './useAsaasCustomers';
-import { useAsaasSubscriptions } from './useAsaasSubscriptions';
 import { useAsaasCardPayments } from './useAsaasCardPayments';
 import type { UnifiedMemberType } from './useMemberTypeWithPlan';
 import type { FiliacaoData } from './useFiliacaoFlow';
-import type { UserSubscriptionInsert, MinisterialData, ProfileExtension } from '@/integrations/supabase/types-extension';
+import { mapErrorToMessage, formatErrorMessage } from '@/utils/errorMessages';
 
 export interface FiliacaoPaymentData extends FiliacaoData {
   // Senha para criar conta (obrigatória se usuário não estiver autenticado)
@@ -36,7 +35,6 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'creating_account' | 'creating_customer' | 'processing_payment' | 'creating_subscription' | 'updating_profile' | 'completed'>('idle');
   
   const { createCustomer } = useAsaasCustomers();
-  const { createSubscription } = useAsaasSubscriptions();
   const { processCardPayment } = useAsaasCardPayments();
 
   // Função auxiliar para calcular próximo vencimento com validação anti-duplicação
@@ -106,9 +104,21 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         
         if (signUpError) {
           // Tratar erro de email já registrado
-          if (signUpError.message.includes('already registered') || signUpError.message.includes('User already registered')) {
-            throw new Error('Este email já está cadastrado. Por favor, faça login antes de prosseguir com a filiação.');
+          if (signUpError.message.includes('already registered') || 
+              signUpError.message.includes('User already registered') ||
+              signUpError.message.includes('email already exists')) {
+            throw new Error('email_already_exists');
           }
+          
+          // Tratar outros erros de autenticação
+          if (signUpError.message.includes('password')) {
+            throw new Error('Senha inválida. Use pelo menos 6 caracteres, 1 maiúscula e 1 número.');
+          }
+          
+          if (signUpError.message.includes('email')) {
+            throw new Error('Email inválido. Verifique o endereço digitado.');
+          }
+          
           throw new Error(`Erro ao criar conta: ${signUpError.message}`);
         }
         
@@ -240,7 +250,11 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
       const initialPaymentResult = await processCardPayment(initialPaymentData);
 
       if (!initialPaymentResult || !initialPaymentResult.success) {
-        throw new Error('Pagamento recusado. Verifique os dados do cartão e tente novamente.');
+        // Extrair mensagem de erro específica se disponível
+        const errorMessage = initialPaymentResult?.message || 
+                            initialPaymentResult?.error ||
+                            'card_declined';
+        throw new Error(errorMessage);
       }
 
       console.log('✅ Pagamento inicial processado com sucesso!');
@@ -259,7 +273,7 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
       setPaymentStatus('creating_subscription');
       
       console.log('📅 ========================================');
-      console.log('📅 CRIANDO ASSINATURA PARA RENOVAÇÃO');
+      console.log('📅 CRIANDO ASSINATURA VIA EDGE FUNCTION');
       console.log('📅 ========================================');
 
       // Mapear cycle baseado na recorrência do plano
@@ -274,28 +288,56 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
       // Calcular próximo vencimento (30 dias) com validação anti-duplicação
       const nextDueDate = calculateNextDueDate(30);
 
-      const subscriptionData: any = {
-        customer: customer.id,
-        billingType: 'CREDIT_CARD',
-        value: finalPrice,
-        nextDueDate: nextDueDate, // +30 DIAS (não hoje!)
-        cycle,
-        description: `Assinatura COMADEMIG - ${selectedMemberType.name}`,
-        externalReference: `subscription_${currentUserId}_${Date.now()}`,
-        // NÃO enviar dados do cartão (já foi tokenizado no pagamento inicial)
-      };
-
       console.log('📅 Dados da assinatura:');
       console.log('   Customer:', customer.id);
+      console.log('   User ID:', currentUserId);
       console.log('   Valor:', finalPrice);
       console.log('   Próximo vencimento:', nextDueDate);
       console.log('   Ciclo:', cycle);
+      console.log('   Afiliado:', affiliateInfo?.affiliateId || 'Nenhum');
 
       let subscriptionResult;
       try {
-        subscriptionResult = await createSubscription.mutateAsync(subscriptionData);
-        console.log('✅ Assinatura criada com sucesso!');
+        // Chamar Edge Function que cria assinatura + configura splits
+        const { data: edgeFunctionResponse, error: edgeFunctionError } = await supabase.functions.invoke(
+          'asaas-create-subscription',
+          {
+            body: {
+              customerId: customer.id,
+              userId: currentUserId,
+              billingType: 'CREDIT_CARD',
+              value: finalPrice,
+              nextDueDate: nextDueDate,
+              cycle,
+              description: `Assinatura COMADEMIG - ${selectedMemberType.name}`,
+              affiliateId: affiliateInfo?.affiliateId || null,
+              subscriptionPlanId: selectedMemberType.plan_id,
+              memberTypeId: selectedMemberType.id,
+              initialPaymentId: initialPaymentResult.asaas_id
+            }
+          }
+        );
+
+        if (edgeFunctionError) {
+          throw new Error(`Erro na Edge Function: ${edgeFunctionError.message}`);
+        }
+
+        if (!edgeFunctionResponse?.success) {
+          throw new Error(edgeFunctionResponse?.error || 'Erro ao criar assinatura');
+        }
+
+        subscriptionResult = {
+          id: edgeFunctionResponse.asaasSubscriptionId,
+          status: 'ACTIVE'
+        };
+
+        console.log('✅ Assinatura criada com sucesso via Edge Function!');
         console.log('   Subscription ID:', subscriptionResult.id);
+        console.log('   User Subscription ID:', edgeFunctionResponse.userSubscriptionId);
+        console.log('   Splits configurados:', edgeFunctionResponse.splitsConfigured);
+
+        toast.success('Assinatura e splits configurados com sucesso!');
+
       } catch (subscriptionError) {
         console.error('⚠️ Erro ao criar assinatura:', subscriptionError);
         
@@ -326,43 +368,7 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         };
         
         console.log('⚠️ Usuário será ativado mas precisará de intervenção manual para renovação');
-      }
-
-      // 3.5. Configurar split de pagamento (divisão tripla)
-      try {
-        console.log('🔄 Configurando split de pagamento...');
-        console.log('  - Cobrança ID:', subscriptionResult.id);
-        console.log('  - Valor:', finalPrice);
-        console.log('  - Tipo:', 'filiacao');
-        console.log('  - Afiliado:', affiliateInfo?.affiliateId || 'Nenhum');
-        
-        const { data: splitData, error: splitError } = await supabase.functions.invoke(
-          'asaas-configure-split',
-          {
-            body: {
-              cobrancaId: subscriptionResult.id,
-              serviceType: 'filiacao',
-              totalValue: finalPrice,
-              affiliateId: affiliateInfo?.affiliateId || null
-            }
-          }
-        );
-        
-        if (splitError) {
-          console.error('❌ Erro ao configurar split:', splitError);
-          // Não falha o processo principal - apenas loga o erro
-          toast.error('Aviso: Split de pagamento não foi configurado. Entre em contato com o suporte.');
-        } else if (splitData?.success) {
-          console.log('✅ Split configurado com sucesso!');
-          console.log('  - Total de beneficiários:', splitData.data?.splits?.length || 0);
-          console.log('  - Splits:', splitData.data?.splits);
-          toast.success('Split de pagamento configurado com sucesso!');
-        } else {
-          console.warn('⚠️ Split retornou sem sucesso:', splitData);
-        }
-      } catch (error) {
-        console.error('❌ Exceção ao configurar split:', error);
-        // Não falha o processo principal
+        toast.warning('Assinatura criada parcialmente. Suporte será notificado.');
       }
 
       // 4. Atualizar perfil do usuário
@@ -398,23 +404,9 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         throw new Error(`Erro ao atualizar perfil: ${profileError.message}`);
       }
 
-      // 5. Criar registro de assinatura do usuário (JÁ ATIVO!)
-      const expirationDate = calculateExpirationDate(selectedMemberType.plan_recurrence || 'Mensal');
-      
-      const userSubscriptionData: UserSubscriptionInsert = {
-        user_id: currentUserId,
-        subscription_plan_id: selectedMemberType.plan_id,
-        member_type_id: selectedMemberType.id,
-        status: 'active', // JÁ ATIVO! Pagamento inicial foi confirmado
-        asaas_subscription_id: subscriptionResult.id,
-        initial_payment_id: initialPaymentResult.asaas_id, // ID do pagamento inicial
-        started_at: new Date().toISOString(),
-        expires_at: expirationDate,
-      };
-
+      // 5. Buscar registro de assinatura criado pela Edge Function
       const { data: subscription, error: subscriptionError } = await (supabase as any)
         .from('user_subscriptions')
-        .insert([userSubscriptionData])
         .select(`
           *,
           subscription_plans(
@@ -424,11 +416,14 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
             recurrence
           )
         `)
+        .eq('user_id', currentUserId)
+        .eq('asaas_subscription_id', subscriptionResult.id)
         .single();
 
       if (subscriptionError) {
-        console.error('Erro ao criar assinatura:', subscriptionError);
-        throw new Error(`Erro ao criar assinatura: ${subscriptionError.message}`);
+        console.error('Erro ao buscar assinatura criada:', subscriptionError);
+        // Não falha o processo - assinatura foi criada pela Edge Function
+        console.log('⚠️ Assinatura existe mas não foi possível buscar detalhes');
       }
 
       // 6. Dados ministeriais já foram salvos no perfil (cargo e data_ordenacao)
@@ -467,7 +462,27 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
     },
     onError: (error: Error) => {
       console.error('Erro no processo de filiação com pagamento:', error);
-      toast.error(error.message || 'Erro ao processar filiação');
+      
+      // Mapear erro para mensagem amigável
+      const errorInfo = mapErrorToMessage(error);
+      const friendlyMessage = formatErrorMessage(error, false);
+      
+      // Exibir mensagem amigável
+      toast.error(friendlyMessage, {
+        duration: errorInfo.retryable ? 5000 : 7000,
+        description: errorInfo.retryable 
+          ? 'Você pode tentar novamente.' 
+          : 'Entre em contato com o suporte se o problema persistir.'
+      });
+      
+      // Log detalhado para debug
+      console.error('📋 Detalhes do erro:', {
+        originalError: error,
+        mappedMessage: errorInfo.message,
+        retryable: errorInfo.retryable,
+        paymentStatus
+      });
+      
       setPaymentStatus('idle');
     },
   });

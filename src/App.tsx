@@ -19,6 +19,7 @@ import EsqueciSenha from '@/pages/EsqueciSenha';
 import ResetPassword from '@/pages/ResetPassword';
 import Checkout from '@/pages/Checkout';
 import PagamentoSucessoFiliacao from '@/pages/PagamentoSucesso';
+import PagamentoPendente from '@/pages/PagamentoPendente';
 import ValidarCarteira from '@/pages/ValidarCarteira';
 import ValidarCertificado from '@/pages/ValidarCertificado';
 import ValidarCertidao from '@/pages/ValidarCertidao';
@@ -48,6 +49,9 @@ import ServicosAdmin from '@/pages/admin/ServicosAdmin';
 import SolicitacoesAdmin from '@/pages/admin/SolicitacoesAdmin';
 import WebhookErrors from '@/pages/admin/WebhookErrors';
 import AffiliatesManagement from '@/pages/admin/AffiliatesManagement';
+
+// Test Pages
+import TestPix from '@/pages/TestPix';
 import SplitManagement from '@/pages/admin/SplitManagement';
 
 // Admin Pages - COMPONENTES ANTIGOS (manter alguns)
@@ -108,6 +112,7 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/checkout/:cobrancaId" element={<Checkout />} />
             <Route path="/pagamento-sucesso" element={<PagamentoSucessoFiliacao />} />
+            <Route path="/pagamento-pendente" element={<PagamentoPendente />} />
             <Route path="/validar-carteira/:numeroCarteira" element={<ValidarCarteira />} />
             <Route path="/validar-certificado/:numeroCertificado" element={<ValidarCertificado />} />
             <Route path="/validar-certidao/:numeroProtocolo" element={<ValidarCertidao />} />
@@ -137,8 +142,12 @@ function App() {
               <Route path="/dashboard/checkout-regularizacao" element={<Navigate to="/dashboard/solicitacao-servicos" replace />} />
             </Route>
 
+            {/* Test Pages - FORA de AdminLayout */}
+            <Route path="/test-pix" element={<TestPix />} />
+
             {/* Admin routes - FORA de ProtectedRoute */}
             <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<Navigate to="/admin/users" replace />} />
               <Route path="users" element={<UsersAdmin />} />
               <Route path="financial" element={<FinancialAdmin />} />
               <Route path="audit-logs" element={<AuditLogs />} />

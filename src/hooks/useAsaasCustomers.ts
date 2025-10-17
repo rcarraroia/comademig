@@ -183,10 +183,10 @@ export const useAsaasCustomers = () => {
     if (!user) return null;
 
     try {
-      // Buscar dados do perfil do usuário (usando campos que existem)
+      // Buscar dados do perfil do usuário (usando campos corretos)
       const { data: profile, error } = await supabase
         .from('profiles' as any)
-        .select('full_name, cpf_cnpj, email, phone')
+        .select('nome_completo, cpf, email, telefone')
         .eq('id', user.id)
         .single();
 
@@ -196,16 +196,16 @@ export const useAsaasCustomers = () => {
 
       const profileData = profile as any;
 
-      if (!profileData.full_name || !profileData.cpf_cnpj || !profileData.email) {
-        throw new Error('Dados obrigatórios faltantes no perfil (nome, CPF/CNPJ, email)');
+      if (!profileData.nome_completo || !profileData.cpf || !profileData.email) {
+        throw new Error('Dados obrigatórios faltantes no perfil (nome, CPF, email)');
       }
 
-      // Criar cliente com dados do perfil (usando campos disponíveis)
+      // Criar cliente com dados do perfil (nomenclatura correta)
       const customerData: CreateCustomerData = {
-        name: profileData.full_name,
-        cpfCnpj: profileData.cpf_cnpj,
+        name: profileData.nome_completo,
+        cpfCnpj: profileData.cpf,
         email: profileData.email,
-        phone: profileData.phone || undefined,
+        phone: profileData.telefone || undefined,
         country: 'Brasil',
         externalReference: `user_${user.id}`
       };

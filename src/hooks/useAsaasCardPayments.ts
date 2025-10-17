@@ -89,35 +89,73 @@ export const useAsaasCardPayments = () => {
       console.log('Valor:', paymentData.value);
       console.log('Parcelas:', paymentData.installmentCount || 1);
 
-      // 2. Processar pagamento com cartão via Edge Function
-      const { data, error } = await supabase.functions.invoke('asaas-process-card', {
-        body: {
-          customer_id: customerId,
-          user_id: user.id,
-          service_type: paymentData.service_type,
-          service_data: {
-            type: paymentData.service_type,
-            details: paymentData.service_data
-          },
-          payment_data: {
-            value: paymentData.value,
-            dueDate: paymentData.dueDate,
-            description: paymentData.description,
-            externalReference: paymentData.externalReference,
-            installmentCount: paymentData.installmentCount
-          },
-          credit_card: paymentData.creditCard,
-          credit_card_holder_info: paymentData.creditCardHolderInfo,
-          save_card: paymentData.saveCard
-        }
+      // 2. Preparar body para Edge Function
+      const requestBody = {
+        customer_id: customerId,
+        user_id: user.id,
+        service_type: paymentData.service_type,
+        service_data: {
+          type: paymentData.service_type,
+          details: paymentData.service_data
+        },
+        payment_data: {
+          value: paymentData.value,
+          dueDate: paymentData.dueDate,
+          description: paymentData.description,
+          externalReference: paymentData.externalReference,
+          installmentCount: paymentData.installmentCount
+        },
+        credit_card: paymentData.creditCard,
+        credit_card_holder_info: paymentData.creditCardHolderInfo,
+        save_card: paymentData.saveCard
+      };
+
+      console.log('📤 Body enviado para Edge Function:', JSON.stringify(requestBody, null, 2));
+
+      // 3. Processar pagamento com cartão via Edge Function
+      const session = await supabase.auth.getSession();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://amkelczfwazutrciqtlk.supabase.co';
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/asaas-process-card`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.data.session?.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+        },
+        body: JSON.stringify(requestBody)
       });
 
-      if (error) {
-        throw new Error(error.message || 'Erro ao comunicar com o servidor');
+      console.log('📥 Resposta da Edge Function:');
+      console.log('  Status:', response.status);
+      console.log('  Status Text:', response.statusText);
+
+      const responseText = await response.text();
+      console.log('  Response Text:', responseText);
+
+      let data = null;
+      try {
+        data = JSON.parse(responseText);
+        console.log('  Parsed Data:', data);
+      } catch (e) {
+        console.error('  Erro ao fazer parse do JSON:', e);
+        console.error('  Response não é JSON válido:', responseText);
+      }
+
+      if (!response.ok) {
+        const errorMessage = data?.error || data?.message || data?.details || responseText || 'Erro desconhecido';
+        console.error('❌ Edge Function retornou erro:', errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      if (!data) {
+        console.error('❌ Edge Function retornou data null');
+        throw new Error('Resposta inválida do servidor');
       }
 
       if (!data.success) {
-        throw new Error(data.message || 'Erro ao processar pagamento com cartão');
+        console.error('❌ Pagamento não teve sucesso:', data);
+        throw new Error(data.message || data.error || 'Erro ao processar pagamento com cartão');
       }
 
       console.log('Pagamento com cartão processado:', data.asaas_id);

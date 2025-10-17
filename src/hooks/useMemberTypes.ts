@@ -223,30 +223,86 @@ export function useDeleteMemberType() {
     mutationFn: async (id: string) => {
       console.log('🔧 Hook useDeleteMemberType - ID recebido:', id);
       
-      // Soft delete: apenas desativar
+      // FASE 1: VALIDAÇÃO DE DEPENDÊNCIAS
+      
+      // 1. Verificar se há usuários usando este tipo de membro
+      const { count: usersCount, error: usersError } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('member_type_id', id);
+      
+      if (usersError) {
+        console.error('❌ Erro ao verificar usuários:', usersError);
+        throw new Error('Erro ao verificar dependências de usuários');
+      }
+      
+      console.log(`📊 Usuários usando este tipo: ${usersCount || 0}`);
+      
+      // 2. Verificar se há assinaturas ativas usando este tipo
+      const { count: subscriptionsCount, error: subscriptionsError } = await supabase
+        .from('user_subscriptions')
+        .select('*', { count: 'exact', head: true })
+        .eq('member_type_id', id)
+        .in('status', ['active', 'pending']);
+      
+      if (subscriptionsError) {
+        console.error('❌ Erro ao verificar assinaturas:', subscriptionsError);
+        throw new Error('Erro ao verificar dependências de assinaturas');
+      }
+      
+      console.log(`📊 Assinaturas ativas usando este tipo: ${subscriptionsCount || 0}`);
+      
+      // 3. Se há dependências, BLOQUEAR exclusão
+      if ((usersCount || 0) > 0 || (subscriptionsCount || 0) > 0) {
+        const usersMsg = (usersCount || 0) > 0 ? `${usersCount} usuário(s)` : '';
+        const subsMsg = (subscriptionsCount || 0) > 0 ? `${subscriptionsCount} assinatura(s) ativa(s)` : '';
+        const separator = usersMsg && subsMsg ? ' e ' : '';
+        
+        const errorMsg = `❌ Não é possível excluir este tipo de membro.\n\n${usersMsg}${separator}${subsMsg} estão vinculados a ele.\n\n💡 Sugestão: Desative o tipo ao invés de excluir.`;
+        
+        console.error(errorMsg);
+        throw new Error(errorMsg);
+      }
+      
+      console.log('✅ Nenhuma dependência encontrada - prosseguindo com exclusão');
+      
+      // 4. Deletar planos associados primeiro (para evitar referências órfãs)
+      const { error: plansError } = await supabase
+        .from('subscription_plans')
+        .delete()
+        .eq('member_type_id', id);
+      
+      if (plansError) {
+        console.error('❌ Erro ao deletar planos:', plansError);
+        throw new Error('Erro ao deletar planos associados');
+      }
+      
+      console.log('✅ Planos associados deletados');
+      
+      // 5. Deletar tipo de membro (HARD DELETE)
       const { data: result, error } = await supabase
         .from('member_types')
-        .update({ is_active: false })
+        .delete()
         .eq('id', id)
         .select()
         .single();
 
       if (error) {
-        console.error('❌ Erro ao deletar member type:', error);
-        throw error;
+        console.error('❌ Erro ao excluir member type:', error);
+        throw new Error('Erro ao excluir tipo de membro');
       }
 
-      console.log('✅ Soft delete bem-sucedido:', result);
+      console.log('✅ Tipo de membro excluído permanentemente:', result);
       return result;
     },
     onSuccess: () => {
       console.log('✅ onSuccess chamado - invalidando cache');
       queryClient.invalidateQueries({ queryKey: ['member-types'] });
-      toast.success('Tipo de membro desativado com sucesso!');
+      toast.success('✅ Tipo de membro excluído com sucesso!');
     },
     onError: (error: any) => {
       console.error('❌ onError chamado:', error);
-      toast.error('Erro ao desativar tipo: ' + error.message);
+      toast.error(error.message || 'Erro ao excluir tipo de membro');
     },
   });
 }

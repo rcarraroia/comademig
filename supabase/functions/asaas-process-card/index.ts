@@ -51,7 +51,7 @@ interface ProcessCardPaymentRequest {
   };
   credit_card: CreditCardData;
   credit_card_holder_info: CreditCardHolderInfo;
-  user_id: string;
+  user_id: string; // OBRIGATÓRIO - Conta deve ser criada antes do pagamento
   save_card?: boolean; // Para assinaturas recorrentes
 }
 
@@ -90,8 +90,13 @@ function validateCreditCard(cardData: CreditCardData): string[] {
     errors.push('Mês e ano de expiração são obrigatórios');
   } else {
     const month = parseInt(cardData.expiryMonth);
-    const year = parseInt(cardData.expiryYear);
+    let year = parseInt(cardData.expiryYear);
     const currentYear = new Date().getFullYear();
+    
+    // Aceitar ano em formato curto (31) ou completo (2031)
+    if (year < 100) {
+      year = 2000 + year;
+    }
     
     if (month < 1 || month > 12) {
       errors.push('Mês de expiração inválido');
@@ -153,6 +158,9 @@ async function createCardPaymentAsaas(
   remoteIp?: string
 ): Promise<AsaasPayment> {
   
+  const installmentCount = paymentData.installmentCount || 1;
+  const installmentValue = paymentData.value / installmentCount;
+  
   const cardPaymentData: CreatePaymentData = {
     customer: customerId,
     billingType: 'CREDIT_CARD',
@@ -160,7 +168,8 @@ async function createCardPaymentAsaas(
     dueDate: paymentData.dueDate,
     description: paymentData.description,
     externalReference: paymentData.externalReference,
-    installmentCount: paymentData.installmentCount || 1,
+    installmentCount: installmentCount,
+    installmentValue: installmentValue,
     creditCard: {
       holderName: creditCard.holderName,
       number: creditCard.number.replace(/\D/g, ''), // Remove formatação
@@ -239,7 +248,7 @@ function validateCardPaymentData(data: ProcessCardPaymentRequest): string[] {
   }
 
   if (!data.user_id) {
-    errors.push('user_id é obrigatório');
+    errors.push('user_id é obrigatório - conta deve ser criada antes do pagamento');
   }
 
   if (!data.service_type) {

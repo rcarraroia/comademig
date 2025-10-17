@@ -27,7 +27,7 @@ export const useAuthActions = () => {
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            full_name: userData.nome_completo,
+            nome_completo: userData.nome_completo,
           }
         }
       });

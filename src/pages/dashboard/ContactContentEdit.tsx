@@ -544,35 +544,35 @@ const ContactContentEdit = () => {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="horario_funcionamento.dias">Dias *</Label>
+                <Label htmlFor="horarioFuncionamento.dias">Dias *</Label>
                 <Input
-                  id="horario_funcionamento.dias"
-                  {...register("horario_funcionamento.dias", { required: "Dias são obrigatórios" })}
+                  id="horarioFuncionamento.dias"
+                  {...register("horarioFuncionamento.dias", { required: "Dias são obrigatórios" })}
                   placeholder="Ex: Segunda a Sexta"
                 />
-                {errors.horario_funcionamento?.dias && (
-                  <p className="text-sm text-red-600 mt-1">{errors.horario_funcionamento.dias.message}</p>
+                {errors.horarioFuncionamento?.dias && (
+                  <p className="text-sm text-red-600 mt-1">{errors.horarioFuncionamento.dias.message}</p>
                 )}
               </div>
 
               <div>
-                <Label htmlFor="horario_funcionamento.horario">Horário *</Label>
+                <Label htmlFor="horarioFuncionamento.horario">Horário *</Label>
                 <Input
-                  id="horario_funcionamento.horario"
-                  {...register("horario_funcionamento.horario", { required: "Horário é obrigatório" })}
+                  id="horarioFuncionamento.horario"
+                  {...register("horarioFuncionamento.horario", { required: "Horário é obrigatório" })}
                   placeholder="Ex: 8h às 17h"
                 />
-                {errors.horario_funcionamento?.horario && (
-                  <p className="text-sm text-red-600 mt-1">{errors.horario_funcionamento.horario.message}</p>
+                {errors.horarioFuncionamento?.horario && (
+                  <p className="text-sm text-red-600 mt-1">{errors.horarioFuncionamento.horario.message}</p>
                 )}
               </div>
             </div>
 
             <div>
-              <Label htmlFor="horario_funcionamento.observacoes">Observações</Label>
+              <Label htmlFor="horarioFuncionamento.observacoes">Observações</Label>
               <Textarea
-                id="horario_funcionamento.observacoes"
-                {...register("horario_funcionamento.observacoes")}
+                id="horarioFuncionamento.observacoes"
+                {...register("horarioFuncionamento.observacoes")}
                 placeholder="Ex: Sábados: 8h às 12h"
                 rows={2}
               />
