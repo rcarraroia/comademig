@@ -1,226 +1,124 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Save, Plus, Trash2, Upload, Image } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  ArrowLeft,
+  Plus,
+  Edit,
+  Trash2,
+  Eye,
+  Search,
+  Filter,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Home as HomeIcon,
+  Star,
+  Loader2,
+} from "lucide-react";
+import { Link, Navigate } from "react-router-dom";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { Navigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useTodasNoticias, useNoticiasMutations } from "@/hooks/useNoticias";
+import { SimpleImageUpload } from "@/components/ui/SimpleImageUpload";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-interface NoticiaDestaque {
+interface NoticiaFormData {
   titulo: string;
-  imagem_principal: string;
-  conteudo: string;
-}
-
-interface OutraNoticia {
-  titulo_noticia: string;
-  imagem_noticia: string;
-  data_publicacao: string;
-  autor: string;
-  resumo_noticia: string;
+  slug: string;
+  resumo: string;
   conteudo_completo: string;
-  tipo_midia: 'imagem' | 'video';
-  link_video?: string;
-}
-
-interface NewsletterData {
-  titulo_principal: string;
-  subtitulo: string;
-}
-
-interface NoticiasContentData {
-  noticia_destaque: NoticiaDestaque;
-  outras_noticias: OutraNoticia[];
-  receba_noticias: NewsletterData;
+  autor: string;
+  data_publicacao: string;
+  categoria: string;
+  imagem_url: string;
+  destaque: boolean;
+  exibir_na_home: boolean;
+  ativo: boolean;
 }
 
 const NoticiasContentEdit = () => {
-  const { isAdmin, loading } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const { isAdmin, loading: authLoading, user, profile } = useAuth();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingNoticia, setEditingNoticia] = useState<any>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  
+  // Filtros
+  const [busca, setBusca] = useState("");
+  const [statusFiltro, setStatusFiltro] = useState<string>("todas");
+  const [categoriaFiltro, setCategoriaFiltro] = useState<string>("todas");
 
-  const [contentData, setContentData] = useState<NoticiasContentData>({
-    noticia_destaque: {
+  // Queries
+  const { data: noticias, isLoading } = useTodasNoticias({
+    status: statusFiltro === "todas" ? undefined : (statusFiltro as any),
+    categoria: categoriaFiltro === "todas" ? undefined : categoriaFiltro,
+    busca,
+  });
+
+  // Mutations
+  const { createNoticia, updateNoticia, deleteNoticia } = useNoticiasMutations();
+
+  // Form
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<NoticiaFormData>({
+    defaultValues: {
       titulo: '',
-      imagem_principal: '',
-      conteudo: ''
-    },
-    outras_noticias: [],
-    receba_noticias: {
-      titulo_principal: '',
-      subtitulo: ''
+      slug: '',
+      resumo: '',
+      conteudo_completo: '',
+      autor: profile?.nome_completo || user?.email || '',
+      data_publicacao: new Date().toISOString().split('T')[0],
+      categoria: '',
+      imagem_url: '',
+      destaque: false,
+      exibir_na_home: false,
+      ativo: true,
     }
   });
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [uploadingImages, setUploadingImages] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (isAdmin()) {
-      loadContent();
-    }
-  }, [isAdmin]);
-
-  const loadContent = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('content_management')
-        .select('content_json')
-        .eq('page_name', 'news')
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Erro ao carregar conteúdo:', error);
-        return;
-      }
-
-      if (data?.content_json) {
-        setContentData(prev => ({
-          ...prev,
-          ...data.content_json
-        }));
-      }
-    } catch (error) {
-      console.error('Erro ao carregar conteúdo:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const { error } = await supabase
-        .from('content_management')
-        .upsert({
-          page_name: 'news',
-          content_json: contentData
-        });
-
-      if (error) {
-        throw error;
-      }
-
-      toast({
-        title: "Sucesso",
-        description: "Conteúdo da página de notícias salvo com sucesso!",
-      });
-
-      navigate('/dashboard/admin/content');
-    } catch (error) {
-      console.error('Erro ao salvar:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível salvar o conteúdo",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleImageUpload = async (file: File, section: string, index?: number): Promise<string | null> => {
-    const uploadId = `${section}-${index || 0}`;
-    setUploadingImages(prev => new Set(prev).add(uploadId));
-
-    try {
-      if (!file.type.startsWith('image/')) {
-        throw new Error('Por favor, selecione apenas arquivos de imagem');
-      }
-
-      if (file.size > 5 * 1024 * 1024) {
-        throw new Error('A imagem deve ter no máximo 5MB');
-      }
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `noticias/${section}/${Date.now()}.${fileExt}`;
-
-      // Verificar se bucket existe, se não, criar
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const contentBucket = buckets?.find(bucket => bucket.name === 'content-images');
-
-      if (!contentBucket) {
-        const { error: bucketError } = await supabase.storage.createBucket('content-images', {
-          public: true,
-          allowedMimeTypes: ['image/*'],
-          fileSizeLimit: 10485760 // 10MB
-        });
-
-        if (bucketError) {
-          console.error('Erro ao criar bucket:', bucketError);
-        }
-      }
-
-      const { error: uploadError } = await supabase.storage
-        .from('content-images')
-        .upload(fileName, file, {
-          upsert: true,
-          contentType: file.type
-        });
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('content-images')
-        .getPublicUrl(fileName);
-
-      return publicUrl;
-    } catch (error: any) {
-      console.error('Erro no upload:', error);
-      toast({
-        title: "Erro no upload",
-        description: error.message,
-        variant: "destructive"
-      });
-      return null;
-    } finally {
-      setUploadingImages(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(uploadId);
-        return newSet;
-      });
-    }
-  };
-
-  const addNoticia = () => {
-    setContentData(prev => ({
-      ...prev,
-      outras_noticias: [
-        ...prev.outras_noticias,
-        {
-          titulo_noticia: '',
-          imagem_noticia: '',
-          data_publicacao: '',
-          autor: '',
-          resumo_noticia: '',
-          conteudo_completo: '',
-          tipo_midia: 'imagem'
-        }
-      ]
-    }));
-  };
-
-  const removeNoticia = (index: number) => {
-    setContentData(prev => ({
-      ...prev,
-      outras_noticias: prev.outras_noticias.filter((_, i) => i !== index)
-    }));
-  };
-
-  if (loading || isLoading) {
+  if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-comademig-blue"></div>
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-comademig-blue" />
       </div>
     );
   }
@@ -229,370 +127,566 @@ const NoticiasContentEdit = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
+  const categorias = [
+    { value: "eventos", label: "Eventos" },
+    { value: "comunicados", label: "Comunicados" },
+    { value: "noticias", label: "Notícias" },
+    { value: "ministerio", label: "Ministério" },
+    { value: "convencao", label: "Convenção" },
+    { value: "outros", label: "Outros" },
+  ];
+
+  // Gerar slug automaticamente
+  const titulo = watch('titulo');
+  const generateSlug = (text: string) => {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+  };
+
+  // Atualizar slug quando título mudar (apenas em criação)
+  if (titulo && !editingNoticia) {
+    const newSlug = generateSlug(titulo);
+    if (watch('slug') !== newSlug) {
+      setValue('slug', newSlug);
+    }
+  }
+
+  const handleOpenDialog = (noticia?: any) => {
+    if (noticia) {
+      setEditingNoticia(noticia);
+      reset({
+        titulo: noticia.titulo,
+        slug: noticia.slug,
+        resumo: noticia.resumo || '',
+        conteudo_completo: noticia.conteudo_completo || '',
+        autor: noticia.autor || profile?.nome_completo || user?.email || '',
+        data_publicacao: noticia.data_publicacao?.split('T')[0] || new Date().toISOString().split('T')[0],
+        categoria: noticia.categoria || '',
+        imagem_url: noticia.imagem_url || '',
+        destaque: noticia.destaque || false,
+        exibir_na_home: noticia.exibir_na_home || false,
+        ativo: noticia.ativo !== false,
+      });
+    } else {
+      setEditingNoticia(null);
+      reset({
+        titulo: '',
+        slug: '',
+        resumo: '',
+        conteudo_completo: '',
+        autor: profile?.nome_completo || user?.email || '',
+        data_publicacao: new Date().toISOString().split('T')[0],
+        categoria: '',
+        imagem_url: '',
+        destaque: false,
+        exibir_na_home: false,
+        ativo: true,
+      });
+    }
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setEditingNoticia(null);
+    reset();
+  };
+
+  const onSubmit = async (data: NoticiaFormData) => {
+    try {
+      if (editingNoticia) {
+        await updateNoticia.mutateAsync({
+          id: editingNoticia.id,
+          ...data,
+        });
+        toast.success('Notícia atualizada com sucesso!');
+      } else {
+        await createNoticia.mutateAsync(data as any);
+        toast.success('Notícia criada com sucesso!');
+      }
+      handleCloseDialog();
+    } catch (error) {
+      console.error('Erro ao salvar notícia:', error);
+      toast.error('Erro ao salvar notícia. Tente novamente.');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+
+    try {
+      await deleteNoticia.mutateAsync(deleteId);
+      toast.success('Notícia excluída com sucesso!');
+      setDeleteId(null);
+    } catch (error) {
+      console.error('Erro ao excluir notícia:', error);
+      toast.error('Erro ao excluir notícia. Tente novamente.');
+    }
+  };
+
+  const toggleExibirNaHome = async (noticia: any) => {
+    try {
+      await updateNoticia.mutateAsync({
+        id: noticia.id,
+        exibir_na_home: !noticia.exibir_na_home,
+      });
+      toast.success(noticia.exibir_na_home ? 'Removida da Home' : 'Adicionada à Home');
+    } catch (error) {
+      toast.error('Erro ao atualizar notícia');
+    }
+  };
+
+  const toggleDestaque = async (noticia: any) => {
+    try {
+      await updateNoticia.mutateAsync({
+        id: noticia.id,
+        destaque: !noticia.destaque,
+      });
+      toast.success(noticia.destaque ? 'Destaque removido' : 'Marcada como destaque');
+    } catch (error) {
+      toast.error('Erro ao atualizar notícia');
+    }
+  };
+
+  const toggleAtivo = async (noticia: any) => {
+    try {
+      await updateNoticia.mutateAsync({
+        id: noticia.id,
+        ativo: !noticia.ativo,
+      });
+      toast.success(noticia.ativo ? 'Notícia desativada' : 'Notícia ativada');
+    } catch (error) {
+      toast.error('Erro ao atualizar notícia');
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'aprovado':
+        return <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />Aprovada</Badge>;
+      case 'pendente':
+        return <Badge className="bg-yellow-500"><Clock className="w-3 h-3 mr-1" />Pendente</Badge>;
+      case 'rejeitado':
+        return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Rejeitada</Badge>;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center space-x-4">
-        <Link to="/dashboard/admin/content">
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/dashboard/admin/content">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar
+            </Link>
           </Button>
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold text-comademig-blue">
-            Editar Página: Notícias
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Configure o conteúdo da página de notícias do site
-          </p>
+          <div>
+            <h1 className="text-3xl font-bold text-comademig-blue">Editor de Notícias</h1>
+            <p className="text-gray-600 mt-2">
+              Gerencie todas as notícias do site
+            </p>
+          </div>
         </div>
+        <Button
+          onClick={() => handleOpenDialog()}
+          className="bg-comademig-blue hover:bg-comademig-blue/90"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Nova Notícia
+        </Button>
       </div>
 
-      <Tabs defaultValue="destaque" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="destaque">Notícia de Destaque</TabsTrigger>
-          <TabsTrigger value="outras">Outras Notícias</TabsTrigger>
-          <TabsTrigger value="newsletter">Receba Nossas Notícias</TabsTrigger>
-        </TabsList>
-
-        {/* Notícia de Destaque */}
-        <TabsContent value="destaque">
-          <Card>
-            <CardHeader>
-              <CardTitle>Notícia de Destaque</CardTitle>
-              <CardDescription>
-                Esta seção permite a edição de uma única notícia principal que aparecerá com mais visibilidade na página.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="destaque-titulo">Título</Label>
+      {/* Filtros */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Filter className="w-5 h-5" />
+            Filtros
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="busca">Buscar</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
-                  id="destaque-titulo"
-                  value={contentData.noticia_destaque.titulo}
-                  onChange={(e) => setContentData(prev => ({
-                    ...prev,
-                    noticia_destaque: { ...prev.noticia_destaque, titulo: e.target.value }
-                  }))}
-                  placeholder="Título da notícia de destaque"
-                  maxLength={200}
+                  id="busca"
+                  placeholder="Título ou resumo..."
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  className="pl-10"
                 />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select value={statusFiltro} onValueChange={setStatusFiltro}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todos</SelectItem>
+                  <SelectItem value="pendente">Pendentes</SelectItem>
+                  <SelectItem value="aprovado">Aprovadas</SelectItem>
+                  <SelectItem value="rejeitado">Rejeitadas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="categoria">Categoria</Label>
+              <Select value={categoriaFiltro} onValueChange={setCategoriaFiltro}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas as categorias" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas</SelectItem>
+                  {categorias.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tabela de Notícias */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            Notícias ({noticias?.length || 0})
+          </CardTitle>
+          <CardDescription>
+            Lista de todas as notícias do sistema
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-comademig-blue" />
+            </div>
+          ) : noticias && noticias.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Título</TableHead>
+                    <TableHead>Autor</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Ações Rápidas</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {noticias.map((noticia) => (
+                    <TableRow key={noticia.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {noticia.titulo}
+                          {noticia.exibir_na_home && (
+                            <Badge variant="outline" className="text-xs">
+                              <HomeIcon className="w-3 h-3 mr-1" />
+                              Home
+                            </Badge>
+                          )}
+                          {noticia.destaque && (
+                            <Badge variant="outline" className="text-xs text-yellow-600">
+                              <Star className="w-3 h-3 mr-1" />
+                              Destaque
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {noticia.autor_profile?.nome_completo || noticia.autor || 'N/A'}
+                        </div>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(noticia.status)}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{noticia.categoria || 'Sem categoria'}</Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-600">
+                        {noticia.data_publicacao && format(new Date(noticia.data_publicacao), 'dd/MM/yyyy', { locale: ptBR })}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleExibirNaHome(noticia)}
+                            title={noticia.exibir_na_home ? "Remover da Home" : "Exibir na Home"}
+                          >
+                            <HomeIcon className={`w-4 h-4 ${noticia.exibir_na_home ? 'text-blue-600' : 'text-gray-400'}`} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleDestaque(noticia)}
+                            title={noticia.destaque ? "Remover destaque" : "Marcar como destaque"}
+                          >
+                            <Star className={`w-4 h-4 ${noticia.destaque ? 'text-yellow-600' : 'text-gray-400'}`} />
+                          </Button>
+                          <Switch
+                            checked={noticia.ativo}
+                            onCheckedChange={() => toggleAtivo(noticia)}
+                            title={noticia.ativo ? "Desativar" : "Ativar"}
+                          />
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {noticia.status === 'aprovado' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              asChild
+                            >
+                              <Link to={`/noticias/${noticia.slug}`} target="_blank">
+                                <Eye className="w-4 h-4" />
+                              </Link>
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenDialog(noticia)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDeleteId(noticia.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <p>Nenhuma notícia encontrada.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Dialog de Criação/Edição */}
+      <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingNoticia ? 'Editar Notícia' : 'Nova Notícia'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingNoticia ? 'Atualize as informações da notícia' : 'Preencha os dados da nova notícia'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <Label htmlFor="titulo">Título *</Label>
+                <Input
+                  id="titulo"
+                  {...register("titulo", { required: "Título é obrigatório" })}
+                  placeholder="Digite o título da notícia"
+                />
+                {errors.titulo && (
+                  <p className="text-sm text-red-600 mt-1">{errors.titulo.message}</p>
+                )}
+              </div>
+
+              <div className="md:col-span-2">
+                <Label htmlFor="slug">Slug (URL) *</Label>
+                <Input
+                  id="slug"
+                  {...register("slug", { required: "Slug é obrigatório" })}
+                  placeholder="slug-da-noticia"
+                  disabled={!!editingNoticia}
+                />
+                {errors.slug && (
+                  <p className="text-sm text-red-600 mt-1">{errors.slug.message}</p>
+                )}
               </div>
 
               <div>
-                <Label htmlFor="destaque-imagem">Imagem Principal</Label>
-                <div className="flex items-center gap-4">
-                  <Input
-                    id="destaque-imagem"
-                    type="file"
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const url = await handleImageUpload(file, 'destaque');
-                        if (url) {
-                          setContentData(prev => ({
-                            ...prev,
-                            noticia_destaque: { ...prev.noticia_destaque, imagem_principal: url }
-                          }));
-                        }
-                      }
-                    }}
-                    disabled={uploadingImages.has('destaque-0')}
-                  />
-                  {uploadingImages.has('destaque-0') && (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-comademig-blue"></div>
-                  )}
-                </div>
-                {contentData.noticia_destaque.imagem_principal && (
+                <Label htmlFor="categoria">Categoria</Label>
+                <Select
+                  value={watch('categoria') || ''}
+                  onValueChange={(value) => setValue('categoria', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categorias.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="data_publicacao">Data de Publicação</Label>
+                <Input
+                  id="data_publicacao"
+                  type="date"
+                  {...register("data_publicacao")}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <Label htmlFor="autor">Autor</Label>
+                <Input
+                  id="autor"
+                  {...register("autor")}
+                  placeholder="Nome do autor"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <Label htmlFor="resumo">Resumo</Label>
+                <Textarea
+                  id="resumo"
+                  {...register("resumo")}
+                  placeholder="Resumo breve da notícia"
+                  rows={3}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <Label htmlFor="conteudo_completo">Conteúdo Completo</Label>
+                <Textarea
+                  id="conteudo_completo"
+                  {...register("conteudo_completo")}
+                  placeholder="Conteúdo completo da notícia"
+                  rows={8}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <Label>Imagem de Capa</Label>
+                <SimpleImageUpload
+                  onImageChange={(url) => {
+                    if (url) {
+                      setValue('imagem_url', url);
+                    }
+                  }}
+                />
+                {watch('imagem_url') && (
                   <div className="mt-2">
                     <img
-                      src={contentData.noticia_destaque.imagem_principal}
+                      src={watch('imagem_url') || ''}
                       alt="Preview"
-                      className="w-48 h-32 object-cover rounded border"
+                      className="w-full max-w-md h-48 object-cover rounded border"
                     />
                   </div>
                 )}
               </div>
 
-              <div>
-                <Label htmlFor="destaque-conteudo">Conteúdo</Label>
-                <Textarea
-                  id="destaque-conteudo"
-                  value={contentData.noticia_destaque.conteudo}
-                  onChange={(e) => setContentData(prev => ({
-                    ...prev,
-                    noticia_destaque: { ...prev.noticia_destaque, conteudo: e.target.value }
-                  }))}
-                  placeholder="Conteúdo da notícia (pode incluir links para outras páginas do site)"
-                  rows={8}
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  Você pode incluir formatação e links para outras notícias ou páginas do site.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Outras Notícias */}
-        <TabsContent value="outras">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Outras Notícias</CardTitle>
-                  <CardDescription>
-                    Gerencie a lista de notícias secundárias que aparecerão na página.
-                  </CardDescription>
+              <div className="md:col-span-2 space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="exibir_na_home"
+                    checked={watch('exibir_na_home')}
+                    onCheckedChange={(checked) => setValue('exibir_na_home', checked)}
+                  />
+                  <Label htmlFor="exibir_na_home" className="cursor-pointer">
+                    🏠 Exibir na página inicial (Home)
+                  </Label>
                 </div>
-                <Button onClick={addNoticia}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Notícia
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {contentData.outras_noticias.map((noticia, index) => (
-                <div key={index} className="p-4 border rounded-lg space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold">Notícia {index + 1}</h4>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeNoticia(index)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor={`noticia-titulo-${index}`}>Título da Notícia</Label>
-                      <Input
-                        id={`noticia-titulo-${index}`}
-                        value={noticia.titulo_noticia}
-                        onChange={(e) => setContentData(prev => ({
-                          ...prev,
-                          outras_noticias: prev.outras_noticias.map((n, i) =>
-                            i === index ? { ...n, titulo_noticia: e.target.value } : n
-                          )
-                        }))}
-                        placeholder="Título da notícia"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor={`noticia-data-${index}`}>Data da Publicação</Label>
-                      <Input
-                        id={`noticia-data-${index}`}
-                        type="date"
-                        value={noticia.data_publicacao}
-                        onChange={(e) => setContentData(prev => ({
-                          ...prev,
-                          outras_noticias: prev.outras_noticias.map((n, i) =>
-                            i === index ? { ...n, data_publicacao: e.target.value } : n
-                          )
-                        }))}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor={`noticia-autor-${index}`}>Autor</Label>
-                    <Input
-                      id={`noticia-autor-${index}`}
-                      value={noticia.autor}
-                      onChange={(e) => setContentData(prev => ({
-                        ...prev,
-                        outras_noticias: prev.outras_noticias.map((n, i) =>
-                          i === index ? { ...n, autor: e.target.value } : n
-                        )
-                      }))}
-                      placeholder="Nome do autor"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor={`noticia-tipo-midia-${index}`}>Tipo de Mídia</Label>
-                    <Select
-                      value={noticia.tipo_midia}
-                      onValueChange={(value: 'imagem' | 'video') => setContentData(prev => ({
-                        ...prev,
-                        outras_noticias: prev.outras_noticias.map((n, i) =>
-                          i === index ? { ...n, tipo_midia: value, link_video: value === 'imagem' ? undefined : n.link_video } : n
-                        )
-                      }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o tipo de mídia" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="imagem">Imagem</SelectItem>
-                        <SelectItem value="video">Vídeo</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {noticia.tipo_midia === 'imagem' ? (
-                    <div>
-                      <Label htmlFor={`noticia-imagem-${index}`}>Imagem da Notícia</Label>
-                      <div className="flex items-center gap-4">
-                        <Input
-                          id={`noticia-imagem-${index}`}
-                          type="file"
-                          accept="image/*"
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const url = await handleImageUpload(file, 'noticias', index);
-                              if (url) {
-                                setContentData(prev => ({
-                                  ...prev,
-                                  outras_noticias: prev.outras_noticias.map((n, i) =>
-                                    i === index ? { ...n, imagem_noticia: url } : n
-                                  )
-                                }));
-                              }
-                            }
-                          }}
-                          disabled={uploadingImages.has(`noticias-${index}`)}
-                        />
-                        {uploadingImages.has(`noticias-${index}`) && (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-comademig-blue"></div>
-                        )}
-                      </div>
-                      {noticia.imagem_noticia && (
-                        <div className="mt-2">
-                          <img
-                            src={noticia.imagem_noticia}
-                            alt="Preview"
-                            className="w-32 h-20 object-cover rounded border"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div>
-                      <Label htmlFor={`noticia-video-${index}`}>Link de Vídeo (YouTube)</Label>
-                      <Input
-                        id={`noticia-video-${index}`}
-                        type="url"
-                        value={noticia.link_video || ''}
-                        onChange={(e) => setContentData(prev => ({
-                          ...prev,
-                          outras_noticias: prev.outras_noticias.map((n, i) =>
-                            i === index ? { ...n, link_video: e.target.value } : n
-                          )
-                        }))}
-                        placeholder="https://www.youtube.com/watch?v=..."
-                      />
-                    </div>
-                  )}
-
-                  <div>
-                    <Label htmlFor={`noticia-resumo-${index}`}>Resumo da Notícia</Label>
-                    <Textarea
-                      id={`noticia-resumo-${index}`}
-                      value={noticia.resumo_noticia}
-                      onChange={(e) => setContentData(prev => ({
-                        ...prev,
-                        outras_noticias: prev.outras_noticias.map((n, i) =>
-                          i === index ? { ...n, resumo_noticia: e.target.value } : n
-                        )
-                      }))}
-                      placeholder="Resumo da notícia"
-                      rows={3}
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor={`noticia-conteudo-${index}`}>Conteúdo Completo</Label>
-                    <Textarea
-                      id={`noticia-conteudo-${index}`}
-                      value={noticia.conteudo_completo}
-                      onChange={(e) => setContentData(prev => ({
-                        ...prev,
-                        outras_noticias: prev.outras_noticias.map((n, i) =>
-                          i === index ? { ...n, conteudo_completo: e.target.value } : n
-                        )
-                      }))}
-                      placeholder="Conteúdo detalhado da notícia"
-                      rows={6}
-                      required
-                    />
-                  </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="destaque"
+                    checked={watch('destaque')}
+                    onCheckedChange={(checked) => setValue('destaque', checked)}
+                  />
+                  <Label htmlFor="destaque" className="cursor-pointer">
+                    ⭐ Marcar como notícia em destaque
+                  </Label>
                 </div>
-              ))}
 
-              {contentData.outras_noticias.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <Image className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Nenhuma notícia adicionada ainda.</p>
-                  <p className="text-sm">Clique em "Adicionar Notícia" para começar.</p>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="ativo"
+                    checked={watch('ativo')}
+                    onCheckedChange={(checked) => setValue('ativo', checked)}
+                  />
+                  <Label htmlFor="ativo" className="cursor-pointer">
+                    ✅ Notícia ativa (visível no site)
+                  </Label>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Newsletter */}
-        <TabsContent value="newsletter">
-          <Card>
-            <CardHeader>
-              <CardTitle>Receba Nossas Notícias</CardTitle>
-              <CardDescription>
-                Configure o conteúdo da seção de newsletter.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="newsletter-titulo">Título Principal</Label>
-                <Input
-                  id="newsletter-titulo"
-                  value={contentData.receba_noticias.titulo_principal}
-                  onChange={(e) => setContentData(prev => ({
-                    ...prev,
-                    receba_noticias: { ...prev.receba_noticias, titulo_principal: e.target.value }
-                  }))}
-                  placeholder="Ex: Receba Nossas Notícias"
-                  maxLength={100}
-                />
               </div>
+            </div>
 
-              <div>
-                <Label htmlFor="newsletter-subtitulo">Subtítulo</Label>
-                <Textarea
-                  id="newsletter-subtitulo"
-                  value={contentData.receba_noticias.subtitulo}
-                  onChange={(e) => setContentData(prev => ({
-                    ...prev,
-                    receba_noticias: { ...prev.receba_noticias, subtitulo: e.target.value }
-                  }))}
-                  placeholder="Descrição da newsletter"
-                  rows={3}
-                  maxLength={500}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={handleCloseDialog}>
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                className="bg-comademig-blue hover:bg-comademig-blue/90"
+                disabled={createNoticia.isPending || updateNoticia.isPending}
+              >
+                {(createNoticia.isPending || updateNoticia.isPending) ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  editingNoticia ? 'Atualizar' : 'Criar'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-      <div className="flex justify-end space-x-2">
-        <Link to="/dashboard/admin/content">
-          <Button variant="outline">Cancelar</Button>
-        </Link>
-        <Button onClick={handleSave} disabled={isSaving}>
-          <Save className="h-4 w-4 mr-2" />
-          {isSaving ? 'Salvando...' : 'Salvar Alterações'}
-        </Button>
-      </div>
+      {/* Dialog de Confirmação de Exclusão */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta notícia? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

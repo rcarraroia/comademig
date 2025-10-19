@@ -1,133 +1,52 @@
-
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link } from "react-router-dom";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Play, Image, Calendar, Eye, Download } from "lucide-react";
+import { Play, Image, Calendar, Eye, Loader2 } from "lucide-react";
+import { useVideos, useAlbuns } from "@/hooks/useMultimidia";
+import { OptimizedImage } from "@/components/ui/OptimizedImage";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const Multimidia = () => {
   const [categoria, setCategoria] = useState<string>("todos");
 
-  const videos = [
-    {
-      id: 1,
-      titulo: "Congresso Estadual 2024 - Dia 1",
-      descricao: "Abertura do Congresso Estadual com a presença de pastores de todo o estado",
-      data: "15 de Novembro de 2024",
-      duracao: "2h 30min",
-      visualizacoes: 1250,
-      categoria: "congressos",
-      thumbnail: "/placeholder-video.jpg"
-    },
-    {
-      id: 2,
-      titulo: "Seminário de Liderança Jovem",
-      descricao: "Palestras sobre liderança cristã para jovens",
-      data: "5 de Outubro de 2024",
-      duracao: "1h 45min",
-      visualizacoes: 890,
-      categoria: "seminarios",
-      thumbnail: "/placeholder-video.jpg"
-    },
-    {
-      id: 3,
-      titulo: "Culto de Consagração - Posse da Diretoria",
-      descricao: "Cerimônia de posse da nova diretoria da COMADEMIG",
-      data: "2 de Dezembro de 2024",
-      duracao: "1h 20min",
-      visualizacoes: 567,
-      categoria: "cultos",
-      thumbnail: "/placeholder-video.jpg"
-    },
-    {
-      id: 4,
-      titulo: "Pregação: O Poder da Oração",
-      descricao: "Mensagem sobre a importância da oração na vida cristã",
-      data: "20 de Novembro de 2024",
-      duracao: "45min",
-      visualizacoes: 2150,
-      categoria: "pregacoes",
-      thumbnail: "/placeholder-video.jpg"
-    },
-    {
-      id: 5,
-      titulo: "Encontro de Pastores - Testemunhos",
-      descricao: "Pastores compartilham experiências e testemunhos",
-      data: "22 de Setembro de 2024",
-      duracao: "2h 15min",
-      visualizacoes: 670,
-      categoria: "encontros",
-      thumbnail: "/placeholder-video.jpg"
-    },
-    {
-      id: 6,
-      titulo: "Louvor e Adoração - Congresso 2024",
-      descricao: "Momentos de louvor e adoração do Congresso Estadual",
-      data: "16 de Novembro de 2024",
-      duracao: "1h 10min",
-      visualizacoes: 1850,
-      categoria: "louvor",
-      thumbnail: "/placeholder-video.jpg"
-    }
-  ];
+  // Buscar vídeos e álbuns
+  const { data: videos, isLoading: isLoadingVideos } = useVideos({
+    categoria: categoria === "todos" ? undefined : categoria,
+    ativo: true,
+    limit: 50,
+  });
 
-  const fotos = [
-    {
-      id: 1,
-      titulo: "Congresso Estadual 2024",
-      descricao: "Fotos do maior evento do ano",
-      data: "15-17 de Novembro de 2024",
-      quantidade: 45,
-      categoria: "congressos",
-      thumbnail: "/placeholder-photo.jpg"
-    },
-    {
-      id: 2,
-      titulo: "Posse da Nova Diretoria",
-      descricao: "Momentos da cerimônia de posse",
-      data: "2 de Dezembro de 2024",
-      quantidade: 32,
-      categoria: "eventos",
-      thumbnail: "/placeholder-photo.jpg"
-    },
-    {
-      id: 3,
-      titulo: "Seminário de Liderança",
-      descricao: "Capacitação para líderes jovens",
-      data: "5-7 de Outubro de 2024",
-      quantidade: 28,
-      categoria: "seminarios",
-      thumbnail: "/placeholder-photo.jpg"
-    },
-    {
-      id: 4,
-      titulo: "Encontro de Pastores",
-      descricao: "Comunhão entre ministros",
-      data: "22-24 de Setembro de 2024",
-      quantidade: 38,
-      categoria: "encontros",
-      thumbnail: "/placeholder-photo.jpg"
-    }
-  ];
+  const { data: albuns, isLoading: isLoadingAlbuns } = useAlbuns({
+    categoria: categoria === "todos" ? undefined : categoria,
+    ativo: true,
+    limit: 50,
+  });
 
   const categorias = [
     { value: "todos", label: "Todos" },
-    { value: "congressos", label: "Congressos" },
-    { value: "seminarios", label: "Seminários" },
     { value: "cultos", label: "Cultos" },
+    { value: "eventos", label: "Eventos" },
     { value: "pregacoes", label: "Pregações" },
-    { value: "encontros", label: "Encontros" },
+    { value: "testemunhos", label: "Testemunhos" },
     { value: "louvor", label: "Louvor" },
-    { value: "eventos", label: "Eventos" }
+    { value: "encontros", label: "Encontros" },
+    { value: "geral", label: "Geral" },
   ];
 
-  const videosFiltrados = videos.filter(video => 
-    categoria === "todos" || video.categoria === categoria
-  );
+  // Função para extrair ID do YouTube da URL
+  const getYouTubeId = (url: string) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : url;
+  };
 
-  const fotosFiltradas = fotos.filter(foto => 
-    categoria === "todos" || foto.categoria === categoria
-  );
+  // Função para gerar thumbnail do YouTube
+  const getYouTubeThumbnail = (url: string) => {
+    const videoId = getYouTubeId(url);
+    return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+  };
 
   return (
     <div className="min-h-screen">
@@ -180,52 +99,88 @@ const Multimidia = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {videosFiltrados.map((video) => (
-              <Card key={video.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow group">
-                <CardHeader className="p-0">
-                  <div className="relative w-full h-48 bg-gray-200 rounded-t-lg overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-gray-500 font-inter text-sm">Thumbnail do Vídeo</span>
+          {isLoadingVideos ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-comademig-blue" />
+            </div>
+          ) : videos && videos.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {videos.map((video) => (
+                <Card key={video.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow group">
+                  <CardHeader className="p-0">
+                    <div className="relative w-full h-48 bg-gray-200 rounded-t-lg overflow-hidden">
+                      {video.thumbnail_url || video.url_youtube ? (
+                        <OptimizedImage
+                          src={video.thumbnail_url || getYouTubeThumbnail(video.url_youtube)}
+                          alt={video.titulo}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-gray-500 font-inter text-sm">Sem thumbnail</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-16 h-16 bg-comademig-gold rounded-full flex items-center justify-center">
+                          <Play className="w-8 h-8 text-white ml-1" />
+                        </div>
+                      </div>
+                      {video.duracao && (
+                        <div className="absolute top-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-sm font-inter">
+                          {video.duracao}
+                        </div>
+                      )}
                     </div>
-                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="w-16 h-16 bg-comademig-gold rounded-full flex items-center justify-center">
-                        <Play className="w-8 h-8 text-white ml-1" />
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <h3 className="font-montserrat font-semibold text-comademig-blue mb-2 line-clamp-2">
+                      {video.titulo}
+                    </h3>
+                    {video.descricao && (
+                      <p className="font-inter text-gray-700 text-sm mb-4 line-clamp-2">
+                        {video.descricao}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between text-gray-500 text-xs mb-4">
+                      <div className="flex items-center space-x-1">
+                        <Calendar size={14} />
+                        <span>
+                          {video.data_publicacao 
+                            ? format(new Date(video.data_publicacao), "dd/MM/yyyy", { locale: ptBR })
+                            : "Data não disponível"
+                          }
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Eye size={14} />
+                        <span>{video.visualizacoes.toLocaleString()}</span>
                       </div>
                     </div>
-                    <div className="absolute top-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-sm font-inter">
-                      {video.duracao}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <h3 className="font-montserrat font-semibold text-comademig-blue mb-2 line-clamp-2">
-                    {video.titulo}
-                  </h3>
-                  <p className="font-inter text-gray-700 text-sm mb-4 line-clamp-2">
-                    {video.descricao}
-                  </p>
-                  <div className="flex items-center justify-between text-gray-500 text-xs mb-4">
-                    <div className="flex items-center space-x-1">
-                      <Calendar size={14} />
-                      <span>{video.data}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Eye size={14} />
-                      <span>{video.visualizacoes.toLocaleString()}</span>
-                    </div>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    className="w-full bg-comademig-gold hover:bg-comademig-gold/90 text-white font-montserrat"
-                  >
-                    <Play className="w-4 h-4 mr-2" />
-                    Assistir
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    <Button 
+                      asChild
+                      size="sm" 
+                      className="w-full bg-comademig-gold hover:bg-comademig-gold/90 text-white font-montserrat"
+                    >
+                      <a 
+                        href={`https://www.youtube.com/watch?v=${getYouTubeId(video.url_youtube)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        Assistir
+                      </a>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500 font-inter">
+                Nenhum vídeo encontrado nesta categoria.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -241,95 +196,74 @@ const Multimidia = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {fotosFiltradas.map((album) => (
-              <Card key={album.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow group bg-white">
-                <CardHeader className="p-0">
-                  <div className="relative w-full h-48 bg-gray-200 rounded-t-lg overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-gray-500 font-inter text-sm">Capa do Álbum</span>
-                    </div>
-                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="w-12 h-12 bg-comademig-gold rounded-full flex items-center justify-center">
-                        <Image className="w-6 h-6 text-white" />
+          {isLoadingAlbuns ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-comademig-blue" />
+            </div>
+          ) : albuns && albuns.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {albuns.map((album) => (
+                <Card key={album.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow group bg-white">
+                  <CardHeader className="p-0">
+                    <div className="relative w-full h-48 bg-gray-200 rounded-t-lg overflow-hidden">
+                      {album.capa_url ? (
+                        <OptimizedImage
+                          src={album.capa_url}
+                          alt={album.titulo}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-gray-500 font-inter text-sm">Sem capa</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-12 h-12 bg-comademig-gold rounded-full flex items-center justify-center">
+                          <Image className="w-6 h-6 text-white" />
+                        </div>
+                      </div>
+                      <div className="absolute top-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-sm font-inter">
+                        {album.fotos_count || 0} fotos
                       </div>
                     </div>
-                    <div className="absolute top-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-sm font-inter">
-                      {album.quantidade} fotos
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <h3 className="font-montserrat font-semibold text-comademig-blue mb-2 line-clamp-2">
-                    {album.titulo}
-                  </h3>
-                  <p className="font-inter text-gray-700 text-sm mb-3 line-clamp-2">
-                    {album.descricao}
-                  </p>
-                  <div className="flex items-center space-x-1 text-gray-500 text-xs mb-3">
-                    <Calendar size={14} />
-                    <span>{album.data}</span>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    className="w-full border-comademig-gold text-comademig-gold hover:bg-comademig-gold hover:text-white font-montserrat"
-                  >
-                    <Image className="w-4 h-4 mr-2" />
-                    Ver Álbum
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Transmissão ao Vivo */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="font-montserrat font-bold text-3xl md:text-4xl text-comademig-blue mb-4">
-              Transmissão ao Vivo
-            </h2>
-            <p className="font-inter text-gray-600 text-lg mb-8">
-              Acompanhe nossos eventos em tempo real
-            </p>
-            
-            <Card className="border-0 shadow-lg">
-              <CardContent className="p-8">
-                <div className="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center mb-6">
-                  <div className="text-center">
-                    <Play className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-                    <span className="text-gray-500 font-inter">Transmissão offline</span>
-                  </div>
-                </div>
-                <h3 className="font-montserrat font-semibold text-xl text-comademig-blue mb-4">
-                  Próxima Transmissão
-                </h3>
-                <p className="font-inter text-gray-700 mb-6">
-                  Congresso Estadual 2024 - Dia 2<br />
-                  16 de Novembro às 19:00
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button 
-                    size="lg" 
-                    className="bg-red-500 hover:bg-red-600 text-white font-montserrat font-semibold"
-                  >
-                    <Play className="w-5 h-5 mr-2" />
-                    Assistir no YouTube
-                  </Button>
-                  <Button 
-                    size="lg" 
-                    variant="outline"
-                    className="border-comademig-blue text-comademig-blue hover:bg-comademig-blue hover:text-white font-montserrat font-semibold"
-                  >
-                    Receber Notificação
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <h3 className="font-montserrat font-semibold text-comademig-blue mb-2 line-clamp-2">
+                      {album.titulo}
+                    </h3>
+                    {album.descricao && (
+                      <p className="font-inter text-gray-700 text-sm mb-3 line-clamp-2">
+                        {album.descricao}
+                      </p>
+                    )}
+                    {album.data_evento && (
+                      <div className="flex items-center space-x-1 text-gray-500 text-xs mb-3">
+                        <Calendar size={14} />
+                        <span>{format(new Date(album.data_evento), "dd/MM/yyyy", { locale: ptBR })}</span>
+                      </div>
+                    )}
+                    <Button 
+                      asChild
+                      size="sm" 
+                      variant="outline"
+                      className="w-full border-comademig-gold text-comademig-gold hover:bg-comademig-gold hover:text-white font-montserrat"
+                    >
+                      <Link to={`/multimidia/album/${album.id}`}>
+                        <Image className="w-4 h-4 mr-2" />
+                        Ver Álbum
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500 font-inter">
+                Nenhum álbum encontrado nesta categoria.
+              </p>
+            </div>
+          )}
         </div>
       </section>
     </div>

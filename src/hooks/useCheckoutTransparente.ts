@@ -23,6 +23,8 @@ export interface CheckoutData {
     cpf: string;
     email: string;
     telefone: string;
+    cep?: string;
+    numero?: string;
   };
   
   // Dados do cartão (se forma_pagamento === 'cartao')
@@ -58,7 +60,7 @@ export function useCheckoutTransparente() {
   
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState<
-    'idle' | 'validating' | 'creating_customer' | 'processing_payment' | 'saving_charge' | 'completed'
+    'idle' | 'validating' | 'creating_customer' | 'processing_payment' | 'saving_charge' | 'saving_data' | 'completed'
   >('idle');
 
   /**
@@ -189,17 +191,87 @@ export function useCheckoutTransparente() {
         }
       }
 
-      console.log('✅ Pagamento processado:', paymentResult.charge_id);
+      const chargeId = paymentResult.charge_id || paymentResult.asaas_id;
+      console.log('✅ Pagamento processado:', chargeId);
 
-      // 5. Cobrança será salva automaticamente pelo webhook do Asaas
-      // Não precisamos salvar manualmente aqui
+      // 5. Salvar cobrança no banco local
+      setCurrentStep('saving_data');
+      console.log('💾 Salvando cobrança no banco local...');
+      
+      try {
+        const { data: cobrancaData, error: cobrancaError } = await supabase
+          .from('asaas_cobrancas')
+          .insert({
+            user_id: user.id,
+            asaas_id: chargeId,
+            customer_id: customerId,
+            status: paymentResult.status || 'PENDING',
+            valor: valorFinal,
+            descricao: `Solicitação de ${data.servico_nome}`,
+            forma_pagamento: data.forma_pagamento === 'pix' ? 'PIX' : 'CREDIT_CARD',
+            data_vencimento: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            billing_type: data.forma_pagamento === 'pix' ? 'PIX' : 'CREDIT_CARD',
+            service_type: 'servico',
+            service_data: {
+              servico_id: data.servico_id,
+              servico_nome: data.servico_nome,
+              dados_formulario: data.dados_formulario,
+              user_id: user.id,
+              customer_id: customerId,
+            },
+          })
+          .select()
+          .single();
 
-      // 6. Retornar resultado
+        if (cobrancaError) {
+          console.error('⚠️ Erro ao salvar cobrança:', cobrancaError);
+          // Não falhar o checkout por isso, webhook pode criar depois
+        } else {
+          console.log('✅ Cobrança salva:', cobrancaData.id);
+        }
+      } catch (saveError) {
+        console.error('⚠️ Erro ao salvar cobrança:', saveError);
+        // Continuar mesmo com erro
+      }
+
+      // 6. Criar solicitação de serviço
+      console.log('📝 Criando solicitação de serviço...');
+      
+      try {
+        // Gerar protocolo único
+        const protocolo = `SOL-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+        
+        const { data: solicitacaoData, error: solicitacaoError } = await supabase
+          .from('solicitacoes_servicos')
+          .insert({
+            protocolo,
+            user_id: user.id,
+            servico_id: data.servico_id,
+            dados_enviados: data.dados_formulario || {},
+            status: paymentResult.status === 'CONFIRMED' ? 'pago' : 'em_analise',
+            payment_reference: chargeId,
+            valor_pago: valorFinal,
+            forma_pagamento: data.forma_pagamento,
+            data_pagamento: paymentResult.status === 'CONFIRMED' ? new Date().toISOString() : null,
+          })
+          .select()
+          .single();
+
+        if (solicitacaoError) {
+          console.error('⚠️ Erro ao criar solicitação:', solicitacaoError);
+        } else {
+          console.log('✅ Solicitação criada:', solicitacaoData.id, 'Protocolo:', protocolo);
+        }
+      } catch (solicitacaoSaveError) {
+        console.error('⚠️ Erro ao criar solicitação:', solicitacaoSaveError);
+      }
+
+      // 7. Retornar resultado
       setCurrentStep('completed');
       
       const result: CheckoutResult = {
         success: true,
-        cobranca_id: paymentResult.charge_id,
+        cobranca_id: chargeId,
       };
 
       if (data.forma_pagamento === 'pix') {

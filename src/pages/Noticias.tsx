@@ -3,77 +3,44 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, User, Eye } from "lucide-react";
+import { Calendar, User, Eye, Loader2 } from "lucide-react";
+import { useNoticias } from "@/hooks/useNoticias";
+import { OptimizedImage } from "@/components/ui/OptimizedImage";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const Noticias = () => {
-  const noticias = [
-    {
-      id: 1,
-      titulo: "Nova Diretoria da COMADEMIG é Empossada",
-      resumo: "Cerimônia de posse da nova diretoria aconteceu na sede da convenção com a presença de pastores de todo o estado de Minas Gerais.",
-      conteudo: "A cerimônia de posse da nova diretoria da COMADEMIG aconteceu no último sábado, dia 2 de dezembro, na sede da convenção em Belo Horizonte. O evento contou com a presença de mais de 200 pastores de todo o estado...",
-      autor: "Pastor João Silva",
-      data: "2 de Dezembro de 2024",
-      categoria: "institucional",
-      imagem: "/placeholder-news.jpg",
-      visualizacoes: 245
-    },
-    {
-      id: 2,
-      titulo: "Campanha de Arrecadação para Obras Sociais",
-      resumo: "A COMADEMIG lança campanha para arrecadação de fundos destinados a obras sociais em comunidades carentes do estado.",
-      conteudo: "Com o objetivo de ampliar o alcance das obras sociais em comunidades carentes de Minas Gerais, a COMADEMIG lançou uma campanha de arrecadação de fundos...",
-      autor: "Pastor Maria Santos",
-      data: "28 de Novembro de 2024",
-      categoria: "social",
-      imagem: "/placeholder-news.jpg",
-      visualizacoes: 189
-    },
-    {
-      id: 3,
-      titulo: "Parceria com Seminário Teológico",
-      resumo: "Firmada parceria entre a COMADEMIG e o Seminário Teológico das Assembleias de Deus para capacitação ministerial.",
-      conteudo: "A COMADEMIG assinou um acordo de parceria com o Seminário Teológico das Assembleias de Deus para oferecer cursos de capacitação ministerial...",
-      autor: "Pastor Carlos Oliveira",
-      data: "25 de Novembro de 2024",
-      categoria: "educacao",
-      imagem: "/placeholder-news.jpg",
-      visualizacoes: 156
-    },
-    {
-      id: 4,
-      titulo: "Congresso Estadual Bate Record de Participação",
-      resumo: "O Congresso Estadual 2024 registrou a maior participação da história da COMADEMIG com mais de 2.500 participantes.",
-      conteudo: "O Congresso Estadual da COMADEMIG 2024 entrou para a história como o evento com maior participação já registrado pela convenção...",
-      autor: "Pastor Roberto Lima",
-      data: "20 de Novembro de 2024",
-      categoria: "eventos",
-      imagem: "/placeholder-news.jpg",
-      visualizacoes: 387
-    },
-    {
-      id: 5,
-      titulo: "Projeto de Evangelização no Interior",
-      resumo: "Novo projeto visa levar a mensagem do Evangelho para cidades do interior mineiro ainda não alcançadas.",
-      conteudo: "A COMADEMIG deu início a um ambicioso projeto de evangelização voltado para cidades do interior de Minas Gerais...",
-      autor: "Pastor Antônio Pereira",
-      data: "15 de Novembro de 2024",
-      categoria: "evangelismo",
-      imagem: "/placeholder-news.jpg",
-      visualizacoes: 298
-    },
-    {
-      id: 6,
-      titulo: "Seminário sobre Família Cristã",
-      resumo: "Evento especial abordou temas relacionados à família cristã e sua importância na sociedade contemporânea.",
-      conteudo: "O seminário sobre família cristã realizado pela COMADEMIG reuniu especialistas e pastores para discutir os desafios enfrentados pela família moderna...",
-      autor: "Pastor José Martins",
-      data: "10 de Novembro de 2024",
-      categoria: "familia",
-      imagem: "/placeholder-news.jpg",
-      visualizacoes: 167
-    }
-  ];
+  const { data: noticias, isLoading, error } = useNoticias({ status: 'aprovado', ativo: true, limit: 20 });
+  const { data: noticiasDestaque } = useNoticias({ status: 'aprovado', destaque: true, limit: 1 });
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-comademig-blue" />
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    console.error('Erro ao carregar notícias:', error);
+  }
+
+  // Notícia em destaque (primeira da lista de destaques ou primeira geral)
+  const noticiaDestaque = noticiasDestaque?.[0] || noticias?.[0];
+  
+  // Outras notícias (excluindo a em destaque)
+  const outrasNoticias = noticias?.filter(n => n.id !== noticiaDestaque?.id) || [];
+
+  // Formatar data
+  const formatarData = (dataString: string) => {
+    const data = new Date(dataString);
+    return data.toLocaleDateString('pt-BR', { 
+      day: 'numeric', 
+      month: 'long', 
+      year: 'numeric' 
+    });
+  };
 
   const categorias = [
     { value: "institucional", label: "Institucional", color: "bg-comademig-blue" },
@@ -105,57 +72,71 @@ const Noticias = () => {
       </section>
 
       {/* Notícia Principal */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <Card className="border-0 shadow-lg overflow-hidden">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-                <div className="md:order-2">
-                  <div className="w-full h-64 md:h-full bg-gray-200 flex items-center justify-center">
-                    <span className="text-gray-500 font-inter">Imagem Principal</span>
+      {noticiaDestaque && (
+        <section className="py-16 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto">
+              <Card className="border-0 shadow-lg overflow-hidden">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+                  <div className="md:order-2">
+                    {noticiaDestaque.imagem_url ? (
+                      <OptimizedImage
+                        src={noticiaDestaque.imagem_url}
+                        alt={noticiaDestaque.titulo}
+                        className="w-full h-64 md:h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-64 md:h-full bg-gray-200 flex items-center justify-center">
+                        <span className="text-gray-500 font-inter">Imagem Principal</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="md:order-1 p-8">
+                    <div className="flex items-center space-x-2 mb-4">
+                      {noticiaDestaque.categoria && (
+                        <Badge className={`${getCategoriaInfo(noticiaDestaque.categoria).color} text-white`}>
+                          {getCategoriaInfo(noticiaDestaque.categoria).label}
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="text-gray-600">
+                        Em Destaque
+                      </Badge>
+                    </div>
+                    <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-comademig-blue mb-4">
+                      {noticiaDestaque.titulo}
+                    </h2>
+                    <p className="font-inter text-gray-700 leading-relaxed mb-6">
+                      {noticiaDestaque.resumo}
+                    </p>
+                    <div className="flex items-center space-x-4 text-gray-600 mb-6 flex-wrap">
+                      {noticiaDestaque.autor && (
+                        <div className="flex items-center space-x-1">
+                          <User size={16} />
+                          <span className="font-inter text-sm">{noticiaDestaque.autor}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center space-x-1">
+                        <Calendar size={16} />
+                        <span className="font-inter text-sm">{formatarData(noticiaDestaque.data_publicacao)}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Eye size={16} />
+                        <span className="font-inter text-sm">{noticiaDestaque.visualizacoes} visualizações</span>
+                      </div>
+                    </div>
+                    <Button 
+                      asChild
+                      className="bg-comademig-gold hover:bg-comademig-gold/90 text-white font-montserrat font-semibold"
+                    >
+                      <Link to={`/noticias/${noticiaDestaque.slug}`}>Ler Notícia Completa</Link>
+                    </Button>
                   </div>
                 </div>
-                <div className="md:order-1 p-8">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Badge className={`${getCategoriaInfo(noticias[0].categoria).color} text-white`}>
-                      {getCategoriaInfo(noticias[0].categoria).label}
-                    </Badge>
-                    <Badge variant="outline" className="text-gray-600">
-                      Em Destaque
-                    </Badge>
-                  </div>
-                  <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-comademig-blue mb-4">
-                    {noticias[0].titulo}
-                  </h2>
-                  <p className="font-inter text-gray-700 leading-relaxed mb-6">
-                    {noticias[0].resumo}
-                  </p>
-                  <div className="flex items-center space-x-4 text-gray-600 mb-6">
-                    <div className="flex items-center space-x-1">
-                      <User size={16} />
-                      <span className="font-inter text-sm">{noticias[0].autor}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Calendar size={16} />
-                      <span className="font-inter text-sm">{noticias[0].data}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Eye size={16} />
-                      <span className="font-inter text-sm">{noticias[0].visualizacoes} visualizações</span>
-                    </div>
-                  </div>
-                  <Button 
-                    asChild
-                    className="bg-comademig-gold hover:bg-comademig-gold/90 text-white font-montserrat font-semibold"
-                  >
-                    <Link to={`/noticias/${noticias[0].id}`}>Ler Notícia Completa</Link>
-                  </Button>
-                </div>
-              </div>
-            </Card>
+              </Card>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Outras Notícias */}
       <section className="py-16 bg-comademig-light">
@@ -170,50 +151,70 @@ const Noticias = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {noticias.slice(1).map((noticia) => (
-              <Card key={noticia.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-white">
-                <CardHeader>
-                  <div className="w-full h-48 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
-                    <span className="text-gray-500 font-inter text-sm">Imagem da Notícia</span>
-                  </div>
-                  <div className="flex justify-between items-start mb-2">
-                    <Badge className={`${getCategoriaInfo(noticia.categoria).color} text-white`}>
-                      {getCategoriaInfo(noticia.categoria).label}
-                    </Badge>
-                    <div className="flex items-center space-x-1 text-gray-500">
-                      <Eye size={14} />
-                      <span className="font-inter text-xs">{noticia.visualizacoes}</span>
+            {outrasNoticias.length > 0 ? (
+              outrasNoticias.map((noticia) => (
+                <Card key={noticia.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-white">
+                  <CardHeader>
+                    {noticia.imagem_url ? (
+                      <OptimizedImage
+                        src={noticia.imagem_url}
+                        alt={noticia.titulo}
+                        className="w-full h-48 rounded-lg mb-4 object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-48 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
+                        <span className="text-gray-500 font-inter text-sm">Imagem da Notícia</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-start mb-2">
+                      {noticia.categoria && (
+                        <Badge className={`${getCategoriaInfo(noticia.categoria).color} text-white`}>
+                          {getCategoriaInfo(noticia.categoria).label}
+                        </Badge>
+                      )}
+                      <div className="flex items-center space-x-1 text-gray-500">
+                        <Eye size={14} />
+                        <span className="font-inter text-xs">{noticia.visualizacoes}</span>
+                      </div>
                     </div>
-                  </div>
-                  <CardTitle className="font-montserrat text-comademig-blue line-clamp-2">
-                    {noticia.titulo}
-                  </CardTitle>
-                  <CardDescription className="font-inter text-sm text-gray-500 flex items-center space-x-4">
-                    <div className="flex items-center space-x-1">
-                      <User size={14} />
-                      <span>{noticia.autor}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Calendar size={14} />
-                      <span>{noticia.data}</span>
-                    </div>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="font-inter text-gray-700 mb-4 line-clamp-3">
-                    {noticia.resumo}
-                  </p>
-                  <Button 
-                    asChild
-                    size="sm" 
-                    variant="outline" 
-                    className="border-comademig-gold text-comademig-gold hover:bg-comademig-gold hover:text-white font-montserrat"
-                  >
-                    <Link to={`/noticias/${noticia.id}`}>Ler Mais</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                    <CardTitle className="font-montserrat text-comademig-blue line-clamp-2">
+                      {noticia.titulo}
+                    </CardTitle>
+                    <CardDescription className="font-inter text-sm text-gray-500 flex items-center space-x-4 flex-wrap">
+                      {noticia.autor && (
+                        <div className="flex items-center space-x-1">
+                          <User size={14} />
+                          <span>{noticia.autor}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center space-x-1">
+                        <Calendar size={14} />
+                        <span>{formatarData(noticia.data_publicacao)}</span>
+                      </div>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="font-inter text-gray-700 mb-4 line-clamp-3">
+                      {noticia.resumo}
+                    </p>
+                    <Button 
+                      asChild
+                      size="sm" 
+                      variant="outline" 
+                      className="border-comademig-gold text-comademig-gold hover:bg-comademig-gold hover:text-white font-montserrat"
+                    >
+                      <Link to={`/noticias/${noticia.slug}`}>Ler Mais</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <p className="font-inter text-gray-600 text-lg">
+                  Nenhuma notícia disponível no momento.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -246,4 +247,10 @@ const Noticias = () => {
   );
 };
 
-export default Noticias;
+const NoticiasWithErrorBoundary = () => (
+  <ErrorBoundary>
+    <Noticias />
+  </ErrorBoundary>
+);
+
+export default NoticiasWithErrorBoundary;

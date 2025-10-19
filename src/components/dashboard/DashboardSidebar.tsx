@@ -20,6 +20,7 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
     { path: "/dashboard/carteira-digital", label: "Identificação Eclesiástica", icon: CreditCard },
     { path: "/dashboard/financeiro", label: "Financeiro", icon: FileText },
     { path: "/dashboard/solicitacao-servicos", label: "Solicitação de Serviços", icon: FileText },
+    { path: "/dashboard/minhas-noticias", label: "Minhas Notícias", icon: FileText },
     { path: "/dashboard/afiliados", label: "Afiliados", icon: Users },
     { path: "/dashboard/notifications", label: "Notificações", icon: Bell },
     { path: "/dashboard/suporte", label: "Suporte", icon: HelpCircle },
@@ -43,12 +44,17 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
       ]
     },
     {
+      category: "Conteúdo e Serviços",
+      items: [
+        { path: "/admin/content", label: "Gerenciar Conteúdo", icon: FileText },
+      ]
+    },
+    {
       category: "Sistema",
       items: [
         { path: "/admin/support", label: "Atendimento ao Membro", icon: MessageSquare },
         { path: "/admin/notifications", label: "Notificações", icon: Bell },
         { path: "/admin/diagnostics", label: "Diagnóstico do Sistema", icon: Activity },
-        { path: "/admin/content", label: "Gerenciar Conteúdo", icon: FileText },
       ]
     }
   ];
@@ -134,6 +140,7 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
                       onClick={onClose}
                       className={`
                         flex items-center justify-between p-2 lg:p-3 rounded-lg transition-colors duration-200 text-sm font-medium mb-1
+                        ${(item as any).indent ? 'ml-6' : ''}
                         ${isActive(item.path)
                           ? 'bg-comademig-gold text-comademig-blue'
                           : 'text-white hover:bg-blue-600'

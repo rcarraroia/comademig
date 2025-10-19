@@ -1,0 +1,136 @@
+{
+  "timestamp": "2025-10-17T19:21:01.774488",
+  "summary": {
+    "total_checked": 31,
+    "existing": 0,
+    "non_existing": 31,
+    "with_data": 0,
+    "empty": 0
+  },
+  "tables": {
+    "content_management": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "profiles": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "user_roles": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "member_types": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "subscription_plans": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "user_subscriptions": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "filiacao_requests": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "asaas_cobrancas": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "asaas_customers": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "payment_transactions": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "solicitacoes_certidoes": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "carteiras_digitais": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "affiliate_links": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "affiliate_commissions": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "support_tickets": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "support_messages": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "eventos": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "inscricoes_eventos": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "noticias": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "multimidia": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "churches": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "ministers": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "documents": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "notifications": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "audit_logs": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "settings": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "banners": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "testimonials": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "faqs": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "contacts": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    },
+    "newsletter_subscribers": {
+      "exists": false,
+      "error": "{'message': 'JSON could not be generated', 'code': 401, 'hint': 'Refer to full message for details', 'details': 'b\\'{\"message\":\"Invalid API key\",\"hint\":\"Double check your Supabase `anon` or `service_role` API key.\"}\\''}"
+    }
+  }
+}

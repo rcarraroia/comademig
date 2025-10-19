@@ -209,28 +209,73 @@ async function executePostPaymentActions(payment: AsaasPayment): Promise<void> {
         break;
 
       case 'certidao':
-        // Processar solicitação de certidão após pagamento confirmado
-        console.log('Processando solicitação de certidão...')
+      case 'regularizacao':
+      case 'servico':
+        // Processar solicitação de serviço genérico após pagamento confirmado
+        console.log(`Processando solicitação de ${serviceType}...`)
         try {
-          const processResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/asaas-process-certidao`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
-            },
-            body: JSON.stringify({
-              paymentId: payment.id,
-              status: event === 'PAYMENT_RECEIVED' ? 'RECEIVED' : 'CONFIRMED',
-              serviceData: serviceData,
-              userId: userId,
-              valor: payment.value
-            })
-          })
+          // Gerar protocolo único
+          const timestamp = Date.now();
+          const random = Math.random().toString(36).substring(2, 11).toUpperCase();
+          const protocolo = `SRV-${timestamp}-${random}`;
 
-          const processResult = await processResponse.json()
-          console.log('Resultado do processamento de certidão:', processResult)
+          // Criar solicitação
+          const { data: solicitacao, error: solicitacaoError } = await supabase
+            .from('solicitacoes_servicos')
+            .insert({
+              user_id: userId,
+              servico_id: serviceData?.servico_id || serviceData?.details?.servico_id,
+              protocolo: protocolo,
+              status: 'pago',
+              dados_enviados: serviceData?.dados_formulario || serviceData?.details?.dados_formulario || {},
+              payment_reference: payment.id,
+              valor_pago: payment.value,
+              forma_pagamento: payment.billingType === 'PIX' ? 'pix' : 'cartao',
+              data_pagamento: payment.paymentDate || new Date().toISOString(),
+            })
+            .select()
+            .single();
+
+          if (solicitacaoError) {
+            console.error('Erro ao criar solicitação:', solicitacaoError);
+          } else {
+            console.log('✅ Solicitação criada:', solicitacao.id, 'Protocolo:', protocolo);
+
+            // Criar notificação para usuário
+            await supabase
+              .from('notifications')
+              .insert({
+                user_id: userId,
+                title: 'Pagamento Confirmado',
+                message: `Seu pagamento foi confirmado! Protocolo: ${protocolo}. Sua solicitação está sendo processada.`,
+                type: 'payment_confirmed',
+                link: `/dashboard/solicitacao-servicos?protocolo=${protocolo}`,
+                read: false,
+              });
+
+            // Criar notificações para admins
+            const { data: admins } = await supabase
+              .from('profiles')
+              .select('id')
+              .in('tipo_membro', ['admin', 'super_admin']);
+
+            if (admins && admins.length > 0) {
+              const adminNotifications = admins.map(admin => ({
+                user_id: admin.id,
+                title: 'Nova Solicitação de Serviço',
+                message: `Nova solicitação recebida. Protocolo: ${protocolo}`,
+                type: 'new_service_request',
+                link: `/admin/solicitacoes?protocolo=${protocolo}`,
+                read: false,
+              }));
+
+              await supabase
+                .from('notifications')
+                .insert(adminNotifications);
+            }
+          }
         } catch (error) {
-          console.error('Erro ao processar certidão:', error)
+          console.error(`Erro ao processar ${serviceType}:`, error)
         }
         break;
 
@@ -257,6 +302,75 @@ async function executePostPaymentActions(payment: AsaasPayment): Promise<void> {
           console.log('Resultado do processamento de regularização:', processResult)
         } catch (error) {
           console.error('Erro ao processar regularização:', error)
+        }
+        break;
+
+      case 'servico':
+        // Processar solicitação de serviço genérico após pagamento confirmado
+        console.log('Processando solicitação de serviço...')
+        try {
+          // Gerar protocolo único
+          const timestamp = Date.now();
+          const random = Math.random().toString(36).substring(2, 11).toUpperCase();
+          const protocolo = `SRV-${timestamp}-${random}`;
+
+          // Criar solicitação
+          const { data: solicitacao, error: solicitacaoError } = await supabase
+            .from('solicitacoes_servicos')
+            .insert({
+              user_id: userId,
+              servico_id: serviceData?.servico_id,
+              protocolo: protocolo,
+              status: 'pago',
+              dados_enviados: serviceData?.dados_formulario || {},
+              payment_reference: payment.id,
+              valor_pago: payment.value,
+              forma_pagamento: payment.billingType === 'PIX' ? 'pix' : 'cartao',
+              data_pagamento: payment.paymentDate || new Date().toISOString(),
+            })
+            .select()
+            .single();
+
+          if (solicitacaoError) {
+            console.error('Erro ao criar solicitação:', solicitacaoError);
+          } else {
+            console.log('✅ Solicitação criada:', solicitacao.id, 'Protocolo:', protocolo);
+
+            // Criar notificação para usuário
+            await supabase
+              .from('notifications')
+              .insert({
+                user_id: userId,
+                title: 'Pagamento Confirmado',
+                message: `Seu pagamento foi confirmado! Protocolo: ${protocolo}. Sua solicitação está sendo processada.`,
+                type: 'payment_confirmed',
+                link: `/dashboard/solicitacao-servicos?protocolo=${protocolo}`,
+                read: false,
+              });
+
+            // Criar notificações para admins
+            const { data: admins } = await supabase
+              .from('profiles')
+              .select('id')
+              .in('tipo_membro', ['admin', 'super_admin']);
+
+            if (admins && admins.length > 0) {
+              const adminNotifications = admins.map(admin => ({
+                user_id: admin.id,
+                title: 'Nova Solicitação de Serviço',
+                message: `Nova solicitação recebida. Protocolo: ${protocolo}`,
+                type: 'new_service_request',
+                link: `/admin/solicitacoes?protocolo=${protocolo}`,
+                read: false,
+              }));
+
+              await supabase
+                .from('notifications')
+                .insert(adminNotifications);
+            }
+          }
+        } catch (error) {
+          console.error('Erro ao processar serviço:', error)
         }
         break;
 

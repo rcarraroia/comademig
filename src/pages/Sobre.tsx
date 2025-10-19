@@ -17,7 +17,8 @@ const Sobre = () => {
   // Prefetch de conteúdo relacionado
   useContentPrefetch('sobre');
 
-  if (isLoading) {
+  // Apenas mostrar loading se realmente estiver carregando E não tiver conteúdo
+  if (isLoading && !content) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-comademig-blue" />
@@ -25,9 +26,9 @@ const Sobre = () => {
     );
   }
 
+  // Log de erro mas continua com conteúdo padrão
   if (error) {
     console.error('Erro ao carregar conteúdo da página sobre:', error);
-    // Continua com conteúdo padrão em caso de erro
   }
 
   return (

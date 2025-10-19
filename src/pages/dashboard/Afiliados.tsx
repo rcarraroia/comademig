@@ -37,8 +37,8 @@ export default function Afiliados() {
           <h1 className="text-3xl font-bold">Programa de Afiliados</h1>
           <p className="text-muted-foreground">Ganhe comissões indicando novos membros</p>
         </div>
-        {affiliate && (
-          <Badge variant="secondary" className="text-sm">
+        {affiliate && affiliate.status === 'active' && (
+          <Badge variant="secondary" className="text-sm bg-green-100 text-green-800">
             <Award className="w-4 h-4 mr-1" />
             Afiliado Ativo
           </Badge>
@@ -58,16 +58,6 @@ export default function Afiliados() {
         <>
           {affiliate ? (
             <>
-              {/* Mensagem de Status Pendente */}
-              {affiliate.status === 'pending' && (
-                <Alert className="bg-yellow-50 border-yellow-200">
-                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                  <AlertDescription className="text-yellow-800">
-                    Seu cadastro de afiliado está em análise. Você será notificado quando for aprovado.
-                  </AlertDescription>
-                </Alert>
-              )}
-
               {/* Mensagem de Status Suspenso */}
               {affiliate.status === 'suspended' && (
                 <Alert className="bg-red-50 border-red-200">

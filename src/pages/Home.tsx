@@ -3,18 +3,26 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Users, Heart, Play, Building, Loader2 } from "lucide-react";
 import { useHomeContent } from "@/hooks/useContent";
+import { useNoticiasHome, useNoticiasRecentes } from "@/hooks/useNoticias";
 import { useContentPrefetch } from "@/hooks/useContentPrefetch";
 import { OptimizedImage } from "@/components/ui/OptimizedImage";
 import ContentStatusBadge from "@/components/admin/ContentStatusBadge";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { NoticiasCarousel } from "@/components/NoticiasCarousel";
+import { NoticiasTitulosCarousel } from "@/components/NoticiasTitulosCarousel";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const Home = () => {
   const { content, isLoading, error, hasCustomContent } = useHomeContent();
+  const { data: noticiasHome, isLoading: isLoadingNoticias } = useNoticiasHome(3);
+  const { data: noticiasRecentes } = useNoticiasRecentes(25);
   
   // Prefetch de conteúdo relacionado para melhor performance
   useContentPrefetch('home');
 
-  if (isLoading) {
+  // Apenas mostrar loading se realmente estiver carregando E não tiver conteúdo
+  if (isLoading && !content) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-comademig-blue" />
@@ -22,20 +30,9 @@ const Home = () => {
     );
   }
 
+  // Log de erro mas continua com conteúdo padrão
   if (error) {
     console.error('Erro ao carregar conteúdo da home:', error);
-    // Continua com conteúdo padrão em caso de erro
-  }
-
-  // Garantir que content sempre existe e tem as propriedades necessárias
-  if (!content || !content.banner_principal) {
-    console.error('Conteúdo da home não está disponível, usando fallback');
-    return <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-comademig-blue mb-4">COMADEMIG</h1>
-        <p className="text-gray-600">Carregando conteúdo...</p>
-      </div>
-    </div>;
   }
 
   return (
@@ -107,27 +104,27 @@ const Home = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {content.destaques_convencao?.map((destaque: any, index: number) => (
                 <Card key={index} className="hover:shadow-lg transition-shadow">
-                  {destaque.imagem && (
+                  {destaque.imagem_evento && (
                     <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
                       <OptimizedImage
-                        src={destaque.imagem}
-                        alt={destaque.titulo}
+                        src={destaque.imagem_evento}
+                        alt={destaque.titulo_evento}
                         className="w-full h-full"
                       />
                     </div>
                   )}
                   <CardHeader>
                     <CardTitle className="font-montserrat text-comademig-blue">
-                      {destaque.titulo}
+                      {destaque.titulo_evento}
                     </CardTitle>
                     <CardDescription className="font-inter">
-                      {destaque.descricao}
+                      {destaque.subtitulo}
                     </CardDescription>
                   </CardHeader>
-                  {destaque.link && (
+                  {destaque.link_evento && (
                     <CardContent>
                       <Button asChild variant="outline" className="w-full">
-                        <Link to={destaque.link}>Saiba Mais</Link>
+                        <Link to={destaque.link_evento}>Saiba Mais</Link>
                       </Button>
                     </CardContent>
                   )}
@@ -138,8 +135,8 @@ const Home = () => {
         </section>
       )}
 
-      {/* Notícias Recentes */}
-      {content.noticias_recentes && content.noticias_recentes?.length > 0 && (
+      {/* Carrossel de Cards - 3 Notícias Recentes */}
+      {noticiasHome && noticiasHome.length > 0 && (
         <section className="py-16 bg-comademig-light">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
@@ -150,40 +147,13 @@ const Home = () => {
                 Fique por dentro das últimas novidades da COMADEMIG
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {content.noticias_recentes?.slice(0, 3).map((noticia: any, index: number) => (
-                <Card key={index} className="hover:shadow-lg transition-shadow bg-white">
-                  {noticia.imagem && (
-                    <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
-                      <OptimizedImage
-                        src={noticia.imagem}
-                        alt={noticia.titulo}
-                        className="w-full h-full"
-                      />
-                    </div>
-                  )}
-                  <CardHeader>
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                      <Calendar className="w-4 h-4" />
-                      {noticia.data && new Date(noticia.data).toLocaleDateString('pt-BR')}
-                    </div>
-                    <CardTitle className="font-montserrat text-comademig-blue">
-                      {noticia.titulo}
-                    </CardTitle>
-                    <CardDescription className="font-inter">
-                      {noticia.resumo}
-                    </CardDescription>
-                  </CardHeader>
-                  {noticia.link && (
-                    <CardContent>
-                      <Button asChild variant="outline" className="w-full">
-                        <Link to={noticia.link}>Ler Mais</Link>
-                      </Button>
-                    </CardContent>
-                  )}
-                </Card>
-              ))}
-            </div>
+            {isLoadingNoticias ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-comademig-blue" />
+              </div>
+            ) : (
+              <NoticiasCarousel noticias={noticiasHome} />
+            )}
             <div className="text-center mt-8">
               <Button asChild variant="outline" size="lg">
                 <Link to="/noticias">Ver Todas as Notícias</Link>
@@ -191,6 +161,11 @@ const Home = () => {
             </div>
           </div>
         </section>
+      )}
+
+      {/* Carrossel de Títulos - 25 Últimas Notícias */}
+      {noticiasRecentes && noticiasRecentes.length > 0 && (
+        <NoticiasTitulosCarousel noticias={noticiasRecentes} />
       )}
 
       {/* Call to Action Final */}

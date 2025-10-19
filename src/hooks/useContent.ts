@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { withAutoRetry, createContextualError } from '@/lib/errorHandling';
 import { CACHE_KEYS, getCacheConfigForContent, shouldRefetchContent } from '@/lib/cache';
@@ -478,5 +478,202 @@ export const useContactContent = () => {
     isLoading,
     error,
     hasCustomContent: !!(data?.content_json && Object.keys(data.content_json).length > 0)
+  };
+};
+
+// ============================================
+// HOOKS PARA SISTEMA DE NOTÍCIAS
+// ============================================
+
+export interface NoticiaData {
+  id: string;
+  titulo: string;
+  slug: string;
+  resumo: string;
+  conteudo_completo: string;
+  autor: string | null;
+  data_publicacao: string;
+  categoria: string | null;
+  imagem_url: string | null;
+  visualizacoes: number;
+  destaque: boolean;
+  ativo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UseNoticiasOptions {
+  categoria?: string;
+  destaque?: boolean;
+  limit?: number;
+  ativo?: boolean;
+}
+
+// Hook para listar notícias com filtros
+export const useNoticias = (options: UseNoticiasOptions = {}) => {
+  const { categoria, destaque, limit = 50, ativo = true } = options;
+
+  return useQuery({
+    queryKey: ['noticias', { categoria, destaque, limit, ativo }],
+    queryFn: async () => {
+      let query = supabase
+        .from('noticias')
+        .select('*')
+        .eq('ativo', ativo)
+        .order('data_publicacao', { ascending: false });
+
+      if (categoria) {
+        query = query.eq('categoria', categoria);
+      }
+
+      if (destaque !== undefined) {
+        query = query.eq('destaque', destaque);
+      }
+
+      if (limit) {
+        query = query.limit(limit);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Erro ao carregar notícias:', error);
+        throw createContextualError(error, {
+          operation: 'load',
+          resource: 'notícias',
+          userMessage: 'Erro ao carregar notícias. Tente novamente.'
+        });
+      }
+
+      return data as NoticiaData[];
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+};
+
+// Hook para buscar uma notícia específica por slug
+export const useNoticia = (slug: string) => {
+  return useQuery({
+    queryKey: ['noticia', slug],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('noticias')
+        .select('*')
+        .eq('slug', slug)
+        .eq('ativo', true)
+        .single();
+
+      if (error) {
+        console.error(`Erro ao carregar notícia ${slug}:`, error);
+        throw createContextualError(error, {
+          operation: 'load',
+          resource: `notícia ${slug}`,
+          userMessage: 'Erro ao carregar notícia. Tente novamente.'
+        });
+      }
+
+      // Incrementar visualizações (fire and forget)
+      if (data) {
+        supabase
+          .from('noticias')
+          .update({ visualizacoes: (data.visualizacoes || 0) + 1 })
+          .eq('id', data.id)
+          .then(() => {})
+          .catch((err) => console.warn('Erro ao incrementar visualizações:', err));
+      }
+
+      return data as NoticiaData;
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    enabled: !!slug,
+  });
+};
+
+// Hook para mutations (create, update, delete)
+export const useNoticiasMutations = () => {
+  const queryClient = useQueryClient();
+
+  const createNoticia = useMutation({
+    mutationFn: async (noticia: Omit<NoticiaData, 'id' | 'created_at' | 'updated_at' | 'visualizacoes'>) => {
+      const { data, error } = await supabase
+        .from('noticias')
+        .insert([{
+          ...noticia,
+          last_updated_by: (await supabase.auth.getUser()).data.user?.id
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        throw createContextualError(error, {
+          operation: 'create',
+          resource: 'notícia',
+          userMessage: 'Erro ao criar notícia. Verifique os dados e tente novamente.'
+        });
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['noticias'] });
+    },
+  });
+
+  const updateNoticia = useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<NoticiaData> & { id: string }) => {
+      const { data, error } = await supabase
+        .from('noticias')
+        .update({
+          ...updates,
+          last_updated_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        throw createContextualError(error, {
+          operation: 'update',
+          resource: 'notícia',
+          userMessage: 'Erro ao atualizar notícia. Tente novamente.'
+        });
+      }
+
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['noticias'] });
+      queryClient.invalidateQueries({ queryKey: ['noticia', data.slug] });
+    },
+  });
+
+  const deleteNoticia = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('noticias')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw createContextualError(error, {
+          operation: 'delete',
+          resource: 'notícia',
+          userMessage: 'Erro ao deletar notícia. Tente novamente.'
+        });
+      }
+
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['noticias'] });
+    },
+  });
+
+  return {
+    createNoticia,
+    updateNoticia,
+    deleteNoticia,
   };
 };

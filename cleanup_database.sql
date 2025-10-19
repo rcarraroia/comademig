@@ -1,0 +1,51 @@
+-- ============================================
+-- SCRIPT DE LIMPEZA DO BANCO DE DADOS
+-- ============================================
+-- Data: 2025-10-17
+-- Objetivo: Remover tabelas vazias e não utilizadas
+-- 
+-- VERIFICAÇÕES REALIZADAS:
+-- ✅ Tabelas vazias identificadas
+-- ✅ Aprovação do usuário recebida
+-- ✅ Tabelas funcionais mantidas (profiles e transactions são usadas)
+--
+-- TABELAS A DELETAR: 3
+-- - noticias (vazia, será recriada)
+-- - multimidia (vazia, não será mais usada)
+-- - eventos (vazia, fora do escopo)
+--
+-- TABELAS MANTIDAS:
+-- - profiles (usada pelo sistema)
+-- - transactions (usada pelo sistema)
+-- ============================================
+
+-- Deletar APENAS as 3 tabelas aprovadas
+DROP TABLE IF EXISTS noticias CASCADE;
+DROP TABLE IF EXISTS multimidia CASCADE;
+DROP TABLE IF EXISTS eventos CASCADE;
+
+-- ============================================
+-- VERIFICAÇÃO PÓS-LIMPEZA
+-- ============================================
+-- Execute este SELECT para confirmar que as tabelas foram removidas:
+--
+-- SELECT table_name 
+-- FROM information_schema.tables 
+-- WHERE table_schema = 'public' 
+-- AND table_type = 'BASE TABLE'
+-- ORDER BY table_name;
+--
+-- Tabelas esperadas após limpeza (12 tabelas):
+-- 1. affiliates
+-- 2. affiliate_commissions
+-- 3. asaas_cobrancas
+-- 4. audit_logs
+-- 5. certidoes
+-- 6. content_management
+-- 7. member_types
+-- 8. profiles (MANTIDA)
+-- 9. solicitacoes_certidoes
+-- 10. subscription_plans
+-- 11. transactions (MANTIDA)
+-- 12. user_subscriptions
+-- ============================================

@@ -43,7 +43,7 @@ USING (
   EXISTS (
     SELECT 1 FROM user_roles
     WHERE user_id = auth.uid()
-    AND role IN ('admin', 'super_admin')
+    AND role = 'admin'
   )
 );
 
@@ -64,7 +64,7 @@ USING (
   EXISTS (
     SELECT 1 FROM user_roles
     WHERE user_id = auth.uid()
-    AND role IN ('admin', 'super_admin')
+    AND role = 'admin'
   )
 );
 

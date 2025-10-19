@@ -9,7 +9,7 @@ import { ArrowLeft, Save, Plus, Trash2, Image, Home, BarChart3, Star, Newspaper,
 import { Link, Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { useHomeContent, HomeContentData } from "@/hooks/useContent";
+import { useHomeContent } from "@/hooks/useContent";
 import { useUpdateContent } from "@/hooks/useContentMutation";
 import { SimpleImageUpload } from "@/components/ui/SimpleImageUpload";
 
@@ -413,128 +413,48 @@ const HomeContentEdit = () => {
                     </CardContent>
                 </Card>
 
-                {/* Notícias Recentes */}
-                <Card>
+                {/* Notícias Recentes - GERENCIADAS NO EDITOR DE NOTÍCIAS */}
+                <Card className="border-blue-200 bg-blue-50">
                     <CardHeader>
-                        <CardTitle className="flex items-center">
-                            <div className="w-8 h-8 bg-comademig-gold rounded-full flex items-center justify-center mr-3">
+                        <CardTitle className="flex items-center text-blue-900">
+                            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3">
                                 <Newspaper className="w-4 h-4 text-white" />
                             </div>
                             Notícias Recentes
                         </CardTitle>
-                        <CardDescription>
-                            Gerencie as notícias em destaque na página inicial
+                        <CardDescription className="text-blue-700">
+                            As notícias da Home agora são gerenciadas no Editor de Notícias
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="flex justify-end mb-4">
-                            <Button type="button" onClick={adicionarNoticia}>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Adicionar Notícia
-                            </Button>
+                    <CardContent>
+                        <div className="space-y-4">
+                            <div className="p-4 bg-white border border-blue-200 rounded-lg">
+                                <p className="text-sm text-gray-700 mb-3">
+                                    📰 As notícias exibidas na página inicial agora são gerenciadas através do 
+                                    <strong> Editor de Notícias</strong>, onde você pode:
+                                </p>
+                                <ul className="text-sm text-gray-600 space-y-2 ml-4">
+                                    <li>✅ Criar e editar notícias</li>
+                                    <li>✅ Marcar notícias para exibir na Home</li>
+                                    <li>✅ Definir notícias em destaque</li>
+                                    <li>✅ Gerenciar categorias e imagens</li>
+                                    <li>✅ Moderar notícias de usuários</li>
+                                </ul>
+                            </div>
+                            
+                            <div className="flex gap-3">
+                                <Button
+                                    type="button"
+                                    asChild
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                    <Link to="/dashboard/admin/content/noticias-editor">
+                                        <Newspaper className="w-4 h-4 mr-2" />
+                                        Ir para Editor de Notícias
+                                    </Link>
+                                </Button>
+                            </div>
                         </div>
-                        {noticiasFields.map((noticia, index) => (
-                            <div key={noticia.id} className="p-4 border rounded-lg space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <h4 className="font-semibold">Notícia {index + 1}</h4>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => removeNoticia(index)}
-                                        className="text-red-600 hover:text-red-700"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
-
-                                <div>
-                                    <Label htmlFor={`noticia-titulo-${index}`}>Título da Notícia</Label>
-                                    <Input
-                                        id={`noticia-titulo-${index}`}
-                                        {...register(`noticias_recentes.${index}.titulo_noticia` as const, { required: "Título é obrigatório" })}
-                                        placeholder="Título da notícia"
-                                    />
-                                    {errors.noticias_recentes?.[index]?.titulo_noticia && (
-                                        <p className="text-sm text-red-600 mt-1">
-                                            {errors.noticias_recentes[index]?.titulo_noticia?.message}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <Label>Imagem da Notícia</Label>
-                                    <SimpleImageUpload
-                                        onImageChange={(url) => {
-                                            if (url) {
-                                                setValue(`noticias_recentes.${index}.imagem_noticia` as const, url, { shouldDirty: true });
-                                            }
-                                        }}
-                                    />
-                                    {watch(`noticias_recentes.${index}.imagem_noticia`) && (
-                                        <div className="mt-2">
-                                            <p className="text-sm text-green-600">✅ Imagem carregada com sucesso!</p>
-                                            <img
-                                                src={watch(`noticias_recentes.${index}.imagem_noticia`)}
-                                                alt="Preview"
-                                                className="w-20 h-20 object-cover rounded border mt-1"
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <Label htmlFor={`noticia-data-${index}`}>Data da Notícia</Label>
-                                    <Input
-                                        id={`noticia-data-${index}`}
-                                        type="date"
-                                        {...register(`noticias_recentes.${index}.data_noticia` as const, { required: "Data é obrigatória" })}
-                                    />
-                                    {errors.noticias_recentes?.[index]?.data_noticia && (
-                                        <p className="text-sm text-red-600 mt-1">
-                                            {errors.noticias_recentes[index]?.data_noticia?.message}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <Label htmlFor={`noticia-resumo-${index}`}>Resumo da Notícia</Label>
-                                    <Textarea
-                                        id={`noticia-resumo-${index}`}
-                                        {...register(`noticias_recentes.${index}.resumo_noticia` as const, { required: "Resumo é obrigatório" })}
-                                        placeholder="Resumo da notícia"
-                                        rows={3}
-                                    />
-                                    {errors.noticias_recentes?.[index]?.resumo_noticia && (
-                                        <p className="text-sm text-red-600 mt-1">
-                                            {errors.noticias_recentes[index]?.resumo_noticia?.message}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <Label htmlFor={`noticia-link-${index}`}>Link da Notícia</Label>
-                                    <Input
-                                        id={`noticia-link-${index}`}
-                                        {...register(`noticias_recentes.${index}.link_noticia` as const, { required: "Link é obrigatório" })}
-                                        placeholder="URL da notícia"
-                                    />
-                                    {errors.noticias_recentes?.[index]?.link_noticia && (
-                                        <p className="text-sm text-red-600 mt-1">
-                                            {errors.noticias_recentes[index]?.link_noticia?.message}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-
-                        {noticiasFields.length === 0 && (
-                            <div className="text-center py-8 text-gray-500">
-                                <Image className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                <p>Nenhuma notícia adicionada ainda.</p>
-                                <p className="text-sm">Clique em "Adicionar Notícia" para começar.</p>
-                            </div>
-                        )}
                     </CardContent>
                 </Card>
 

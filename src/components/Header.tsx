@@ -27,10 +27,10 @@ const Header = () => {
     { to: "/", label: "Início" },
     { to: "/sobre", label: "Sobre" },
     { to: "/lideranca", label: "Liderança" },
-    // Temporariamente removidos até implementação dos editores:
-    // { to: "/noticias", label: "Notícias" },
+    { to: "/noticias", label: "Notícias" },
+    { to: "/multimidia", label: "Multimídia" },
+    // Temporariamente removido até implementação do editor:
     // { to: "/eventos", label: "Eventos" },
-    // { to: "/multimidia", label: "Multimídia" },
     { to: "/contato", label: "Contato" },
   ];
 

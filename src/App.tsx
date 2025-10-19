@@ -10,8 +10,10 @@ import Home from '@/pages/Home';
 import Sobre from '@/pages/Sobre';
 import Lideranca from '@/pages/Lideranca';
 import Noticias from '@/pages/Noticias';
+import NoticiaDetalhes from '@/pages/NoticiaDetalhes';
 import Eventos from '@/pages/Eventos';
 import Multimidia from '@/pages/Multimidia';
+import AlbumDetalhes from '@/pages/AlbumDetalhes';
 import Contato from '@/pages/Contato';
 import Filiacao from '@/pages/Filiacao';
 import Auth from '@/pages/Auth';
@@ -71,8 +73,13 @@ import Termos from '@/pages/Termos';
 import LeadershipContentEdit from '@/pages/dashboard/LeadershipContentEdit';
 import EventosContentEdit from '@/pages/dashboard/EventosContentEdit';
 import MultimidiaContentEdit from '@/pages/dashboard/MultimidiaContentEdit';
+import AlbumFotosEdit from '@/pages/dashboard/AlbumFotosEdit';
 import ContatoContentEdit from '@/pages/dashboard/ContatoContentEdit';
 import NoticiasContentEdit from '@/pages/dashboard/NoticiasContentEdit';
+import PrivacidadeContentEdit from '@/pages/dashboard/PrivacidadeContentEdit';
+import TermosContentEdit from '@/pages/dashboard/TermosContentEdit';
+import MinhasNoticias from '@/pages/dashboard/MinhasNoticias';
+import NoticiaForm from '@/pages/dashboard/NoticiaForm';
 
 // Layouts
 import Layout from '@/components/Layout';
@@ -101,12 +108,14 @@ function App() {
             <Route path="/sobre" element={<Layout><Sobre /></Layout>} />
             <Route path="/lideranca" element={<Layout><Lideranca /></Layout>} />
             <Route path="/noticias" element={<Layout><Noticias /></Layout>} />
+            <Route path="/noticias/:slug" element={<Layout><NoticiaDetalhes /></Layout>} />
             <Route path="/eventos" element={<Layout><Eventos /></Layout>} />
             <Route path="/multimidia" element={<Layout><Multimidia /></Layout>} />
+            <Route path="/multimidia/album/:id" element={<Layout><AlbumDetalhes /></Layout>} />
             <Route path="/contato" element={<Layout><Contato /></Layout>} />
             <Route path="/filiacao" element={<Filiacao />} />
-            <Route path="/privacidade" element={<Layout><Privacidade /></Layout>} />
-            <Route path="/termos" element={<Layout><Termos /></Layout>} />
+            <Route path="/privacidade" element={<Privacidade />} />
+            <Route path="/termos" element={<Termos />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/esqueci-senha" element={<EsqueciSenha />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -136,6 +145,10 @@ function App() {
               <Route path="/dashboard/afiliados" element={<Afiliados />} />
               <Route path="/dashboard/notifications" element={<Notifications />} />
               <Route path="/dashboard/perfil-completo" element={<PerfilCompleto />} />
+              {/* Minhas Notícias */}
+              <Route path="/dashboard/minhas-noticias" element={<MinhasNoticias />} />
+              <Route path="/dashboard/minhas-noticias/nova" element={<NoticiaForm />} />
+              <Route path="/dashboard/minhas-noticias/editar/:id" element={<NoticiaForm />} />
               {/* Redirecionamentos das URLs antigas */}
               <Route path="/dashboard/certidoes" element={<Navigate to="/dashboard/solicitacao-servicos?tab=certidao" replace />} />
               <Route path="/dashboard/regularizacao" element={<Navigate to="/dashboard/solicitacao-servicos?tab=regularizacao" replace />} />
@@ -178,8 +191,11 @@ function App() {
               <Route path="content/lideranca-editor" element={<LeadershipContentEdit />} />
               <Route path="content/eventos-editor" element={<EventosContentEdit />} />
               <Route path="content/multimidia-editor" element={<MultimidiaContentEdit />} />
+              <Route path="content/album/:id/fotos" element={<AlbumFotosEdit />} />
               <Route path="content/contato-editor" element={<ContatoContentEdit />} />
               <Route path="content/noticias-editor" element={<NoticiasContentEdit />} />
+              <Route path="content/privacidade-editor" element={<PrivacidadeContentEdit />} />
+              <Route path="content/termos-editor" element={<TermosContentEdit />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

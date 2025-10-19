@@ -1,7 +1,31 @@
 import { Link } from "react-router-dom";
-import { Facebook, Instagram, Youtube, MapPin, Phone, Mail, ExternalLink } from "lucide-react";
+import { Facebook, Instagram, Youtube, MapPin, Phone, Mail } from "lucide-react";
+import { useContactContent } from "@/hooks/useContent";
 
 const Footer = () => {
+  const { content: contactContent } = useContactContent();
+  
+  // Conteúdo padrão inline para garantir que o Footer sempre renderize
+  const defaultContactContent = {
+    endereco: {
+      rua: 'Rua das Assembleias, 123',
+      cidade: 'Belo Horizonte',
+      estado: 'MG',
+      cep: '30000-000',
+      complemento: ''
+    },
+    telefones: [{ id: '1', tipo: 'Principal', numero: '(31) 3333-4444', ordem: 1 }],
+    emails: [{ id: '1', tipo: 'Geral', email: 'contato@comademig.org.br', ordem: 1 }],
+    redes_sociais: {
+      facebook: 'https://facebook.com/comademig',
+      instagram: 'https://instagram.com/comademig',
+      youtube: 'https://youtube.com/comademig'
+    }
+  };
+  
+  // Usar conteúdo carregado ou padrão
+  const safeContactContent = contactContent || defaultContactContent;
+  
   return (
     <footer className="bg-comademig-blue text-white">
       <div className="container mx-auto px-4 py-12">
@@ -49,6 +73,14 @@ const Footer = () => {
                   className="text-gray-300 hover:text-comademig-gold transition-colors flex items-center"
                 >
                   Notícias
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  to="/multimidia" 
+                  className="text-gray-300 hover:text-comademig-gold transition-colors flex items-center"
+                >
+                  Multimídia
                 </Link>
               </li>
               <li>
@@ -104,20 +136,37 @@ const Footer = () => {
             <div className="space-y-3 font-inter text-sm mb-6">
               <div className="flex items-start space-x-2 text-gray-300">
                 <MapPin size={16} className="mt-0.5 flex-shrink-0" />
-                <span>Rua Exemplo, 123<br />Belo Horizonte, MG<br />CEP: 30000-000</span>
+                <span>
+                  {safeContactContent.endereco.rua}
+                  {safeContactContent.endereco.complemento && `, ${safeContactContent.endereco.complemento}`}
+                  <br />
+                  {safeContactContent.endereco.cidade} - {safeContactContent.endereco.estado}
+                  <br />
+                  CEP: {safeContactContent.endereco.cep}
+                </span>
               </div>
-              <div className="flex items-center space-x-2 text-gray-300">
-                <Phone size={16} />
-                <a href="tel:+5531333344444" className="hover:text-comademig-gold transition-colors">
-                  (31) 3333-4444
-                </a>
-              </div>
-              <div className="flex items-center space-x-2 text-gray-300">
-                <Mail size={16} />
-                <a href="mailto:contato@comademig.org.br" className="hover:text-comademig-gold transition-colors">
-                  contato@comademig.org.br
-                </a>
-              </div>
+              {safeContactContent.telefones && safeContactContent.telefones.length > 0 && (
+                <div className="flex items-center space-x-2 text-gray-300">
+                  <Phone size={16} />
+                  <a 
+                    href={`tel:${safeContactContent.telefones[0].numero.replace(/\D/g, '')}`} 
+                    className="hover:text-comademig-gold transition-colors"
+                  >
+                    {safeContactContent.telefones[0].numero}
+                  </a>
+                </div>
+              )}
+              {safeContactContent.emails && safeContactContent.emails.length > 0 && (
+                <div className="flex items-center space-x-2 text-gray-300">
+                  <Mail size={16} />
+                  <a 
+                    href={`mailto:${safeContactContent.emails[0].email}`} 
+                    className="hover:text-comademig-gold transition-colors"
+                  >
+                    {safeContactContent.emails[0].email}
+                  </a>
+                </div>
+              )}
             </div>
 
             {/* Redes Sociais */}
@@ -126,33 +175,39 @@ const Footer = () => {
                 Redes Sociais
               </h4>
               <div className="flex space-x-3">
-                <a 
-                  href="https://facebook.com/comademig" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-gray-300 hover:text-comademig-gold transition-colors p-2 rounded-full hover:bg-white/10"
-                  aria-label="Facebook"
-                >
-                  <Facebook size={20} />
-                </a>
-                <a 
-                  href="https://instagram.com/comademig" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-gray-300 hover:text-comademig-gold transition-colors p-2 rounded-full hover:bg-white/10"
-                  aria-label="Instagram"
-                >
-                  <Instagram size={20} />
-                </a>
-                <a 
-                  href="https://youtube.com/@comademig" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-gray-300 hover:text-comademig-gold transition-colors p-2 rounded-full hover:bg-white/10"
-                  aria-label="YouTube"
-                >
-                  <Youtube size={20} />
-                </a>
+                {safeContactContent.redes_sociais?.facebook && (
+                  <a 
+                    href={safeContactContent.redes_sociais.facebook} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-gray-300 hover:text-comademig-gold transition-colors p-2 rounded-full hover:bg-white/10"
+                    aria-label="Facebook"
+                  >
+                    <Facebook size={20} />
+                  </a>
+                )}
+                {safeContactContent.redes_sociais?.instagram && (
+                  <a 
+                    href={safeContactContent.redes_sociais.instagram} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-gray-300 hover:text-comademig-gold transition-colors p-2 rounded-full hover:bg-white/10"
+                    aria-label="Instagram"
+                  >
+                    <Instagram size={20} />
+                  </a>
+                )}
+                {safeContactContent.redes_sociais?.youtube && (
+                  <a 
+                    href={safeContactContent.redes_sociais.youtube} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-gray-300 hover:text-comademig-gold transition-colors p-2 rounded-full hover:bg-white/10"
+                    aria-label="YouTube"
+                  >
+                    <Youtube size={20} />
+                  </a>
+                )}
               </div>
             </div>
           </div>

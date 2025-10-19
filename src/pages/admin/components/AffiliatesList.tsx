@@ -29,30 +29,67 @@ export function AffiliatesList() {
   const queryClient = useQueryClient();
 
   // Buscar todos os afiliados
-  const { data: affiliates = [], isLoading } = useQuery({
+  const { data: affiliates = [], isLoading, error: queryError } = useQuery({
     queryKey: ['admin-affiliates', statusFilter],
     queryFn: async () => {
+      // Primeiro buscar afiliados
       let query = supabase
         .from('affiliates')
-        .select(`
-          *,
-          user:profiles!affiliates_user_id_fkey(
-            id,
-            nome_completo,
-            email
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (statusFilter !== 'all') {
         query = query.eq('status', statusFilter);
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
+      const { data: affiliatesData, error: affiliatesError } = await query;
+      
+      if (affiliatesError) {
+        console.error('Error fetching affiliates:', affiliatesError);
+        throw affiliatesError;
+      }
+
+      // Depois buscar os perfis dos usuários
+      if (affiliatesData && affiliatesData.length > 0) {
+        const userIds = affiliatesData.map(a => a.user_id).filter(Boolean);
+        
+        if (userIds.length > 0) {
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, nome_completo, email')
+            .in('id', userIds);
+
+          if (!profilesError && profilesData) {
+            // Combinar dados
+            const enrichedData = affiliatesData.map(affiliate => ({
+              ...affiliate,
+              user: profilesData.find(p => p.id === affiliate.user_id) || null
+            }));
+            
+            console.log('Admin Affiliates Query:', { 
+              data: enrichedData, 
+              count: enrichedData.length,
+              profiles: profilesData.length 
+            });
+            
+            return enrichedData;
+          }
+        }
+      }
+      
+      console.log('Admin Affiliates Query:', { 
+        data: affiliatesData, 
+        count: affiliatesData?.length 
+      });
+      
+      return affiliatesData || [];
     },
   });
+  
+  // Log de debug
+  if (queryError) {
+    console.error('Query Error:', queryError);
+  }
 
   // Mutation para atualizar status do afiliado
   const updateStatusMutation = useMutation({

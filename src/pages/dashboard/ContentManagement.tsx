@@ -29,8 +29,12 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { useHomeContent, useAboutContent, useLeadershipContent, useContactContent } from "@/hooks/useContent";
+import { useNoticias } from "@/hooks/useNoticias";
+import { useVideos, useAlbuns } from "@/hooks/useMultimidia";
+import { usePrivacidadeContent, useTermosContent } from "@/hooks/useLegalPages";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Shield } from "lucide-react";
 
 const ContentManagement = () => {
   const { isAdmin, loading } = useAuth();
@@ -40,6 +44,13 @@ const ContentManagement = () => {
   const { hasCustomContent: aboutCustom, content: aboutContent, isLoading: aboutLoading } = useAboutContent();
   const { hasCustomContent: leadershipCustom, content: leadershipContent, isLoading: leadershipLoading } = useLeadershipContent();
   const { hasCustomContent: contactCustom, content: contactContent, isLoading: contactLoading } = useContactContent();
+  
+  // Hooks para páginas dinâmicas
+  const { data: noticias, isLoading: noticiasLoading } = useNoticias({ limit: 5 });
+  const { data: videos, isLoading: videosLoading } = useVideos({ limit: 5 });
+  const { data: albuns, isLoading: albunsLoading } = useAlbuns({ limit: 5 });
+  const { data: privacidadeData, isLoading: privacidadeLoading } = usePrivacidadeContent();
+  const { data: termosData, isLoading: termosLoading } = useTermosContent();
 
   if (loading) {
     return (
@@ -114,30 +125,57 @@ const ContentManagement = () => {
       name: "Notícias", 
       key: "noticias", 
       description: "Notícias, comunicados e atualizações importantes",
-      hasCustomContent: false,
-      content: null,
-      isLoading: false,
+      hasCustomContent: true,
+      content: noticias,
+      isLoading: noticiasLoading,
       publicUrl: "/noticias",
       editorUrl: "/dashboard/admin/content/noticias-editor",
       icon: Newspaper,
       priority: "média",
-      status: "não implementado",
-      implemented: false
+      status: "personalizado",
+      implemented: true
     },
-
     { 
       name: "Multimídia", 
       key: "multimidia", 
       description: "Galeria de fotos, vídeos e materiais visuais",
-      hasCustomContent: false,
-      content: null,
-      isLoading: false,
+      hasCustomContent: true,
+      content: { videos, albuns },
+      isLoading: videosLoading || albunsLoading,
       publicUrl: "/multimidia",
       editorUrl: "/dashboard/admin/content/multimidia-editor",
       icon: Camera,
-      priority: "baixa",
-      status: "não implementado",
-      implemented: false
+      priority: "média",
+      status: "personalizado",
+      implemented: true
+    },
+    { 
+      name: "Privacidade", 
+      key: "privacidade", 
+      description: "Política de Privacidade (LGPD)",
+      hasCustomContent: true,
+      content: privacidadeData,
+      isLoading: privacidadeLoading,
+      publicUrl: "/privacidade",
+      editorUrl: "/dashboard/admin/content/privacidade-editor",
+      icon: Shield,
+      priority: "alta",
+      status: "personalizado",
+      implemented: true
+    },
+    { 
+      name: "Termos de Uso", 
+      key: "termos", 
+      description: "Termos e condições de uso do site",
+      hasCustomContent: true,
+      content: termosData,
+      isLoading: termosLoading,
+      publicUrl: "/termos",
+      editorUrl: "/dashboard/admin/content/termos-editor",
+      icon: FileText,
+      priority: "alta",
+      status: "personalizado",
+      implemented: true
     }
   ];
 
@@ -186,6 +224,42 @@ const ContentManagement = () => {
             `Endereço: ${page.content.endereco?.rua ? '✓' : '✗'}`,
             `WhatsApp: ${page.content.telefones?.some((t: any) => t.whatsapp) ? '✓' : '✗'}`,
             `Horários: ${page.content.horario_funcionamento ? '✓' : '✗'}`
+          ]
+        };
+      case 'noticias':
+        return {
+          text: `${page.content?.length || 0} notícias publicadas`,
+          details: [
+            `Ativas: ${page.content?.filter((n: any) => n.ativo).length || 0}`,
+            `Destaques: ${page.content?.filter((n: any) => n.destaque).length || 0}`,
+            `Categorias: ${new Set(page.content?.map((n: any) => n.categoria)).size || 0}`
+          ]
+        };
+      case 'multimidia':
+        return {
+          text: `${page.content?.videos?.length || 0} vídeos, ${page.content?.albuns?.length || 0} álbuns`,
+          details: [
+            `Vídeos ativos: ${page.content?.videos?.filter((v: any) => v.ativo).length || 0}`,
+            `Álbuns ativos: ${page.content?.albuns?.filter((a: any) => a.ativo).length || 0}`,
+            `Total de fotos: ${page.content?.albuns?.reduce((sum: number, a: any) => sum + (a.fotos_count || 0), 0) || 0}`
+          ]
+        };
+      case 'privacidade':
+        return {
+          text: page.content?.content_json?.title || "Política de Privacidade",
+          details: [
+            `Seções: ${page.content?.content_json?.sections?.length || 0}`,
+            `Última atualização: ${page.content?.last_updated_at ? new Date(page.content.last_updated_at).toLocaleDateString('pt-BR') : 'N/A'}`,
+            `Conformidade LGPD: ✓`
+          ]
+        };
+      case 'termos':
+        return {
+          text: page.content?.content_json?.title || "Termos de Uso",
+          details: [
+            `Seções: ${page.content?.content_json?.sections?.length || 0}`,
+            `Última atualização: ${page.content?.last_updated_at ? new Date(page.content.last_updated_at).toLocaleDateString('pt-BR') : 'N/A'}`,
+            `Status: Ativo`
           ]
         };
       default:

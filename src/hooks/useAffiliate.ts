@@ -175,7 +175,7 @@ export function useCreateAffiliate() {
           asaas_wallet_id: data.asaas_wallet_id,
           contact_email: data.contact_email || user.email,
           phone: data.phone,
-          status: 'pending',
+          status: 'active',
           is_adimplent: true,
         })
         .select()
@@ -186,7 +186,7 @@ export function useCreateAffiliate() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-affiliate'] });
-      toast.success('Cadastro de afiliado criado com sucesso! Aguarde aprovação.');
+      toast.success('Cadastro de afiliado criado com sucesso! Você já pode começar a indicar.');
     },
     onError: (error: any) => {
       console.error('Erro ao criar afiliado:', error);
