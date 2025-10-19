@@ -14,6 +14,7 @@ export interface CheckoutData {
   servico_id: string;
   servico_nome: string;
   servico_valor: number;
+  servico_categoria: string;
   dados_formulario: Record<string, any>;
   forma_pagamento: 'pix' | 'cartao';
   
@@ -211,7 +212,7 @@ export function useCheckoutTransparente() {
             forma_pagamento: data.forma_pagamento === 'pix' ? 'PIX' : 'CREDIT_CARD',
             data_vencimento: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             billing_type: data.forma_pagamento === 'pix' ? 'PIX' : 'CREDIT_CARD',
-            service_type: 'certidao',
+            service_type: data.servico_categoria,
             service_data: {
               servico_id: data.servico_id,
               servico_nome: data.servico_nome,

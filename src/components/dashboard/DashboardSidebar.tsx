@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { X, Home, User, CreditCard, FileText, HelpCircle, Settings, Globe, Building, Users, Bell, Activity, MessageSquare, DollarSign, BarChart3, Shield, Award, Split } from "lucide-react";
+import { X, Home, User, CreditCard, FileText, HelpCircle, Settings, Globe, Building, Users, Bell, Activity, MessageSquare, DollarSign, BarChart3, Shield, Award, Split, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,6 +47,9 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
       category: "Conteúdo e Serviços",
       items: [
         { path: "/admin/content", label: "Gerenciar Conteúdo", icon: FileText },
+        { path: "/admin/servicos", label: "Gerenciar Serviços", icon: FileText },
+        { path: "/admin/servicos/categorias", label: "Categorias de Serviços", icon: Tag },
+        { path: "/admin/solicitacoes", label: "Solicitações", icon: FileText },
       ]
     },
     {

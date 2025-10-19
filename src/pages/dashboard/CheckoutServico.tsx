@@ -115,6 +115,7 @@ export default function CheckoutServico() {
       servico_id: servico.id,
       servico_nome: servico.nome,
       servico_valor: valorOriginal,
+      servico_categoria: servico.categoria,
       dados_formulario: dadosFormulario,
       forma_pagamento: formaPagamento,
       cliente: dadosCliente,

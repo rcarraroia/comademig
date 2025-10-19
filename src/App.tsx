@@ -48,6 +48,7 @@ import AuditLogs from '@/pages/admin/AuditLogs';
 import SupportManagement from '@/pages/admin/SupportManagement';
 import NotificationManagementPage from '@/pages/admin/NotificationManagementPage';
 import ServicosAdmin from '@/pages/admin/ServicosAdmin';
+import ServicoCategorias from '@/pages/admin/ServicoCategorias';
 import SolicitacoesAdmin from '@/pages/admin/SolicitacoesAdmin';
 import WebhookErrors from '@/pages/admin/WebhookErrors';
 import AffiliatesManagement from '@/pages/admin/AffiliatesManagement';
@@ -173,6 +174,7 @@ function App() {
               <Route path="content" element={<ContentManagement />} />
               <Route path="notification-management" element={<NotificationManagementPage />} />
               <Route path="servicos" element={<ServicosAdmin />} />
+              <Route path="servicos/categorias" element={<ServicoCategorias />} />
               <Route path="solicitacoes" element={<SolicitacoesAdmin />} />
               <Route path="webhook-errors" element={<WebhookErrors />} />
             </Route>
