@@ -15,7 +15,7 @@ import type { Servico } from '@/hooks/useServicos';
 const servicoSchema = z.object({
   nome: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
   descricao: z.string().min(10, 'Descrição deve ter no mínimo 10 caracteres'),
-  categoria: z.enum(['certidao', 'regularizacao', 'outros']),
+  categoria: z.enum(['certidao', 'regularizacao']),
   prazo: z.string().min(3, 'Prazo é obrigatório'),
   valor: z.number().min(0.01, 'Valor deve ser maior que zero'),
   aceita_pix: z.boolean(),
@@ -132,7 +132,6 @@ export function ServicoFormAdmin({ servico, onSuccess, onCancel }: ServicoFormAd
             <SelectContent>
               <SelectItem value="certidao">📜 Certidão</SelectItem>
               <SelectItem value="regularizacao">⚖️ Regularização</SelectItem>
-              <SelectItem value="outros">📋 Outros</SelectItem>
             </SelectContent>
           </Select>
           {errors.categoria && (

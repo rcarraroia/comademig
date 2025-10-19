@@ -255,7 +255,6 @@ export function useSplitManagement() {
         let query = supabase
           .from('audit_logs')
           .select('*')
-          .in('table_name', ['split_configurations', 'split_recipients'])
           .order('created_at', { ascending: false });
 
         // Aplicar filtros
@@ -281,6 +280,7 @@ export function useSplitManagement() {
           throw new Error('Erro ao buscar log de auditoria');
         }
 
+        console.log('Audit logs fetched:', data);
         return data || [];
       },
     });

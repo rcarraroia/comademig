@@ -30,7 +30,6 @@ export function ServicoCard({
     const labels: Record<string, string> = {
       certidao: 'Certidão',
       regularizacao: 'Regularização',
-      outros: 'Outros',
     };
     return labels[categoria] || categoria;
   };
@@ -39,7 +38,6 @@ export function ServicoCard({
     const colors: Record<string, string> = {
       certidao: 'bg-blue-100 text-blue-800',
       regularizacao: 'bg-green-100 text-green-800',
-      outros: 'bg-gray-100 text-gray-800',
     };
     return colors[categoria] || 'bg-gray-100 text-gray-800';
   };

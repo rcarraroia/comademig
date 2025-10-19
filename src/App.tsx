@@ -174,7 +174,7 @@ function App() {
               <Route path="content" element={<ContentManagement />} />
               <Route path="notification-management" element={<NotificationManagementPage />} />
               <Route path="servicos" element={<ServicosAdmin />} />
-              <Route path="servicos/categorias" element={<ServicoCategorias />} />
+              <Route path="servico-categorias" element={<ServicoCategorias />} />
               <Route path="solicitacoes" element={<SolicitacoesAdmin />} />
               <Route path="webhook-errors" element={<WebhookErrors />} />
             </Route>

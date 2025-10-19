@@ -129,6 +129,19 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         currentUserId = authData.user.id;
         isNewAccount = true;
         toast.success('Conta criada com sucesso!');
+        
+        // 🎯 REGISTRAR INDICAÇÃO DE AFILIADO (se houver)
+        if (affiliateInfo?.registerReferral) {
+          try {
+            const referralResult = await affiliateInfo.registerReferral(currentUserId);
+            if (referralResult.success) {
+              console.log('✅ Indicação de afiliado registrada:', referralResult.message);
+            }
+          } catch (error) {
+            console.error('⚠️ Erro ao registrar indicação (não crítico):', error);
+            // Não falhar o processo por causa disso
+          }
+        }
       } else {
         // Usuário já está logado - verificar se já tem filiação ativa
         const { data: existingSubscription } = await (supabase as any)

@@ -338,7 +338,27 @@ async function handlePaymentReceived(
 
   console.log('💰 Processando pagamento confirmado:', payment.id)
 
-  // Buscar assinatura pelo asaas_subscription_id OU initial_payment_id
+  // 1. Buscar cobrança no sistema
+  const { data: cobranca } = await supabaseClient
+    .from('asaas_cobrancas')
+    .select('*')
+    .eq('asaas_id', payment.id)
+    .single()
+
+  if (cobranca) {
+    console.log('📦 Cobrança encontrada:', cobranca.id)
+    
+    // 2. Processar splits automaticamente
+    try {
+      await processPaymentSplits(supabaseClient, cobranca)
+      console.log('✅ Splits processados automaticamente')
+    } catch (splitError) {
+      console.error('❌ Erro ao processar splits:', splitError)
+      // Não falhar o webhook por causa de erro nos splits
+    }
+  }
+
+  // 3. Buscar assinatura pelo asaas_subscription_id OU initial_payment_id
   let subscription = null
   
   if (payment.subscription) {
@@ -365,11 +385,11 @@ async function handlePaymentReceived(
     console.log('⚠️ Assinatura não encontrada para pagamento:', payment.id)
     return { 
       success: true, 
-      message: 'Payment received but no subscription found' 
+      message: cobranca ? 'Payment processed with splits' : 'Payment received but no subscription found'
     }
   }
 
-  // Atualizar status para 'active'
+  // 4. Atualizar status para 'active'
   const updateData: any = {
     status: 'active',
     updated_at: new Date().toISOString()
@@ -393,7 +413,153 @@ async function handlePaymentReceived(
 
   return { 
     success: true, 
-    message: 'Subscription activated' 
+    message: 'Subscription activated and splits processed' 
+  }
+}
+
+/**
+ * Processa splits automaticamente para um pagamento
+ */
+async function processPaymentSplits(
+  supabaseClient: any,
+  cobranca: any
+): Promise<void> {
+  
+  console.log('🔄 Iniciando processamento de splits para cobrança:', cobranca.id)
+  
+  // 1. Determinar tipo de serviço
+  const serviceType = cobranca.service_type || 'servicos'
+  
+  // 2. Buscar configuração de split ativa para este tipo
+  const { data: splitConfig } = await supabaseClient
+    .from('split_configurations')
+    .select('*')
+    .eq('category', serviceType)
+    .eq('is_active', true)
+    .single()
+  
+  if (!splitConfig) {
+    console.log('⚠️ Nenhuma configuração de split ativa para:', serviceType)
+    return
+  }
+  
+  console.log('📋 Configuração encontrada:', splitConfig.category_label)
+  
+  // 3. Buscar recipients da configuração
+  const { data: recipients } = await supabaseClient
+    .from('split_recipients')
+    .select('*')
+    .eq('configuration_id', splitConfig.id)
+  
+  if (!recipients || recipients.length === 0) {
+    console.log('⚠️ Nenhum recipient configurado')
+    return
+  }
+  
+  console.log(`👥 ${recipients.length} recipients encontrados`)
+  
+  // 4. Buscar se usuário foi indicado por afiliado
+  let affiliateId = null
+  let referralId = null
+  
+  if (cobranca.user_id) {
+    const { data: referral } = await supabaseClient
+      .from('affiliate_referrals')
+      .select('affiliate_id, id')
+      .eq('referred_user_id', cobranca.user_id)
+      .eq('status', 'pending')
+      .single()
+    
+    if (referral) {
+      affiliateId = referral.affiliate_id
+      referralId = referral.id
+      console.log(`🎯 Usuário foi indicado por afiliado: ${affiliateId}`)
+    }
+  }
+  
+  // 5. Criar splits
+  const valorTotal = parseFloat(cobranca.valor)
+  const splits = []
+  
+  for (const recipient of recipients) {
+    const valorSplit = (valorTotal * recipient.percentage) / 100
+    
+    // Determinar tipo de recipient corretamente
+    let recipientType = 'renum'
+    if (recipient.recipient_identifier === 'comademig') {
+      recipientType = 'comademig'
+    } else if (recipient.recipient_identifier === 'affiliate') {
+      recipientType = 'affiliate'
+    }
+    
+    const walletId = recipient.wallet_id || `wallet_${recipient.recipient_identifier}`
+    
+    const splitData = {
+      cobranca_id: cobranca.id,
+      recipient_type: recipientType,
+      recipient_name: recipient.recipient_name,
+      service_type: serviceType,
+      percentage: parseFloat(recipient.percentage),
+      commission_amount: parseFloat(valorSplit.toFixed(2)),
+      total_value: valorTotal,
+      wallet_id: walletId,
+      affiliate_id: recipientType === 'affiliate' ? affiliateId : null,
+      status: 'done',
+      processed_at: new Date().toISOString(),
+      payment_id: cobranca.asaas_id
+    }
+    
+    splits.push(splitData)
+    
+    // Se é split de afiliado, criar comissão
+    if (recipientType === 'affiliate' && affiliateId) {
+      try {
+        await supabaseClient
+          .from('affiliate_commissions')
+          .insert({
+            affiliate_id: affiliateId,
+            payment_id: cobranca.id,
+            amount: valorSplit,
+            status: 'pending'
+          })
+        
+        console.log(`✅ Comissão criada para afiliado: R$ ${valorSplit.toFixed(2)}`)
+      } catch (error) {
+        console.error('⚠️ Erro ao criar comissão (não crítico):', error)
+      }
+    }
+  }
+  
+  // 6. Atualizar status da indicação para 'confirmed'
+  if (referralId) {
+    try {
+      await supabaseClient
+        .from('affiliate_referrals')
+        .update({ status: 'confirmed' })
+        .eq('id', referralId)
+      
+      console.log(`✅ Indicação confirmada: ${referralId}`)
+    } catch (error) {
+      console.error('⚠️ Erro ao confirmar indicação (não crítico):', error)
+    }
+  }
+  
+  // 7. Inserir splits no banco
+  const { data: createdSplits, error } = await supabaseClient
+    .from('asaas_splits')
+    .insert(splits)
+    .select()
+  
+  if (error) {
+    console.error('❌ Erro ao criar splits:', error)
+    throw error
+  }
+  
+  console.log(`✅ ${createdSplits.length} splits criados com sucesso`)
+  
+  // 8. Log dos splits criados
+  for (const split of createdSplits) {
+    console.log(`  - ${split.recipient_name}: ${split.percentage}% = R$ ${split.commission_amount}`)
   }
 }
 

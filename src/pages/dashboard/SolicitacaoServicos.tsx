@@ -19,7 +19,7 @@ export default function SolicitacaoServicos() {
   const navigate = useNavigate();
   
   // States
-  const [categoriaAtiva, setCategoriaAtiva] = useState<'certidao' | 'regularizacao' | 'outros'>('certidao');
+  const [categoriaAtiva, setCategoriaAtiva] = useState<'certidao' | 'regularizacao'>('certidao');
   const [servicoSelecionado, setServicoSelecionado] = useState<Servico | null>(null);
   const [modalFormularioAberto, setModalFormularioAberto] = useState(false);
   const [solicitacaoDetalhesId, setSolicitacaoDetalhesId] = useState<string | null>(null);
@@ -27,7 +27,6 @@ export default function SolicitacaoServicos() {
   // Queries
   const { data: servicosCertidao = [], isLoading: loadingCertidao } = useServicosPorCategoria('certidao');
   const { data: servicosRegularizacao = [], isLoading: loadingRegularizacao } = useServicosPorCategoria('regularizacao');
-  const { data: servicosOutros = [], isLoading: loadingOutros } = useServicosPorCategoria('outros');
   const { solicitacoes, isLoading: loadingSolicitacoes } = useSolicitacoes(user?.id);
   const { exigencias, isLoading: loadingExigencias } = useServicoExigencias(servicoSelecionado?.id);
 
@@ -67,8 +66,6 @@ export default function SolicitacaoServicos() {
         return servicosCertidao;
       case 'regularizacao':
         return servicosRegularizacao;
-      case 'outros':
-        return servicosOutros;
       default:
         return [];
     }
@@ -80,8 +77,6 @@ export default function SolicitacaoServicos() {
         return loadingCertidao;
       case 'regularizacao':
         return loadingRegularizacao;
-      case 'outros':
-        return loadingOutros;
       default:
         return false;
     }
@@ -96,7 +91,7 @@ export default function SolicitacaoServicos() {
       <div>
         <h1 className="text-3xl font-bold">Solicitação de Serviços</h1>
         <p className="text-muted-foreground mt-2">
-          Solicite certidões, regularizações e outros serviços
+          Solicite certidões e regularizações
         </p>
       </div>
 
@@ -108,9 +103,6 @@ export default function SolicitacaoServicos() {
           </TabsTrigger>
           <TabsTrigger value="regularizacao">
             ⚖️ Regularização
-          </TabsTrigger>
-          <TabsTrigger value="outros">
-            📋 Outros
           </TabsTrigger>
         </TabsList>
 

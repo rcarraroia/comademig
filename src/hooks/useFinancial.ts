@@ -147,88 +147,74 @@ export function useFinancialMetrics(dateRange?: { from: string; to: string }) {
       const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const thisYear = new Date(now.getFullYear(), 0, 1);
 
-      // Query base para transações
-      let baseQuery = supabase.from('financial_transactions');
-
-      // Aplicar filtro de data se fornecido
-      if (dateRange) {
-        baseQuery = baseQuery
-          .gte('created_at', dateRange.from)
-          .lte('created_at', dateRange.to);
-      }
-
+      // CORREÇÃO TEMPORÁRIA: Ler de asaas_cobrancas até refatoração completa
+      // TODO: Migrar para financial_transactions após aprovação do cliente
+      
       // Receita total
       const { data: allTransactions } = await supabase
-        .from('financial_transactions')
-        .select('amount, status')
-        .eq('status', 'paid');
+        .from('asaas_cobrancas')
+        .select('valor, status')
+        .eq('status', 'CONFIRMED');
 
-      const totalRevenue = allTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
+      const totalRevenue = allTransactions?.reduce((sum, t) => sum + parseFloat(t.valor), 0) || 0;
 
       // Receita mensal
       const { data: monthlyTransactions } = await supabase
-        .from('financial_transactions')
-        .select('amount')
-        .eq('status', 'paid')
+        .from('asaas_cobrancas')
+        .select('valor')
+        .eq('status', 'CONFIRMED')
         .gte('created_at', thisMonth.toISOString());
 
-      const monthlyRevenue = monthlyTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
+      const monthlyRevenue = monthlyTransactions?.reduce((sum, t) => sum + parseFloat(t.valor), 0) || 0;
 
       // Receita anual
       const { data: yearlyTransactions } = await supabase
-        .from('financial_transactions')
-        .select('amount')
-        .eq('status', 'paid')
+        .from('asaas_cobrancas')
+        .select('valor')
+        .eq('status', 'CONFIRMED')
         .gte('created_at', thisYear.toISOString());
 
-      const annualRevenue = yearlyTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
+      const annualRevenue = yearlyTransactions?.reduce((sum, t) => sum + parseFloat(t.valor), 0) || 0;
 
       // Pagamentos pendentes
       const { data: pendingTransactions } = await supabase
-        .from('financial_transactions')
-        .select('amount')
-        .eq('status', 'pending');
+        .from('asaas_cobrancas')
+        .select('valor')
+        .eq('status', 'PENDING');
 
-      const pendingPayments = pendingTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
+      const pendingPayments = pendingTransactions?.reduce((sum, t) => sum + parseFloat(t.valor), 0) || 0;
 
-      // Pagamentos em atraso (due_date < hoje)
+      // Pagamentos em atraso (data_vencimento < hoje)
       const { data: overdueTransactions } = await supabase
-        .from('financial_transactions')
-        .select('amount')
-        .in('status', ['pending', 'processing'])
-        .lt('due_date', today.toISOString().split('T')[0]);
+        .from('asaas_cobrancas')
+        .select('valor')
+        .in('status', ['PENDING'])
+        .lt('data_vencimento', today.toISOString().split('T')[0]);
 
-      const overduePayments = overdueTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
+      const overduePayments = overdueTransactions?.reduce((sum, t) => sum + parseFloat(t.valor), 0) || 0;
 
       // Pagamentos hoje
       const { data: todayTransactions } = await supabase
-        .from('financial_transactions')
-        .select('amount')
-        .eq('status', 'paid')
-        .gte('paid_at', today.toISOString())
-        .lt('paid_at', new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString());
+        .from('asaas_cobrancas')
+        .select('valor')
+        .eq('status', 'CONFIRMED')
+        .gte('data_pagamento', today.toISOString())
+        .lt('data_pagamento', new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString());
 
-      const paidToday = todayTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
+      const paidToday = todayTransactions?.reduce((sum, t) => sum + parseFloat(t.valor), 0) || 0;
 
-      // Receita por tipo de membro
+      // Receita por tipo de serviço (service_type)
       const { data: revenueByType } = await supabase
-        .from('financial_transactions')
-        .select(`
-          amount,
-          subscription:user_subscriptions(
-            subscription_plan:subscription_plans(
-              member_type:member_types(name)
-            )
-          )
-        `)
-        .eq('status', 'paid');
+        .from('asaas_cobrancas')
+        .select('valor, service_type')
+        .eq('status', 'CONFIRMED');
 
       const revenueByMemberType = new Map();
       revenueByType?.forEach((transaction: any) => {
-        const memberType = transaction.subscription?.subscription_plan?.member_type?.name || 'Outros';
+        const memberType = transaction.service_type || 'Outros';
         const current = revenueByMemberType.get(memberType) || { revenue: 0, count: 0 };
         revenueByMemberType.set(memberType, {
-          revenue: current.revenue + transaction.amount,
+          revenue: current.revenue + parseFloat(transaction.valor),
           count: current.count + 1
         });
       });
@@ -244,13 +230,13 @@ export function useFinancialMetrics(dateRange?: { from: string; to: string }) {
         const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
         
         const { data: monthTransactions } = await supabase
-          .from('financial_transactions')
-          .select('amount')
-          .eq('status', 'paid')
-          .gte('paid_at', monthStart.toISOString())
-          .lte('paid_at', monthEnd.toISOString());
+          .from('asaas_cobrancas')
+          .select('valor')
+          .eq('status', 'CONFIRMED')
+          .gte('created_at', monthStart.toISOString())
+          .lte('created_at', monthEnd.toISOString());
 
-        const monthRevenue = monthTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
+        const monthRevenue = monthTransactions?.reduce((sum, t) => sum + parseFloat(t.valor), 0) || 0;
         
         revenueByMonth.push({
           month: monthStart.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }),
@@ -261,18 +247,23 @@ export function useFinancialMetrics(dateRange?: { from: string; to: string }) {
 
       // Métodos de pagamento
       const { data: paymentMethodData } = await supabase
-        .from('financial_transactions')
-        .select('payment_method, amount')
-        .eq('status', 'paid')
-        .not('payment_method', 'is', null);
+        .from('asaas_cobrancas')
+        .select('forma_pagamento, valor')
+        .eq('status', 'CONFIRMED')
+        .not('forma_pagamento', 'is', null);
 
       const paymentMethods = new Map();
       paymentMethodData?.forEach((transaction) => {
-        const method = transaction.payment_method || 'Não informado';
+        // Converter forma_pagamento do Asaas para formato padrão
+        let method = transaction.forma_pagamento || 'Não informado';
+        if (method === 'CREDIT_CARD') method = 'credit_card';
+        if (method === 'PIX') method = 'pix';
+        if (method === 'BOLETO') method = 'boleto';
+        
         const current = paymentMethods.get(method) || { count: 0, revenue: 0 };
         paymentMethods.set(method, {
           count: current.count + 1,
-          revenue: current.revenue + transaction.amount
+          revenue: current.revenue + parseFloat(transaction.valor)
         });
       });
 
@@ -282,16 +273,22 @@ export function useFinancialMetrics(dateRange?: { from: string; to: string }) {
 
       // Distribuição por status
       const { data: statusData } = await supabase
-        .from('financial_transactions')
-        .select('status, amount');
+        .from('asaas_cobrancas')
+        .select('status, valor');
 
       const statusDistribution = new Map();
       statusData?.forEach((transaction) => {
-        const status = transaction.status;
+        // Converter status do Asaas para formato padrão
+        let status = transaction.status;
+        if (status === 'CONFIRMED') status = 'paid';
+        if (status === 'PENDING') status = 'pending';
+        if (status === 'RECEIVED') status = 'paid';
+        if (status === 'OVERDUE') status = 'failed';
+        
         const current = statusDistribution.get(status) || { count: 0, amount: 0 };
         statusDistribution.set(status, {
           count: current.count + 1,
-          amount: current.amount + transaction.amount
+          amount: current.amount + parseFloat(transaction.valor)
         });
       });
 

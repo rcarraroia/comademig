@@ -57,12 +57,18 @@ function AuditLogItem({ log }: { log: any }) {
   const [showDetails, setShowDetails] = useState(false);
 
   const actionLabels: Record<string, string> = {
+    insert: 'Criação',
+    update: 'Atualização',
+    delete: 'Exclusão',
     INSERT: 'Criação',
     UPDATE: 'Atualização',
     DELETE: 'Exclusão',
   };
 
   const actionColors: Record<string, string> = {
+    insert: 'bg-green-100 text-green-800',
+    update: 'bg-blue-100 text-blue-800',
+    delete: 'bg-red-100 text-red-800',
     INSERT: 'bg-green-100 text-green-800',
     UPDATE: 'bg-blue-100 text-blue-800',
     DELETE: 'bg-red-100 text-red-800',
@@ -74,9 +80,11 @@ function AuditLogItem({ log }: { log: any }) {
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
             <Badge className={actionColors[log.action] || 'bg-gray-100 text-gray-800'}>
-              {actionLabels[log.action] || log.action}
+              {actionLabels[log.action] || log.action || 'Ação desconhecida'}
             </Badge>
-            <span className="text-sm font-medium">{log.table_name}</span>
+            <span className="text-sm font-medium">
+              {log.entity_type || log.table_name || 'Entidade desconhecida'}
+            </span>
             <span className="text-xs text-gray-500">
               {format(new Date(log.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
             </span>
@@ -88,9 +96,15 @@ function AuditLogItem({ log }: { log: any }) {
             </div>
           )}
 
+          {log.entity_id && (
+            <div className="text-xs text-gray-500 mb-2">
+              ID: {log.entity_id.substring(0, 8)}...
+            </div>
+          )}
+
           {showDetails && (
             <div className="mt-4 space-y-3">
-              {log.old_values && (
+              {log.old_values && Object.keys(log.old_values).length > 0 && (
                 <div>
                   <div className="text-xs font-medium text-gray-500 mb-1">Valores Anteriores:</div>
                   <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">
@@ -99,7 +113,7 @@ function AuditLogItem({ log }: { log: any }) {
                 </div>
               )}
 
-              {log.new_values && (
+              {log.new_values && Object.keys(log.new_values).length > 0 && (
                 <div>
                   <div className="text-xs font-medium text-gray-500 mb-1">Novos Valores:</div>
                   <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">

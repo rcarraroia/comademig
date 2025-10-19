@@ -115,6 +115,13 @@ export default function AdminSidebar() {
           badge: 'Novo'
         },
         {
+          title: 'Categorias',
+          href: '/admin/servico-categorias',
+          icon: FileText,
+          description: 'Gerenciar categorias de serviços',
+          badge: 'Novo'
+        },
+        {
           title: 'Solicitações',
           href: '/admin/solicitacoes',
           icon: FileText,

@@ -31,7 +31,6 @@ export function SolicitacaoCard({ solicitacao, onVerDetalhes }: SolicitacaoCardP
     const emojis: Record<string, string> = {
       certidao: '📜',
       regularizacao: '⚖️',
-      outros: '📋',
     };
     return emojis[categoria] || '📋';
   };

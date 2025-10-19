@@ -10,7 +10,7 @@ export interface Servico {
   id: string;
   nome: string;
   descricao: string;
-  categoria: 'certidao' | 'regularizacao' | 'outros';
+  categoria: 'certidao' | 'regularizacao';
   prazo: string;
   valor: number;
   is_active: boolean;
@@ -25,7 +25,7 @@ export interface Servico {
 export interface CreateServicoInput {
   nome: string;
   descricao: string;
-  categoria: 'certidao' | 'regularizacao' | 'outros';
+  categoria: 'certidao' | 'regularizacao';
   prazo: string;
   valor: number;
   aceita_pix?: boolean;
@@ -71,7 +71,7 @@ export function useServicos() {
   });
 
   // Query: Buscar serviços por categoria
-  const buscarPorCategoria = (categoria: 'certidao' | 'regularizacao' | 'outros') => {
+  const buscarPorCategoria = (categoria: 'certidao' | 'regularizacao') => {
     return useQuery({
       queryKey: QUERY_KEYS.byCategoria(categoria),
       queryFn: async () => {
@@ -252,7 +252,7 @@ export function useServico(id: string | undefined) {
 // HOOK: useServicosPorCategoria (wrapper conveniente)
 // ============================================================================
 
-export function useServicosPorCategoria(categoria: 'certidao' | 'regularizacao' | 'outros') {
+export function useServicosPorCategoria(categoria: 'certidao' | 'regularizacao') {
   return useQuery({
     queryKey: QUERY_KEYS.byCategoria(categoria),
     queryFn: async () => {

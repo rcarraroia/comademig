@@ -44,12 +44,17 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
       ]
     },
     {
-      category: "Conteúdo e Serviços",
+      category: "Serviços",
+      items: [
+        { path: "/admin/servicos", label: "Gestão de Serviços", icon: FileText },
+        { path: "/admin/servico-categorias", label: "Categorias", icon: Tag, indent: true },
+        { path: "/admin/solicitacoes", label: "Solicitações", icon: FileText },
+      ]
+    },
+    {
+      category: "Gerenciar Conteúdos",
       items: [
         { path: "/admin/content", label: "Gerenciar Conteúdo", icon: FileText },
-        { path: "/admin/servicos", label: "Gerenciar Serviços", icon: FileText },
-        { path: "/admin/servicos/categorias", label: "Categorias de Serviços", icon: Tag },
-        { path: "/admin/solicitacoes", label: "Solicitações", icon: FileText },
       ]
     },
     {

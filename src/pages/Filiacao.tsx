@@ -21,7 +21,8 @@ export default function Filiacao() {
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   
   // Captura automática e silenciosa do código de referral da URL
-  const { referralCode, affiliateInfo } = useReferralCode();
+  const referralHook = useReferralCode();
+  const { referralCode, affiliateInfo } = referralHook;
 
   const handleMemberTypeSelect = (memberType: UnifiedMemberType | null) => {
     setSelectedMemberType(memberType);
@@ -186,7 +187,7 @@ export default function Filiacao() {
               
               <PaymentFormEnhanced 
                 selectedMemberType={selectedMemberType}
-                affiliateInfo={affiliateInfo}
+                affiliateInfo={referralHook}
                 onSuccess={() => {
                   toast.success('Filiação realizada com sucesso!');
                   navigate('/dashboard');

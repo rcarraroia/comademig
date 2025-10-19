@@ -259,12 +259,16 @@ export function useCheckoutTransparente() {
           .single();
 
         if (solicitacaoError) {
-          console.error('⚠️ Erro ao criar solicitação:', solicitacaoError);
+          console.error('❌ Erro ao criar solicitação:', solicitacaoError.message);
+          toast.error(`Erro ao criar solicitação: ${solicitacaoError.message}`);
         } else {
-          console.log('✅ Solicitação criada:', solicitacaoData.id, 'Protocolo:', protocolo);
+          console.log('✅ Solicitação criada com sucesso!');
+          console.log('ID:', solicitacaoData.id);
+          console.log('Protocolo:', protocolo);
+          console.log('Dados completos:', solicitacaoData);
         }
-      } catch (solicitacaoSaveError) {
-        console.error('⚠️ Erro ao criar solicitação:', solicitacaoSaveError);
+      } catch (solicitacaoSaveError: any) {
+        console.error('❌ Exceção ao criar solicitação:', solicitacaoSaveError.message);
       }
 
       // 7. Retornar resultado

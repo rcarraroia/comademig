@@ -70,7 +70,6 @@ export default function SolicitacoesAdmin() {
     const emojis: Record<string, string> = {
       certidao: '📜',
       regularizacao: '⚖️',
-      outros: '📋',
     };
     return emojis[categoria] || '📋';
   };
@@ -175,7 +174,6 @@ export default function SolicitacoesAdmin() {
                   <SelectItem value="all">Todas</SelectItem>
                   <SelectItem value="certidao">📜 Certidões</SelectItem>
                   <SelectItem value="regularizacao">⚖️ Regularização</SelectItem>
-                  <SelectItem value="outros">📋 Outros</SelectItem>
                 </SelectContent>
               </Select>
             </div>
