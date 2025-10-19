@@ -219,6 +219,12 @@ async function executePostPaymentActions(payment: AsaasPayment): Promise<void> {
           const random = Math.random().toString(36).substring(2, 11).toUpperCase();
           const protocolo = `SRV-${timestamp}-${random}`;
 
+          // DEBUG - Logs detalhados para diagnóstico
+          console.log('🔍 DEBUG - serviceData completo:', JSON.stringify(serviceData, null, 2));
+          console.log('🔍 DEBUG - servico_id extraído:', serviceData?.servico_id || serviceData?.details?.servico_id);
+          console.log('🔍 DEBUG - userId:', userId);
+          console.log('🔍 DEBUG - protocolo gerado:', protocolo);
+
           // Criar solicitação
           const { data: solicitacao, error: solicitacaoError } = await supabase
             .from('solicitacoes_servicos')
