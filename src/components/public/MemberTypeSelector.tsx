@@ -137,14 +137,7 @@ export const MemberTypeSelector: React.FC<MemberTypeSelectorProps> = ({
             <SelectContent>
               {memberTypes.map((type) => (
                 <SelectItem key={type.id} value={type.id}>
-                  <div className="flex items-center justify-between w-full">
-                    <span>{type.name}</span>
-                    {type.plan_name && (
-                      <Badge variant="outline" className="ml-2 text-xs">
-                        R$ {type.plan_value?.toFixed(2)}
-                      </Badge>
-                    )}
-                  </div>
+                  {type.name}
                 </SelectItem>
               ))}
             </SelectContent>
