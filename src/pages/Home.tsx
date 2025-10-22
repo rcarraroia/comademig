@@ -192,7 +192,7 @@ const Home = () => {
         pageName="home"
         pageTitle="Página Inicial"
         hasCustomContent={hasCustomContent}
-        editorUrl="/dashboard/admin/content/home-editor"
+        editorUrl="/admin/content/home-editor"
         publicUrl="/"
         position="bottom-right"
         contentPreview={content?.banner_principal?.titulo_principal}

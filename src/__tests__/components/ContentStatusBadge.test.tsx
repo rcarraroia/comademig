@@ -32,7 +32,7 @@ describe('ContentStatusBadge', () => {
     pageName: 'home',
     pageTitle: 'Página Inicial',
     hasCustomContent: false,
-    editorUrl: '/dashboard/admin/content/home-editor',
+    editorUrl: '/admin/content/home-editor',
     publicUrl: '/',
   };
 
@@ -176,7 +176,7 @@ describe('ContentStatusBadge', () => {
     fireEvent.click(expandButton);
     
     const editLink = screen.getByRole('link', { name: /editar página/i });
-    expect(editLink).toHaveAttribute('href', '/dashboard/admin/content/home-editor');
+    expect(editLink).toHaveAttribute('href', '/admin/content/home-editor');
   });
 
   it('deve ter link correto para página pública quando fornecido', () => {

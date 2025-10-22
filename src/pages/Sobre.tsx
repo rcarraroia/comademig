@@ -284,7 +284,7 @@ const Sobre = () => {
             size="sm"
             className="bg-comademig-blue hover:bg-comademig-blue/90 shadow-lg"
           >
-            <Link to="/dashboard/admin/content/sobre-editor">
+            <Link to="/admin/content/sobre-editor">
               <Edit className="w-4 h-4 mr-2" />
               Editar Página
             </Link>
@@ -294,7 +294,7 @@ const Sobre = () => {
             pageName="sobre"
             pageTitle="Sobre Nós"
             hasCustomContent={hasCustomContent}
-            editorUrl="/dashboard/admin/content/sobre-editor"
+            editorUrl="/admin/content/sobre-editor"
             publicUrl="/sobre"
             position="bottom-right"
             compact={true}
