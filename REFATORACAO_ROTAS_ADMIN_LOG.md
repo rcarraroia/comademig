@@ -97,3 +97,28 @@
 7. `/dashboard/admin/content` → `/admin/content`
 8-18. Todos os redirects de conteúdo criados
 
+### [2025-10-22 - FASE 3 CONCLUÍDA] ✅
+**Componentes Movidos para /pages/admin/**
+- ✅ Criada estrutura `/pages/admin/content/`
+- ✅ Movidos 16 componentes para locais corretos
+- ✅ Atualizados todos os imports no App.tsx
+- ✅ Atualizados imports em testes
+- ✅ Removida pasta `/pages/dashboard/admin/` (vazia)
+- ✅ Sem erros de compilação
+
+**Componentes movidos:**
+1. `MemberTypeManagement.tsx` → `/pages/admin/`
+2. `ContentManagement.tsx` → `/pages/admin/`
+3. `ContentEdit.tsx` → `/pages/admin/`
+4. `UserManagement.tsx` → `/pages/admin/`
+5. `AdminNotificationsPage.tsx` → `/pages/admin/`
+6. `SystemDiagnosticsPage.tsx` → `/pages/admin/`
+7. `NotificationManagement.tsx` → `/pages/admin/`
+8-18. Todos os `*ContentEdit.tsx` → `/pages/admin/content/`
+
+**Arquivos duplicados deletados:**
+- `/pages/dashboard/admin/AuditLogs.tsx` (duplicata)
+- `/pages/dashboard/admin/FinanceiroAdmin.tsx` (duplicata)
+- `/pages/dashboard/admin/MemberTypes.tsx` (não usado)
+- `/pages/dashboard/admin/Subscriptions.tsx` (não usado)
+

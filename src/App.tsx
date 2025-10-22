@@ -57,30 +57,34 @@ import AffiliatesManagement from '@/pages/admin/AffiliatesManagement';
 import TestPix from '@/pages/TestPix';
 import SplitManagement from '@/pages/admin/SplitManagement';
 
-// Admin Pages - COMPONENTES ANTIGOS (manter alguns)
-import MemberTypeManagement from '@/pages/dashboard/MemberTypeManagement';
-import AdminNotificationsPage from '@/pages/dashboard/admin/AdminNotifications';
-import ContentManagement from '@/pages/dashboard/ContentManagement';
-import SystemDiagnosticsPage from '@/pages/dashboard/admin/SystemDiagnostics';
-import ContentEdit from '@/pages/dashboard/ContentEdit';
-import UserManagement from '@/pages/dashboard/UserManagement';
+// Admin Pages - COMPONENTES MOVIDOS PARA /admin/
+import MemberTypeManagement from '@/pages/admin/MemberTypeManagement';
+import AdminNotificationsPage from '@/pages/admin/AdminNotificationsPage';
+import ContentManagement from '@/pages/admin/ContentManagement';
+import SystemDiagnosticsPage from '@/pages/admin/SystemDiagnosticsPage';
+import ContentEdit from '@/pages/admin/ContentEdit';
+import UserManagement from '@/pages/admin/UserManagement';
+import HomeContentEdit from '@/pages/admin/content/HomeContentEdit';
+import AboutContentEdit from '@/pages/admin/content/AboutContentEdit';
+import LeadershipContentEdit from '@/pages/admin/content/LeadershipContentEdit';
+import EventosContentEdit from '@/pages/admin/content/EventosContentEdit';
+import MultimidiaContentEdit from '@/pages/admin/content/MultimidiaContentEdit';
+import AlbumFotosEdit from '@/pages/admin/content/AlbumFotosEdit';
+import ContatoContentEdit from '@/pages/admin/content/ContatoContentEdit';
+import NoticiasContentEdit from '@/pages/admin/content/NoticiasContentEdit';
+import PrivacidadeContentEdit from '@/pages/admin/content/PrivacidadeContentEdit';
+import TermosContentEdit from '@/pages/admin/content/TermosContentEdit';
+
+// Dashboard Pages - COMPONENTES QUE FICAM
 import Notifications from '@/pages/dashboard/Notifications';
 import PerfilPublico from '@/pages/dashboard/PerfilPublico';
 import PerfilCompleto from '@/pages/dashboard/PerfilCompleto';
-import HomeContentEdit from '@/pages/dashboard/HomeContentEdit';
-import AboutContentEdit from '@/pages/dashboard/AboutContentEdit';
-import Privacidade from '@/pages/Privacidade';
-import Termos from '@/pages/Termos';
-import LeadershipContentEdit from '@/pages/dashboard/LeadershipContentEdit';
-import EventosContentEdit from '@/pages/dashboard/EventosContentEdit';
-import MultimidiaContentEdit from '@/pages/dashboard/MultimidiaContentEdit';
-import AlbumFotosEdit from '@/pages/dashboard/AlbumFotosEdit';
-import ContatoContentEdit from '@/pages/dashboard/ContatoContentEdit';
-import NoticiasContentEdit from '@/pages/dashboard/NoticiasContentEdit';
-import PrivacidadeContentEdit from '@/pages/dashboard/PrivacidadeContentEdit';
-import TermosContentEdit from '@/pages/dashboard/TermosContentEdit';
 import MinhasNoticias from '@/pages/dashboard/MinhasNoticias';
 import NoticiaForm from '@/pages/dashboard/NoticiaForm';
+
+// Public Pages
+import Privacidade from '@/pages/Privacidade';
+import Termos from '@/pages/Termos';
 
 // Layouts
 import Layout from '@/components/Layout';

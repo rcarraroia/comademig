@@ -10,8 +10,8 @@ import { act } from 'react-dom/test-utils';
 
 // Componentes a serem testados
 import Home from '@/pages/Home';
-import HomeContentEdit from '@/pages/dashboard/HomeContentEdit';
-import ContentManagement from '@/pages/dashboard/ContentManagement';
+import HomeContentEdit from '@/pages/admin/content/HomeContentEdit';
+import ContentManagement from '@/pages/admin/ContentManagement';
 
 // Mock do Supabase
 const mockSupabaseClient = {

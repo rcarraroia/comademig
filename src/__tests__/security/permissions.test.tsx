@@ -9,8 +9,8 @@ import { BrowserRouter } from 'react-router-dom';
 
 // Componentes a serem testados
 import ContentStatusBadge from '@/components/admin/ContentStatusBadge';
-import HomeContentEdit from '@/pages/dashboard/HomeContentEdit';
-import ContentManagement from '@/pages/dashboard/ContentManagement';
+import HomeContentEdit from '@/pages/admin/content/HomeContentEdit';
+import ContentManagement from '@/pages/admin/ContentManagement';
 
 // Mock do Supabase
 const mockSupabaseClient = {
