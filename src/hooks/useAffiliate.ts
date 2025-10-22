@@ -93,6 +93,8 @@ export function useAffiliateReferrals(affiliateId?: string) {
       return data || [];
     },
     enabled: !!affiliateId,
+    staleTime: 0, // Sempre buscar dados frescos
+    gcTime: 0, // Não cachear (antes era cacheTime)
   });
 }
 

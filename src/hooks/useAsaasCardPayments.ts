@@ -64,8 +64,22 @@ export const useAsaasCardPayments = () => {
   /**
    * Processa pagamento com cartão de crédito
    */
-  const processCardPayment = async (paymentData: CreateCardPaymentData): Promise<CardPaymentResult | null> => {
-    if (!user) {
+  const processCardPayment = async (
+    paymentData: CreateCardPaymentData,
+    userId?: string,  // ✅ Aceitar userId como parâmetro opcional
+    customerId?: string  // ✅ NOVO: Aceitar customerId que já foi criado
+  ): Promise<CardPaymentResult | null> => {
+    console.log('🔍 processCardPayment INICIADO');
+    console.log('🔍 user do contexto:', user);
+    console.log('🔍 userId fornecido:', userId);
+    console.log('🔍 customerId fornecido:', customerId);
+    console.log('🔍 paymentData:', paymentData);
+
+    // ✅ Usar userId fornecido OU user do contexto
+    const effectiveUserId = userId || user?.id;
+
+    if (!effectiveUserId) {
+      console.error('❌ Usuário não autenticado!');
       toast({
         title: "Erro",
         description: "Usuário não autenticado",
@@ -74,25 +88,34 @@ export const useAsaasCardPayments = () => {
       return null;
     }
 
+    console.log('✅ Usando userId:', effectiveUserId);
+
     setIsLoading(true);
-    
+
     try {
-      console.log('Iniciando processamento de cartão...');
-      
-      // 1. Garantir que o usuário tem um customer_id no Asaas
-      const customerId = await ensureCustomer();
-      if (!customerId) {
-        throw new Error('Não foi possível configurar cliente no sistema de pagamentos');
+      console.log('💳 Iniciando processamento de cartão...');
+
+      // 1. Usar customerId fornecido OU garantir que o usuário tem um customer_id no Asaas
+      let finalCustomerId = customerId;
+
+      if (!finalCustomerId) {
+        console.log('⚠️ customerId não fornecido, tentando ensureCustomer...');
+        finalCustomerId = await ensureCustomer();
+        if (!finalCustomerId) {
+          throw new Error('Não foi possível configurar cliente no sistema de pagamentos');
+        }
+      } else {
+        console.log('✅ Usando customerId fornecido:', finalCustomerId);
       }
 
-      console.log('Cliente Asaas confirmado:', customerId);
+      console.log('Cliente Asaas confirmado:', finalCustomerId);
       console.log('Valor:', paymentData.value);
       console.log('Parcelas:', paymentData.installmentCount || 1);
 
       // 2. Preparar body para Edge Function
       const requestBody = {
-        customer_id: customerId,
-        user_id: user.id,
+        customer_id: finalCustomerId,
+        user_id: effectiveUserId,
         service_type: paymentData.service_type,
         service_data: {
           type: paymentData.service_type,
@@ -115,7 +138,7 @@ export const useAsaasCardPayments = () => {
       // 3. Processar pagamento com cartão via Edge Function
       const session = await supabase.auth.getSession();
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://amkelczfwazutrciqtlk.supabase.co';
-      
+
       const response = await fetch(`${supabaseUrl}/functions/v1/asaas-process-card`, {
         method: 'POST',
         headers: {
@@ -162,7 +185,7 @@ export const useAsaasCardPayments = () => {
       console.log('Status:', data.status);
 
       // Mensagem de sucesso baseada no status
-      const successMessage = data.status === 'CONFIRMED' 
+      const successMessage = data.status === 'CONFIRMED'
         ? 'Pagamento aprovado com sucesso!'
         : 'Pagamento processado, aguardando confirmação.';
 
@@ -175,15 +198,15 @@ export const useAsaasCardPayments = () => {
 
     } catch (error) {
       console.error('Erro ao processar cartão:', error);
-      
+
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      
+
       toast({
         title: "Erro no Cartão",
         description: errorMessage,
         variant: "destructive",
       });
-      
+
       return null;
     } finally {
       setIsLoading(false);
@@ -195,7 +218,7 @@ export const useAsaasCardPayments = () => {
    */
   const calculateInstallments = (totalValue: number, installmentCount: number = 1) => {
     const installmentValue = totalValue / installmentCount;
-    
+
     return {
       totalValue,
       installmentCount,
@@ -225,11 +248,11 @@ export const useAsaasCardPayments = () => {
       const year = parseInt(cardData.expiryYear);
       const currentYear = new Date().getFullYear();
       const currentMonth = new Date().getMonth() + 1;
-      
+
       if (month < 1 || month > 12) {
         errors.push('Mês de expiração inválido');
       }
-      
+
       if (year < currentYear || (year === currentYear && month < currentMonth)) {
         errors.push('Cartão expirado');
       }

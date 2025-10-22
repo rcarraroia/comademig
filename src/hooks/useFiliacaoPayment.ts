@@ -82,6 +82,22 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
     mutationFn: async (data: FiliacaoPaymentData) => {
       let currentUserId = user?.id;
       let isNewAccount = false;
+      
+      // ✅ CORREÇÃO: Usar affiliateInfo já validado pelo useReferralCode
+      // Não buscar da URL novamente para evitar perda de dados
+      let validatedAffiliateInfo: { affiliateId: string; referralCode: string } | null = null;
+      
+      if (affiliateInfo?.referralCode && affiliateInfo?.affiliateInfo?.id) {
+        validatedAffiliateInfo = {
+          affiliateId: affiliateInfo.affiliateInfo.id,
+          referralCode: affiliateInfo.referralCode
+        };
+        console.log('✅ Usando afiliado já validado:');
+        console.log('   - ID:', validatedAffiliateInfo.affiliateId);
+        console.log('   - Código:', validatedAffiliateInfo.referralCode);
+      } else {
+        console.log('ℹ️ Nenhum código de indicação válido');
+      }
 
       // 1. Criar conta se usuário não estiver autenticado
       if (!currentUserId) {
@@ -131,11 +147,23 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         toast.success('Conta criada com sucesso!');
         
         // 🎯 REGISTRAR INDICAÇÃO DE AFILIADO (se houver)
-        if (affiliateInfo?.registerReferral) {
+        if (validatedAffiliateInfo) {
           try {
-            const referralResult = await affiliateInfo.registerReferral(currentUserId);
-            if (referralResult.success) {
-              console.log('✅ Indicação de afiliado registrada:', referralResult.message);
+            console.log('📝 Registrando indicação de afiliado...');
+            const { error: referralError } = await supabase
+              .from('affiliate_referrals')
+              .insert({
+                affiliate_id: validatedAffiliateInfo.affiliateId,
+                referral_code: validatedAffiliateInfo.referralCode,
+                referred_user_id: currentUserId,
+                status: 'pending'
+              });
+            
+            if (referralError) {
+              console.error('⚠️ Erro ao registrar indicação:', referralError);
+            } else {
+              console.log('✅ Indicação de afiliado registrada com sucesso!');
+              toast.success('Indicação registrada! Você foi indicado por um afiliado.');
             }
           } catch (error) {
             console.error('⚠️ Erro ao registrar indicação (não crítico):', error);
@@ -260,13 +288,16 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
       };
 
       console.log('💳 Processando pagamento inicial...');
-      const initialPaymentResult = await processCardPayment(initialPaymentData);
+      // ✅ Passar currentUserId E customer_id que já foi criado
+      const initialPaymentResult = await processCardPayment(
+        initialPaymentData, 
+        currentUserId,
+        customer.id  // ← Customer já foi criado na linha 217
+      );
 
       if (!initialPaymentResult || !initialPaymentResult.success) {
         // Extrair mensagem de erro específica se disponível
-        const errorMessage = initialPaymentResult?.message || 
-                            initialPaymentResult?.error ||
-                            'card_declined';
+        const errorMessage = initialPaymentResult?.message || 'card_declined';
         throw new Error(errorMessage);
       }
 
@@ -307,7 +338,8 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
       console.log('   Valor:', finalPrice);
       console.log('   Próximo vencimento:', nextDueDate);
       console.log('   Ciclo:', cycle);
-      console.log('   Afiliado:', affiliateInfo?.affiliateId || 'Nenhum');
+      console.log('   Afiliado:', validatedAffiliateInfo?.affiliateId || 'Nenhum');
+      console.log('   Código de indicação:', validatedAffiliateInfo?.referralCode || 'Nenhum');
 
       let subscriptionResult;
       try {
@@ -316,17 +348,26 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
           'asaas-create-subscription',
           {
             body: {
-              customerId: customer.id,
+              customer: customer.id,
               userId: currentUserId,
               billingType: 'CREDIT_CARD',
               value: finalPrice,
               nextDueDate: nextDueDate,
               cycle,
               description: `Assinatura COMADEMIG - ${selectedMemberType.name}`,
-              affiliateId: affiliateInfo?.affiliateId || null,
+              affiliateCode: validatedAffiliateInfo?.referralCode || null,
               subscriptionPlanId: selectedMemberType.plan_id,
               memberTypeId: selectedMemberType.id,
-              initialPaymentId: initialPaymentResult.asaas_id
+              initialPaymentId: initialPaymentResult.asaas_id,
+              creditCardToken: initialPaymentResult.credit_card_token,
+              creditCardHolderInfo: {
+                name: data.nome_completo,
+                email: data.email,
+                cpfCnpj: data.cpf.replace(/\D/g, ''),
+                postalCode: data.cep.replace(/\D/g, ''),
+                addressNumber: data.numero,
+                phone: data.telefone.replace(/\D/g, '')
+              }
             }
           }
         );
@@ -355,24 +396,11 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         console.error('⚠️ Erro ao criar assinatura:', subscriptionError);
         
         // IMPORTANTE: Pagamento já foi processado, usuário JÁ ESTÁ ATIVO
-        // Mas não terá renovação automática - notificar admin
+        // Mas não terá renovação automática
         
-        try {
-          await (supabase as any)
-            .from('admin_tasks')
-            .insert({
-              type: 'subscription_creation_failed',
-              user_id: currentUserId,
-              payment_id: initialPaymentResult.asaas_id,
-              error_message: subscriptionError instanceof Error ? subscriptionError.message : 'Erro desconhecido',
-              status: 'pending',
-              created_at: new Date().toISOString()
-            });
-          
-          console.log('📧 Admin notificado sobre falha na criação da assinatura');
-        } catch (notifyError) {
-          console.error('Erro ao notificar admin:', notifyError);
-        }
+        console.error('❌ Falha ao criar assinatura:', subscriptionError);
+        console.error('   User ID:', currentUserId);
+        console.error('   Payment ID:', initialPaymentResult.asaas_id);
         
         // Criar assinatura "fake" para não quebrar o fluxo
         subscriptionResult = {
@@ -381,7 +409,7 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         };
         
         console.log('⚠️ Usuário será ativado mas precisará de intervenção manual para renovação');
-        toast.warning('Assinatura criada parcialmente. Suporte será notificado.');
+        toast.warning('Assinatura criada parcialmente. Entre em contato com o suporte.');
       }
 
       // 4. Atualizar perfil do usuário
@@ -402,6 +430,8 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         data_ordenacao: null, // Será preenchido no perfil posteriormente
         tempo_ministerio: null, // Será preenchido no perfil posteriormente
         member_type_id: selectedMemberType.id,
+        tipo_membro: selectedMemberType.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''), // Remove acentos
+        status: initialPaymentResult.status === 'CONFIRMED' ? 'ativo' : 'pendente', // Ativar se pagamento confirmado
         asaas_customer_id: customer.id,
         asaas_subscription_id: subscriptionResult.id,
         updated_at: new Date().toISOString()
@@ -442,24 +472,9 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
       // 6. Dados ministeriais já foram salvos no perfil (cargo e data_ordenacao)
       // Não é mais necessário salvar em tabela separada
 
-      // 7. Registrar afiliado se houver
-      if (affiliateInfo?.affiliateId && affiliateInfo?.referralCode) {
-        try {
-          const affiliateData = {
-            affiliate_id: affiliateInfo.affiliateId,
-            referral_code: affiliateInfo.referralCode,
-            referred_user_id: currentUserId,
-            status: 'pending',
-            created_at: new Date().toISOString()
-          };
-
-          await supabase
-            .from('affiliate_referrals')
-            .insert([affiliateData]);
-        } catch (error) {
-          console.log('Erro ao registrar afiliado, mas filiação continua:', error);
-        }
-      }
+      // 7. Indicação já foi registrada após criar conta (linha ~145)
+      // Não é necessário registrar novamente aqui
+      console.log('ℹ️ Indicação de afiliado já foi registrada anteriormente');
 
       setPaymentStatus('completed');
 

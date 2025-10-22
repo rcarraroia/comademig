@@ -25,12 +25,14 @@ serve(async (req) => {
             description,
             externalReference,
             creditCard,
+            creditCardToken, // NOVO: Token do cartão já salvo
             creditCardHolderInfo,
             discount,
             affiliateCode, // NOVO: código de afiliado
             userId, // NOVO: ID do usuário para salvar em user_subscriptions
             memberTypeId, // NOVO: ID do tipo de membro
-            subscriptionPlanId // NOVO: ID do plano de assinatura
+            subscriptionPlanId, // NOVO: ID do plano de assinatura
+            initialPaymentId // NOVO: ID do pagamento inicial já processado
         } = await req.json()
 
         console.log('📝 Criando assinatura no Asaas:', {
@@ -75,51 +77,8 @@ serve(async (req) => {
             splits: splitConfig.splits.map(s => `${s.recipientName}: ${s.percentualValue}%`)
         })
 
-        // Calcular data de hoje para a cobrança imediata
-        const today = new Date().toISOString().split('T')[0]
-
-        // NOVO: 1. Criar cobrança imediata (initial payment) com split
-        console.log('💰 Criando cobrança imediata (primeira mensalidade)...')
-
-        const initialPaymentPayload: any = {
-            customer,
-            billingType,
-            value,
-            dueDate: today, // Cobrança imediata
-            description: description || 'Primeira mensalidade - COMADEMIG',
-            externalReference: externalReference ? `${externalReference}-initial` : undefined,
-            split: splits // Incluir split na cobrança
-        }
-
-        if (discount) {
-            initialPaymentPayload.discount = discount
-        }
-
-        // Adicionar dados do cartão se for pagamento com cartão
-        if (billingType === 'CREDIT_CARD' && creditCard && creditCardHolderInfo) {
-            initialPaymentPayload.creditCard = creditCard
-            initialPaymentPayload.creditCardHolderInfo = creditCardHolderInfo
-        }
-
-        const initialPaymentResponse = await fetch(`${ASAAS_BASE_URL}/payments`, {
-            method: 'POST',
-            headers: {
-                'access_token': ASAAS_API_KEY,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(initialPaymentPayload),
-        })
-
-        const initialPayment = await initialPaymentResponse.json()
-
-        if (!initialPaymentResponse.ok) {
-            console.error('❌ Erro ao criar cobrança inicial:', initialPayment)
-            throw new Error(initialPayment.errors?.[0]?.description || initialPayment.message || 'Erro ao criar cobrança inicial')
-        }
-
-        console.log('✅ Cobrança inicial criada:', initialPayment.id)
-
-        // NOVO: 2. Criar assinatura com split e nextDueDate = hoje + 30 dias
+        // Pagamento inicial já foi processado no frontend
+        // Apenas criar assinatura recorrente
         console.log('📅 Criando assinatura recorrente...')
 
         const subscriptionPayload: any = {
@@ -137,10 +96,14 @@ serve(async (req) => {
             subscriptionPayload.discount = discount
         }
 
-        // Adicionar dados do cartão se for pagamento com cartão
-        if (billingType === 'CREDIT_CARD' && creditCard && creditCardHolderInfo) {
-            subscriptionPayload.creditCard = creditCard
-            subscriptionPayload.creditCardHolderInfo = creditCardHolderInfo
+        // Adicionar token do cartão se disponível
+        if (billingType === 'CREDIT_CARD') {
+            if (creditCardToken) {
+                subscriptionPayload.creditCardToken = creditCardToken
+            } else if (creditCard && creditCardHolderInfo) {
+                subscriptionPayload.creditCard = creditCard
+                subscriptionPayload.creditCardHolderInfo = creditCardHolderInfo
+            }
         }
 
         const subscriptionResponse = await fetch(`${ASAAS_BASE_URL}/subscriptions`, {
@@ -175,9 +138,9 @@ serve(async (req) => {
                 user_id: userId,
                 subscription_plan_id: subscriptionPlanId,
                 member_type_id: memberTypeId,
-                status: 'pending', // Será atualizado para 'active' quando receber webhook de pagamento
-                payment_id: initialPayment.id,
-                initial_payment_id: initialPayment.id, // ID da cobrança inicial
+                status: 'active', // Já ativo pois pagamento inicial foi confirmado
+                payment_id: initialPaymentId,
+                initial_payment_id: initialPaymentId, // ID da cobrança inicial
                 asaas_subscription_id: subscription.id, // ID da assinatura recorrente
                 asaas_customer_id: customer,
                 billing_type: billingType,
@@ -201,7 +164,7 @@ serve(async (req) => {
 
         const splitsToInsert = splitConfig.splits.map(split => ({
             subscription_id: userSubscription.id,
-            payment_id: initialPayment.id,
+            payment_id: initialPaymentId,
             affiliate_id: split.recipientType === 'affiliate' ? splitConfig.affiliateInfo?.id : null,
             recipient_type: split.recipientType,
             recipient_name: split.recipientName,
@@ -251,12 +214,7 @@ serve(async (req) => {
                     status: subscription.status,
                     nextDueDate: subscription.nextDueDate,
                 },
-                initialPayment: {
-                    id: initialPayment.id,
-                    status: initialPayment.status,
-                    invoiceUrl: initialPayment.invoiceUrl,
-                    bankSlipUrl: initialPayment.bankSlipUrl,
-                },
+                initialPaymentId: initialPaymentId,
                 userSubscriptionId: userSubscription.id,
                 split: {
                     configured: true,

@@ -45,6 +45,7 @@ export default function AffiliateDashboard() {
   const [walletId, setWalletId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingWallet, setIsUpdatingWallet] = useState(false);
+  const [isEditingWallet, setIsEditingWallet] = useState(false);
 
   useEffect(() => {
     fetchAffiliateStatus();
@@ -113,14 +114,15 @@ export default function AffiliateDashboard() {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success('Carteira cadastrada com sucesso!');
+        toast.success('Carteira atualizada com sucesso!');
+        setIsEditingWallet(false);
         await fetchAffiliateStatus();
       } else {
-        toast.error(data.message || 'Erro ao cadastrar carteira');
+        toast.error(data.message || 'Erro ao atualizar carteira');
       }
     } catch (error) {
       console.error('Erro ao atualizar carteira:', error);
-      toast.error('Erro ao cadastrar carteira');
+      toast.error('Erro ao atualizar carteira');
     } finally {
       setIsUpdatingWallet(false);
     }
@@ -141,7 +143,7 @@ export default function AffiliateDashboard() {
     if (!affiliateStatus?.referral_code) return;
 
     const link = `${window.location.origin}/filiacao?ref=${affiliateStatus.referral_code}`;
-    
+
     try {
       await navigator.clipboard.writeText(link);
       toast.success('Link copiado!');
@@ -390,6 +392,96 @@ export default function AffiliateDashboard() {
         </CardContent>
       </Card>
 
+      {/* Carteira Asaas */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Wallet className="w-5 h-5" />
+            Carteira Asaas
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="wallet_display">Wallet ID Cadastrado</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="wallet_display"
+                value={walletId || 'Não cadastrado'}
+                onChange={(e) => setWalletId(e.target.value)}
+                readOnly={!isEditingWallet}
+                className={`font-mono ${!isEditingWallet ? 'bg-gray-50' : ''}`}
+                placeholder="Digite o ID da sua carteira Asaas"
+              />
+              {!isEditingWallet ? (
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditingWallet(true)}
+                >
+                  Editar
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    onClick={updateWallet}
+                    disabled={isUpdatingWallet || !walletId.trim()}
+                  >
+                    {isUpdatingWallet ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    ) : (
+                      'Salvar'
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setWalletId(affiliateStatus.wallet_id || '');
+                      setIsEditingWallet(false);
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                </>
+              )}
+            </div>
+            <p className="text-sm text-gray-500 mt-1">
+              Esta é a carteira onde você receberá suas comissões
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {affiliateStatus.wallet_validated ? (
+              <Badge className="bg-green-500">
+                <CheckCircle className="w-4 h-4 mr-1" />
+                Carteira Validada
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="border-yellow-500 text-yellow-700">
+                <AlertCircle className="w-4 h-4 mr-1" />
+                Aguardando Validação
+              </Badge>
+            )}
+          </div>
+
+          {!affiliateStatus.wallet_validated && (
+            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+              <h4 className="font-semibold text-yellow-800 mb-2">Atenção:</h4>
+              <p className="text-sm text-yellow-700">
+                Sua carteira ainda não foi validada. Certifique-se de que o Wallet ID está correto para receber suas comissões.
+              </p>
+            </div>
+          )}
+
+          {affiliateStatus.wallet_validated && (
+            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+              <h4 className="font-semibold text-green-800 mb-2">✓ Tudo pronto!</h4>
+              <p className="text-sm text-green-700">
+                Sua carteira está validada e você já pode receber comissões das suas indicações.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Histórico de Comissões */}
       <Card>
         <CardHeader>
@@ -433,7 +525,7 @@ export default function AffiliateDashboard() {
                       })}
                     </p>
                   </div>
-                  
+
                   {commission.paid_at && (
                     <div className="text-right">
                       <p className="text-sm font-medium text-green-600">Pago</p>

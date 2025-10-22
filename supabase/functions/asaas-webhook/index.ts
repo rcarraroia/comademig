@@ -34,14 +34,14 @@ serve(async (req) => {
   // Health check
   if (req.method === 'GET') {
     return new Response(
-      JSON.stringify({ 
-        status: 'ok', 
+      JSON.stringify({
+        status: 'ok',
         message: 'Webhook endpoint is active',
         timestamp: new Date().toISOString()
       }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
   }
@@ -51,19 +51,19 @@ serve(async (req) => {
     if (req.method !== 'POST') {
       return new Response(
         JSON.stringify({ error: 'Method not allowed' }),
-        { 
-          status: 405, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 405,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
 
     // 2. Validar autenticidade (asaas-access-token)
     const accessToken = req.headers.get('asaas-access-token')
-    
+
     if (ASAAS_WEBHOOK_TOKEN && accessToken !== ASAAS_WEBHOOK_TOKEN) {
       console.error('❌ Token de webhook inválido')
-      
+
       await logError({
         source: 'webhook',
         functionName: 'asaas-webhook',
@@ -73,32 +73,32 @@ serve(async (req) => {
           ip: req.headers.get('x-forwarded-for') || 'unknown'
         }
       })
-      
+
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
 
     // 3. Parse do payload
     const payload: AsaasWebhookPayload = await req.json()
-    
+
     if (!payload.event) {
       return new Response(
         JSON.stringify({ error: 'Invalid webhook payload: missing event' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
 
     // 4. Gerar ID único do evento (para idempotência)
     const eventId = generateEventId(payload)
-    
+
     console.log('📨 Webhook recebido:', {
       event: payload.event,
       eventId,
@@ -129,18 +129,18 @@ serve(async (req) => {
 
     if (existingEvent) {
       console.log('⚠️ Evento já foi recebido anteriormente:', eventId)
-      
+
       if (existingEvent.processed) {
         console.log('✅ Evento já foi processado, retornando sucesso')
         return new Response(
-          JSON.stringify({ 
-            success: true, 
+          JSON.stringify({
+            success: true,
             message: 'Event already processed',
-            eventId 
+            eventId
           }),
-          { 
-            status: 200, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
         )
       } else {
@@ -170,10 +170,10 @@ serve(async (req) => {
 
     // 8. Processar evento
     let processResult = { success: false, message: 'Not processed' }
-    
+
     try {
       processResult = await processWebhookEvent(supabaseClient, payload, eventId)
-      
+
       // 9. Marcar como processado
       await supabaseClient
         .from('webhook_events')
@@ -195,7 +195,7 @@ serve(async (req) => {
 
     } catch (processError) {
       console.error('❌ Erro ao processar webhook:', processError)
-      
+
       // Incrementar retry_count
       await supabaseClient
         .from('webhook_events')
@@ -216,53 +216,53 @@ serve(async (req) => {
       // ⚠️ IMPORTANTE: Retornar 200 mesmo com erro para não pausar webhook
       // O erro foi registrado e pode ser reprocessado depois
       return new Response(
-        JSON.stringify({ 
-          success: true, 
+        JSON.stringify({
+          success: true,
           message: 'Webhook received but processing failed',
           eventId,
           error: processError.message
         }),
-        { 
-          status: 200, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
 
     // 10. Retornar sucesso
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         message: 'Webhook processed successfully',
         eventId,
         result: processResult
       }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
 
   } catch (error) {
     console.error('❌ Erro crítico no webhook:', error)
-    
+
     await logError({
       source: 'webhook',
       functionName: 'asaas-webhook',
       message: 'Erro crítico ao processar webhook',
       error: error as Error
     })
-    
+
     // ⚠️ IMPORTANTE: Retornar 200 para não pausar webhook
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         message: 'Webhook received but critical error occurred',
-        error: error.message 
+        error: error.message
       }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
   }
@@ -278,7 +278,7 @@ function generateEventId(payload: AsaasWebhookPayload): string {
     payload.subscription?.id || '',
     payload.split?.id || ''
   ].filter(Boolean)
-  
+
   return parts.join('-')
 }
 
@@ -286,38 +286,38 @@ function generateEventId(payload: AsaasWebhookPayload): string {
  * Processa o evento do webhook
  */
 async function processWebhookEvent(
-  supabaseClient: any, 
+  supabaseClient: any,
   payload: AsaasWebhookPayload,
   eventId: string
 ): Promise<{ success: boolean; message: string }> {
-  
+
   console.log(`🔄 Processando evento: ${payload.event}`)
-  
+
   switch (payload.event) {
     case 'PAYMENT_RECEIVED':
     case 'PAYMENT_CONFIRMED':
       return await handlePaymentReceived(supabaseClient, payload)
-    
+
     case 'PAYMENT_OVERDUE':
       return await handlePaymentOverdue(supabaseClient, payload)
-    
+
     case 'PAYMENT_DELETED':
     case 'PAYMENT_REFUNDED':
       return await handlePaymentCancelled(supabaseClient, payload)
-    
+
     case 'SUBSCRIPTION_UPDATED':
       return await handleSubscriptionUpdated(supabaseClient, payload)
-    
+
     case 'TRANSFER_DONE':
     case 'TRANSFER_FAILED':
     case 'TRANSFER_CANCELLED':
       return await handleTransferEvent(supabaseClient, payload)
-    
+
     default:
       console.log(`⚠️ Evento não tratado: ${payload.event}`)
-      return { 
-        success: true, 
-        message: `Event ${payload.event} received but not processed` 
+      return {
+        success: true,
+        message: `Event ${payload.event} received but not processed`
       }
   }
 }
@@ -326,12 +326,12 @@ async function processWebhookEvent(
  * Processa PAYMENT_RECEIVED e PAYMENT_CONFIRMED
  */
 async function handlePaymentReceived(
-  supabaseClient: any, 
+  supabaseClient: any,
   payload: AsaasWebhookPayload
 ): Promise<{ success: boolean; message: string }> {
-  
+
   const payment = payload.payment
-  
+
   if (!payment) {
     throw new Error('Payment data missing in webhook payload')
   }
@@ -347,7 +347,7 @@ async function handlePaymentReceived(
 
   if (cobranca) {
     console.log('📦 Cobrança encontrada:', cobranca.id)
-    
+
     // 2. Processar splits automaticamente
     try {
       await processPaymentSplits(supabaseClient, cobranca)
@@ -360,7 +360,7 @@ async function handlePaymentReceived(
 
   // 3. Buscar assinatura pelo asaas_subscription_id OU initial_payment_id
   let subscription = null
-  
+
   if (payment.subscription) {
     // É uma renovação
     const { data } = await supabaseClient
@@ -368,7 +368,7 @@ async function handlePaymentReceived(
       .select('*')
       .eq('asaas_subscription_id', payment.subscription)
       .single()
-    
+
     subscription = data
   } else {
     // É pagamento inicial
@@ -377,14 +377,14 @@ async function handlePaymentReceived(
       .select('*')
       .eq('initial_payment_id', payment.id)
       .single()
-    
+
     subscription = data
   }
 
   if (!subscription) {
     console.log('⚠️ Assinatura não encontrada para pagamento:', payment.id)
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: cobranca ? 'Payment processed with splits' : 'Payment received but no subscription found'
     }
   }
@@ -411,9 +411,9 @@ async function handlePaymentReceived(
 
   console.log('✅ Assinatura atualizada para active:', subscription.id)
 
-  return { 
-    success: true, 
-    message: 'Subscription activated and splits processed' 
+  return {
+    success: true,
+    message: 'Subscription activated and splits processed'
   }
 }
 
@@ -424,12 +424,12 @@ async function processPaymentSplits(
   supabaseClient: any,
   cobranca: any
 ): Promise<void> {
-  
+
   console.log('🔄 Iniciando processamento de splits para cobrança:', cobranca.id)
-  
+
   // 1. Determinar tipo de serviço
   const serviceType = cobranca.service_type || 'servicos'
-  
+
   // 2. Buscar configuração de split ativa para este tipo
   const { data: splitConfig } = await supabaseClient
     .from('split_configurations')
@@ -437,53 +437,54 @@ async function processPaymentSplits(
     .eq('category', serviceType)
     .eq('is_active', true)
     .single()
-  
+
   if (!splitConfig) {
     console.log('⚠️ Nenhuma configuração de split ativa para:', serviceType)
     return
   }
-  
+
   console.log('📋 Configuração encontrada:', splitConfig.category_label)
-  
+
   // 3. Buscar recipients da configuração
   const { data: recipients } = await supabaseClient
     .from('split_recipients')
     .select('*')
     .eq('configuration_id', splitConfig.id)
-  
+
   if (!recipients || recipients.length === 0) {
     console.log('⚠️ Nenhum recipient configurado')
     return
   }
-  
+
   console.log(`👥 ${recipients.length} recipients encontrados`)
-  
+
   // 4. Buscar se usuário foi indicado por afiliado
   let affiliateId = null
   let referralId = null
-  
+
   if (cobranca.user_id) {
     const { data: referral } = await supabaseClient
       .from('affiliate_referrals')
-      .select('affiliate_id, id')
+      .select('affiliate_id, id, status')
       .eq('referred_user_id', cobranca.user_id)
-      .eq('status', 'pending')
-      .single()
-    
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
     if (referral) {
       affiliateId = referral.affiliate_id
       referralId = referral.id
-      console.log(`🎯 Usuário foi indicado por afiliado: ${affiliateId}`)
+      console.log(`🎯 Usuário foi indicado por afiliado: ${affiliateId} (status atual: ${referral.status})`)
     }
   }
-  
+
   // 5. Criar splits
   const valorTotal = parseFloat(cobranca.valor)
   const splits = []
-  
+
   for (const recipient of recipients) {
     const valorSplit = (valorTotal * recipient.percentage) / 100
-    
+
     // Determinar tipo de recipient corretamente
     let recipientType = 'renum'
     if (recipient.recipient_identifier === 'comademig') {
@@ -491,9 +492,9 @@ async function processPaymentSplits(
     } else if (recipient.recipient_identifier === 'affiliate') {
       recipientType = 'affiliate'
     }
-    
+
     const walletId = recipient.wallet_id || `wallet_${recipient.recipient_identifier}`
-    
+
     const splitData = {
       cobranca_id: cobranca.id,
       recipient_type: recipientType,
@@ -508,9 +509,9 @@ async function processPaymentSplits(
       processed_at: new Date().toISOString(),
       payment_id: cobranca.asaas_id
     }
-    
+
     splits.push(splitData)
-    
+
     // Se é split de afiliado, criar comissão
     if (recipientType === 'affiliate' && affiliateId) {
       try {
@@ -522,41 +523,51 @@ async function processPaymentSplits(
             amount: valorSplit,
             status: 'pending'
           })
-        
+
         console.log(`✅ Comissão criada para afiliado: R$ ${valorSplit.toFixed(2)}`)
       } catch (error) {
         console.error('⚠️ Erro ao criar comissão (não crítico):', error)
       }
     }
   }
-  
+
   // 6. Atualizar status da indicação para 'confirmed'
   if (referralId) {
     try {
-      await supabaseClient
+      const { data: updateResult, error: updateError } = await supabaseClient
         .from('affiliate_referrals')
-        .update({ status: 'confirmed' })
+        .update({ 
+          status: 'confirmed'
+        })
         .eq('id', referralId)
-      
-      console.log(`✅ Indicação confirmada: ${referralId}`)
+        .eq('status', 'pending') // Só atualizar se ainda estiver pending
+        .select()
+
+      if (updateError) {
+        console.error('⚠️ Erro ao confirmar indicação:', updateError)
+      } else if (updateResult && updateResult.length > 0) {
+        console.log(`✅ Indicação confirmada: ${referralId}`)
+      } else {
+        console.log(`ℹ️ Indicação ${referralId} já estava confirmada`)
+      }
     } catch (error) {
       console.error('⚠️ Erro ao confirmar indicação (não crítico):', error)
     }
   }
-  
+
   // 7. Inserir splits no banco
   const { data: createdSplits, error } = await supabaseClient
     .from('asaas_splits')
     .insert(splits)
     .select()
-  
+
   if (error) {
     console.error('❌ Erro ao criar splits:', error)
     throw error
   }
-  
+
   console.log(`✅ ${createdSplits.length} splits criados com sucesso`)
-  
+
   // 8. Log dos splits criados
   for (const split of createdSplits) {
     console.log(`  - ${split.recipient_name}: ${split.percentage}% = R$ ${split.commission_amount}`)
@@ -567,12 +578,12 @@ async function processPaymentSplits(
  * Processa PAYMENT_OVERDUE
  */
 async function handlePaymentOverdue(
-  supabaseClient: any, 
+  supabaseClient: any,
   payload: AsaasWebhookPayload
 ): Promise<{ success: boolean; message: string }> {
-  
+
   const payment = payload.payment
-  
+
   if (!payment || !payment.subscription) {
     return { success: true, message: 'No subscription to update' }
   }
@@ -598,12 +609,12 @@ async function handlePaymentOverdue(
  * Processa PAYMENT_DELETED e PAYMENT_REFUNDED
  */
 async function handlePaymentCancelled(
-  supabaseClient: any, 
+  supabaseClient: any,
   payload: AsaasWebhookPayload
 ): Promise<{ success: boolean; message: string }> {
-  
+
   const payment = payload.payment
-  
+
   if (!payment || !payment.subscription) {
     return { success: true, message: 'No subscription to cancel' }
   }
@@ -629,12 +640,12 @@ async function handlePaymentCancelled(
  * Processa SUBSCRIPTION_UPDATED
  */
 async function handleSubscriptionUpdated(
-  supabaseClient: any, 
+  supabaseClient: any,
   payload: AsaasWebhookPayload
 ): Promise<{ success: boolean; message: string }> {
-  
+
   const subscription = payload.subscription
-  
+
   if (!subscription) {
     throw new Error('Subscription data missing in webhook payload')
   }
@@ -663,19 +674,19 @@ async function handleSubscriptionUpdated(
  * Processa eventos de transferência (splits)
  */
 async function handleTransferEvent(
-  supabaseClient: any, 
+  supabaseClient: any,
   payload: AsaasWebhookPayload
 ): Promise<{ success: boolean; message: string }> {
-  
+
   const transfer = payload.split || payload.transfer
-  
+
   if (!transfer) {
     throw new Error('Transfer data missing in webhook payload')
   }
 
   // Mapear status do evento para status do banco
   let newStatus = 'pending'
-  
+
   switch (payload.event) {
     case 'TRANSFER_DONE':
       newStatus = 'done'

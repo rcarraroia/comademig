@@ -1,0 +1,159 @@
+{
+  "data_analise": "2025-10-22",
+  "categorias": {
+    "rotas_duplicadas": {
+      "total_admin": 0,
+      "total_dashboard_admin": 0,
+      "total_dashboard": 20,
+      "rotas_admin": [],
+      "rotas_dashboard_admin": [],
+      "conflito": false,
+      "descricao": "Rotas /admin/* e /dashboard/admin/* coexistem"
+    },
+    "paginas_duplicadas": {
+      "total_duplicatas": 1,
+      "duplicatas": {
+        "AuditLogs": [
+          "pages/admin/AuditLogs.tsx",
+          "pages/dashboard/admin/AuditLogs.tsx"
+        ]
+      },
+      "descricao": "Páginas com mesmo nome em locais diferentes"
+    },
+    "componentes_duplicados": {
+      "total_duplicatas": 3,
+      "exemplos": {
+        "ProtectedRoute": [
+          "ProtectedRoute.tsx",
+          "auth\\ProtectedRoute.tsx"
+        ],
+        "QRCodeScanner": [
+          "carteira\\QRCodeScanner.tsx",
+          "events\\QRCodeScanner.tsx"
+        ],
+        "RevenueChart": [
+          "dashboard\\RevenueChart.tsx",
+          "financial\\RevenueChart.tsx"
+        ]
+      },
+      "descricao": "Componentes com mesmo nome em pastas diferentes"
+    },
+    "hooks_duplicados": {
+      "total_hooks": 78,
+      "padroes_similares": {
+        "payment": 9,
+        "asaas": 8,
+        "subscription": 5,
+        "financial": 2
+      },
+      "hooks_payment": [
+        "useAsaasBoletoPayments",
+        "useAsaasCardPayments",
+        "useAsaasPayments",
+        "useAsaasPixPayments",
+        "useCertidoesWithPayment",
+        "useFiliacaoPayment",
+        "usePaymentActions",
+        "usePaymentNotifications",
+        "useRegularizacaoWithPayment"
+      ],
+      "hooks_asaas": [
+        "useAsaasBoletoPayments",
+        "useAsaasCardPayments",
+        "useAsaasCustomers",
+        "useAsaasPayments",
+        "useAsaasPixPayments",
+        "useAsaasSplits",
+        "useAsaasSubscriptions",
+        "useAsaasWebhooks"
+      ],
+      "hooks_subscription": [
+        "useAsaasSubscriptions",
+        "useSubscriptionPlans",
+        "useSubscriptionRetry",
+        "useSubscriptionsByMemberType",
+        "useUserSubscriptionsAdmin"
+      ],
+      "hooks_financial": [
+        "useFinancial",
+        "useFinancialDashboard"
+      ],
+      "descricao": "Múltiplos hooks com funcionalidades similares"
+    },
+    "edge_functions": {
+      "total_functions": 17,
+      "padroes": {
+        "asaas": 13,
+        "create": 5,
+        "process": 5,
+        "webhook": 3
+      },
+      "functions_asaas": [
+        "asaas-activate-subscription",
+        "asaas-configure-split",
+        "asaas-create-boleto",
+        "asaas-create-customer",
+        "asaas-create-pix-payment",
+        "asaas-create-subscription",
+        "asaas-process-card",
+        "asaas-process-certidao",
+        "asaas-process-regularizacao",
+        "asaas-process-splits",
+        "asaas-process-webhook",
+        "asaas-webhook",
+        "test-asaas-connectivity"
+      ],
+      "functions_process": [
+        "asaas-process-card",
+        "asaas-process-certidao",
+        "asaas-process-regularizacao",
+        "asaas-process-splits",
+        "asaas-process-webhook"
+      ],
+      "functions_webhook": [
+        "asaas-process-webhook",
+        "asaas-webhook",
+        "retry-failed-webhooks"
+      ],
+      "descricao": "Edge Functions com funcionalidades potencialmente sobrepostas"
+    },
+    "banco_dados": {
+      "total_migrations": 21,
+      "tabelas_identificadas": 2,
+      "exemplos_tabelas": [
+        "if",
+        "noticias"
+      ],
+      "descricao": "Análise de migrações e estrutura do banco"
+    },
+    "layouts": {
+      "total_layouts": 3,
+      "layouts_encontrados": [
+        "components/layout/AdminLayout.tsx",
+        "components/layout/ResponsiveGrid.tsx",
+        "components/dashboard/DashboardLayout.tsx"
+      ],
+      "descricao": "Layouts em diferentes localizações"
+    }
+  },
+  "resumo": {
+    "total_categorias_analisadas": 7,
+    "total_problemas_encontrados": 2,
+    "problemas_criticos": [],
+    "nivel_complexidade": "MÉDIO"
+  },
+  "prioridades": {
+    "CRITICA": [
+      "rotas_duplicadas - Conflito /admin vs /dashboard/admin",
+      "paginas_duplicadas - Mesmas páginas em locais diferentes"
+    ],
+    "ALTA": [
+      "hooks_duplicados - Múltiplos hooks de pagamento/asaas",
+      "edge_functions - Functions com funcionalidades sobrepostas"
+    ],
+    "MEDIA": [
+      "componentes_duplicados - Componentes similares",
+      "layouts - Layouts em diferentes localizações"
+    ]
+  }
+}

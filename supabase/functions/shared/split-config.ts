@@ -45,23 +45,23 @@ export interface SplitConfigurationResult {
 export async function getSplitConfiguration(
   affiliateCode?: string
 ): Promise<SplitConfigurationResult> {
-  
+
   // 1. Buscar wallet_id da RENUM (variável de ambiente)
   const RENUM_WALLET_ID = Deno.env.get('RENUM_WALLET_ID')
   const COMADEMIG_WALLET_ID = Deno.env.get('COMADEMIG_WALLET_ID')
-  
+
   if (!RENUM_WALLET_ID) {
     throw new Error('RENUM_WALLET_ID não configurada nas variáveis de ambiente')
   }
-  
+
   if (!COMADEMIG_WALLET_ID) {
     throw new Error('COMADEMIG_WALLET_ID não configurada nas variáveis de ambiente')
   }
-  
+
   const splits: SplitConfig[] = []
   let hasAffiliate = false
   let affiliateInfo: SplitConfigurationResult['affiliateInfo'] = undefined
-  
+
   // 2. Verificar se há código de afiliado
   if (affiliateCode) {
     // Buscar dados do afiliado no banco
@@ -69,29 +69,29 @@ export async function getSplitConfiguration(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
-    
+
     const { data: affiliate, error } = await supabaseClient
       .from('affiliates')
       .select('id, display_name, asaas_wallet_id, status, user_id')
       .eq('referral_code', affiliateCode)
       .eq('status', 'active')
       .single()
-    
+
     if (error || !affiliate) {
       throw new Error(`Código de afiliado inválido ou inativo: ${affiliateCode}`)
     }
-    
+
     if (!affiliate.asaas_wallet_id) {
       throw new Error(`Afiliado ${affiliateCode} não possui wallet_id configurado`)
     }
-    
+
     hasAffiliate = true
     affiliateInfo = {
       id: affiliate.id,
       name: affiliate.display_name || 'Afiliado',
       walletId: affiliate.asaas_wallet_id
     }
-    
+
     // 3. Calcular percentuais COM afiliado (40% + 40% + 20%)
     splits.push({
       walletId: RENUM_WALLET_ID,
@@ -99,27 +99,27 @@ export async function getSplitConfiguration(
       recipientType: 'renum',
       recipientName: 'RENUM'
     })
-    
+
     splits.push({
       walletId: COMADEMIG_WALLET_ID,
       percentualValue: 40.00,
       recipientType: 'comademig',
       recipientName: 'COMADEMIG'
     })
-    
+
     splits.push({
       walletId: affiliate.asaas_wallet_id,
       percentualValue: 20.00,
       recipientType: 'affiliate',
       recipientName: affiliate.display_name || 'Afiliado'
     })
-    
+
     console.log('✅ Split configurado COM afiliado:', {
       affiliateCode,
       affiliateName: affiliate.display_name,
       splits: splits.map(s => `${s.recipientName}: ${s.percentualValue}%`)
     })
-    
+
   } else {
     // 4. Calcular percentuais SEM afiliado (50% + 50%)
     splits.push({
@@ -128,25 +128,25 @@ export async function getSplitConfiguration(
       recipientType: 'renum',
       recipientName: 'RENUM'
     })
-    
+
     splits.push({
       walletId: COMADEMIG_WALLET_ID,
       percentualValue: 50.00,
       recipientType: 'comademig',
       recipientName: 'COMADEMIG'
     })
-    
+
     console.log('✅ Split configurado SEM afiliado:', {
       splits: splits.map(s => `${s.recipientName}: ${s.percentualValue}%`)
     })
   }
-  
+
   // 5. Validar que a soma dos percentuais é 100%
   const totalPercentage = splits.reduce((sum, split) => sum + split.percentualValue, 0)
   if (Math.abs(totalPercentage - 100) > 0.01) {
     throw new Error(`Soma dos percentuais de split inválida: ${totalPercentage}%. Deve ser 100%.`)
   }
-  
+
   return {
     splits,
     hasAffiliate,
@@ -179,25 +179,25 @@ export async function validateAffiliateCode(affiliateCode: string) {
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   )
-  
+
   const { data: affiliate, error } = await supabaseClient
     .from('affiliates')
     .select('id, display_name, asaas_wallet_id, status, user_id')
     .eq('referral_code', affiliateCode)
     .single()
-  
+
   if (error || !affiliate) {
     throw new Error(`Código de afiliado não encontrado: ${affiliateCode}`)
   }
-  
+
   if (affiliate.status !== 'active') {
     throw new Error(`Afiliado ${affiliateCode} está inativo`)
   }
-  
+
   if (!affiliate.asaas_wallet_id) {
     throw new Error(`Afiliado ${affiliateCode} não possui wallet_id configurado`)
   }
-  
+
   return {
     id: affiliate.id,
     name: affiliate.display_name || 'Afiliado',

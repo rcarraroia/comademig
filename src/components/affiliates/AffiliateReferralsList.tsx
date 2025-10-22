@@ -17,6 +17,9 @@ export const AffiliateReferralsList = () => {
 
   useEffect(() => {
     loadReferrals();
+    // Atualizar a cada 30 segundos
+    const interval = setInterval(loadReferrals, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -49,7 +52,8 @@ export const AffiliateReferralsList = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'paid': return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'paid':
+      case 'confirmed': return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'pending': return <Clock className="h-4 w-4 text-yellow-600" />;
       case 'cancelled': return <XCircle className="h-4 w-4 text-red-600" />;
       default: return <Clock className="h-4 w-4 text-gray-600" />;
@@ -59,6 +63,7 @@ export const AffiliateReferralsList = () => {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'paid': return 'Pago';
+      case 'confirmed': return 'Confirmada';
       case 'pending': return 'Pendente';
       case 'cancelled': return 'Cancelado';
       default: return status;
@@ -67,7 +72,8 @@ export const AffiliateReferralsList = () => {
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case 'paid': return 'default' as const;
+      case 'paid':
+      case 'confirmed': return 'default' as const;
       case 'pending': return 'secondary' as const;
       case 'cancelled': return 'destructive' as const;
       default: return 'outline' as const;
@@ -104,6 +110,7 @@ export const AffiliateReferralsList = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os Status</SelectItem>
+              <SelectItem value="confirmed">Confirmadas</SelectItem>
               <SelectItem value="paid">Pagos</SelectItem>
               <SelectItem value="pending">Pendentes</SelectItem>
               <SelectItem value="cancelled">Cancelados</SelectItem>

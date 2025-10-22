@@ -1,7 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Users, TrendingUp, Clock } from "lucide-react";
+import { DollarSign, Users, TrendingUp, Clock, Wallet, CheckCircle, AlertCircle } from "lucide-react";
 import { useAffiliateStats } from "@/hooks/useAffiliate";
 import type { Affiliate } from "@/hooks/useAffiliate";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AffiliatesDashboardProps {
   affiliate: Affiliate;
@@ -9,6 +16,9 @@ interface AffiliatesDashboardProps {
 
 export function AffiliatesDashboard({ affiliate }: AffiliatesDashboardProps) {
   const { data: stats, isLoading } = useAffiliateStats(affiliate.id);
+  const [isEditingWallet, setIsEditingWallet] = useState(false);
+  const [walletId, setWalletId] = useState(affiliate.asaas_wallet_id || '');
+  const [isUpdatingWallet, setIsUpdatingWallet] = useState(false);
 
   if (isLoading) {
     return (
@@ -23,6 +33,37 @@ export function AffiliatesDashboard({ affiliate }: AffiliatesDashboardProps) {
       style: 'currency',
       currency: 'BRL',
     }).format(value);
+  };
+
+  const handleUpdateWallet = async () => {
+    if (!walletId.trim()) {
+      toast.error('Digite o ID da carteira');
+      return;
+    }
+
+    setIsUpdatingWallet(true);
+
+    try {
+      const { error } = await supabase
+        .from('affiliates')
+        .update({ 
+          asaas_wallet_id: walletId
+        })
+        .eq('id', affiliate.id);
+
+      if (error) throw error;
+
+      toast.success('Carteira atualizada com sucesso!');
+      setIsEditingWallet(false);
+      
+      // Recarregar página para atualizar dados
+      window.location.reload();
+    } catch (error) {
+      console.error('Erro ao atualizar carteira:', error);
+      toast.error('Erro ao atualizar carteira');
+    } finally {
+      setIsUpdatingWallet(false);
+    }
   };
 
   return (
@@ -148,6 +189,96 @@ export function AffiliatesDashboard({ affiliate }: AffiliatesDashboardProps) {
               </p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Carteira Asaas */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Wallet className="w-5 h-5" />
+            Carteira Asaas
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="wallet_display">Wallet ID Cadastrado</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="wallet_display"
+                value={walletId || 'Não cadastrado'}
+                onChange={(e) => setWalletId(e.target.value)}
+                readOnly={!isEditingWallet}
+                className={`font-mono ${!isEditingWallet ? 'bg-gray-50' : ''}`}
+                placeholder="Digite o ID da sua carteira Asaas"
+              />
+              {!isEditingWallet ? (
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsEditingWallet(true)}
+                >
+                  Editar
+                </Button>
+              ) : (
+                <>
+                  <Button 
+                    onClick={handleUpdateWallet}
+                    disabled={isUpdatingWallet || !walletId.trim()}
+                  >
+                    {isUpdatingWallet ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    ) : (
+                      'Salvar'
+                    )}
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      setWalletId(affiliate.asaas_wallet_id || '');
+                      setIsEditingWallet(false);
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                </>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              Esta é a carteira onde você receberá suas comissões
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {affiliate.asaas_wallet_id ? (
+              <Badge className="bg-green-500">
+                <CheckCircle className="w-4 h-4 mr-1" />
+                Carteira Cadastrada
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="border-yellow-500 text-yellow-700">
+                <AlertCircle className="w-4 h-4 mr-1" />
+                Carteira Não Cadastrada
+              </Badge>
+            )}
+          </div>
+
+          {!affiliate.asaas_wallet_id && (
+            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+              <h4 className="font-semibold text-yellow-800 mb-2">Atenção:</h4>
+              <p className="text-sm text-yellow-700">
+                Você precisa cadastrar uma carteira Asaas para receber suas comissões.
+              </p>
+            </div>
+          )}
+
+          {affiliate.asaas_wallet_id && (
+            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+              <h4 className="font-semibold text-green-800 mb-2">✓ Tudo pronto!</h4>
+              <p className="text-sm text-green-700">
+                Sua carteira está cadastrada e você já pode receber comissões das suas indicações.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

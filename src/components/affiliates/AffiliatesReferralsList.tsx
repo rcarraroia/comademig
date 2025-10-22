@@ -22,6 +22,7 @@ export function AffiliatesReferralsList({ affiliate }: AffiliatesReferralsListPr
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       pending: { label: 'Em Aberto', className: 'bg-yellow-100 text-yellow-800' },
+      confirmed: { label: 'Confirmada', className: 'bg-green-100 text-green-800' },
       converted: { label: 'Convertido', className: 'bg-green-100 text-green-800' },
       cancelled: { label: 'Cancelado', className: 'bg-red-100 text-red-800' },
     };
@@ -67,6 +68,7 @@ export function AffiliatesReferralsList({ affiliate }: AffiliatesReferralsListPr
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="pending">Em Aberto</SelectItem>
+            <SelectItem value="confirmed">Confirmadas</SelectItem>
             <SelectItem value="converted">Convertidos</SelectItem>
             <SelectItem value="cancelled">Cancelados</SelectItem>
           </SelectContent>

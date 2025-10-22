@@ -32,6 +32,7 @@ import { useFiliacaoPayment, type FiliacaoPaymentData } from '@/hooks/useFiliaca
 import { formatCurrency } from '@/hooks/useFiliacaoFlow';
 import { toast } from 'sonner';
 import type { UnifiedMemberType } from '@/hooks/useMemberTypeWithPlan';
+import { validarCPF } from '@/utils/cpfValidator';
 
 // Schema de validação para o formulário
 const PaymentFormSchema = z.object({
@@ -39,7 +40,8 @@ const PaymentFormSchema = z.object({
   nome_completo: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   cpf: z.string()
     .min(11, 'CPF deve ter 11 dígitos')
-    .refine((val) => val.replace(/\D/g, '').length === 11, 'CPF deve ter 11 dígitos'),
+    .refine((val) => val.replace(/\D/g, '').length === 11, 'CPF deve ter 11 dígitos')
+    .refine((val) => validarCPF(val), 'CPF inválido'),
   telefone: z.string()
     .min(10, 'Telefone deve ter pelo menos 10 dígitos')
     .refine((val) => val.replace(/\D/g, '').length >= 10, 'Telefone deve ter pelo menos 10 dígitos'),
@@ -214,6 +216,17 @@ export default function PaymentFormEnhanced({
     } catch (error: any) {
       // Erro já tratado no hook
       console.error('Erro no formulário de filiação:', error);
+      
+      // Mostrar mensagem de erro ao usuário
+      const errorMessage = error?.message || 'Erro ao processar filiação';
+      
+      if (errorMessage.includes('email_already_exists') || errorMessage.includes('já está cadastrado')) {
+        toast.error('Este email já está cadastrado. Faça login ou use "Esqueci minha senha".');
+      } else if (errorMessage.includes('CPF')) {
+        toast.error('CPF inválido. Verifique os dados e tente novamente.');
+      } else {
+        toast.error(errorMessage);
+      }
     }
   };
 
