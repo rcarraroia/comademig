@@ -177,16 +177,7 @@ function App() {
               <Route path="servico-categorias" element={<ServicoCategorias />} />
               <Route path="solicitacoes" element={<SolicitacoesAdmin />} />
               <Route path="webhook-errors" element={<WebhookErrors />} />
-            </Route>
-
-            <Route path="/dashboard/admin" element={<AdminLayout />}>
-              <Route path="usuarios" element={<UsersAdmin />} />
-              <Route path="member-management" element={<MemberTypeManagement />} />
-              <Route path="financial" element={<FinancialAdmin />} />
-              <Route path="notifications" element={<AdminNotificationsPage />} />
-              <Route path="diagnostics" element={<SystemDiagnosticsPage />} />
-              <Route path="suporte" element={<SupportManagement />} />
-              <Route path="content" element={<ContentManagement />} />
+              {/* Rotas de edição de conteúdo */}
               <Route path="content/:pageName/edit" element={<ContentEdit />} />
               <Route path="content/home-editor" element={<HomeContentEdit />} />
               <Route path="content/sobre-editor" element={<AboutContentEdit />} />
@@ -199,6 +190,26 @@ function App() {
               <Route path="content/privacidade-editor" element={<PrivacidadeContentEdit />} />
               <Route path="content/termos-editor" element={<TermosContentEdit />} />
             </Route>
+
+            {/* Redirects de URLs antigas /dashboard/admin/* para /admin/* */}
+            <Route path="/dashboard/admin/usuarios" element={<Navigate to="/admin/users" replace />} />
+            <Route path="/dashboard/admin/member-management" element={<Navigate to="/admin/member-management" replace />} />
+            <Route path="/dashboard/admin/financial" element={<Navigate to="/admin/financial" replace />} />
+            <Route path="/dashboard/admin/notifications" element={<Navigate to="/admin/notifications" replace />} />
+            <Route path="/dashboard/admin/diagnostics" element={<Navigate to="/admin/diagnostics" replace />} />
+            <Route path="/dashboard/admin/suporte" element={<Navigate to="/admin/support" replace />} />
+            <Route path="/dashboard/admin/content" element={<Navigate to="/admin/content" replace />} />
+            <Route path="/dashboard/admin/content/:pageName/edit" element={<Navigate to="/admin/content/:pageName/edit" replace />} />
+            <Route path="/dashboard/admin/content/home-editor" element={<Navigate to="/admin/content/home-editor" replace />} />
+            <Route path="/dashboard/admin/content/sobre-editor" element={<Navigate to="/admin/content/sobre-editor" replace />} />
+            <Route path="/dashboard/admin/content/lideranca-editor" element={<Navigate to="/admin/content/lideranca-editor" replace />} />
+            <Route path="/dashboard/admin/content/eventos-editor" element={<Navigate to="/admin/content/eventos-editor" replace />} />
+            <Route path="/dashboard/admin/content/multimidia-editor" element={<Navigate to="/admin/content/multimidia-editor" replace />} />
+            <Route path="/dashboard/admin/content/album/:id/fotos" element={<Navigate to="/admin/content/album/:id/fotos" replace />} />
+            <Route path="/dashboard/admin/content/contato-editor" element={<Navigate to="/admin/content/contato-editor" replace />} />
+            <Route path="/dashboard/admin/content/noticias-editor" element={<Navigate to="/admin/content/noticias-editor" replace />} />
+            <Route path="/dashboard/admin/content/privacidade-editor" element={<Navigate to="/admin/content/privacidade-editor" replace />} />
+            <Route path="/dashboard/admin/content/termos-editor" element={<Navigate to="/admin/content/termos-editor" replace />} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
