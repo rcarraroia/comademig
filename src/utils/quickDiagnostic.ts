@@ -29,7 +29,7 @@ import { diagnosticService } from './diagnostics';
     });
     
     console.log('');
-    console.log('💡 Para relatório completo, acesse: /dashboard/admin/diagnostics');
+    console.log('💡 Para relatório completo, acesse: /admin/diagnostics');
     
     return report;
   } catch (error) {

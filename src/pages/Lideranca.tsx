@@ -237,7 +237,7 @@ const Lideranca = () => {
         pageName="lideranca"
         pageTitle="Liderança"
         hasCustomContent={hasCustomContent}
-        editorUrl="/dashboard/admin/content/lideranca-editor"
+        editorUrl="/admin/content/lideranca-editor"
         publicUrl="/lideranca"
         position="bottom-right"
         compact={false}

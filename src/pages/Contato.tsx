@@ -348,7 +348,7 @@ const Contato = () => {
         pageName="contato"
         pageTitle="Contato"
         hasCustomContent={hasCustomContent}
-        editorUrl="/dashboard/admin/content/contato-editor"
+        editorUrl="/admin/content/contato-editor"
         publicUrl="/contato"
         position="bottom-right"
         compact={false}
