@@ -4,6 +4,7 @@ import { X, Home, User, CreditCard, FileText, HelpCircle, Settings, Globe, Build
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscriptionNotifications } from "@/hooks/useSubscriptionNotifications";
 
 interface DashboardSidebarProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface DashboardSidebarProps {
 const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
   const location = useLocation();
   const { isAdmin, isSuperAdmin, loading, profile } = useAuth();
+  const { getNotificationCounts } = useSubscriptionNotifications();
 
   const menuItems = [
     { path: "/dashboard", label: "Dashboard", icon: Home },
@@ -104,23 +106,38 @@ const DashboardSidebar = ({ isOpen, onClose }: DashboardSidebarProps) => {
 
         {/* Menu Items - Scrollable area */}
         <nav className="flex-1 p-3 lg:p-4 space-y-1 lg:space-y-2 overflow-y-auto">
-          {menuItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={onClose}
-              className={`
-                flex items-center space-x-3 p-2 lg:p-3 rounded-lg transition-colors duration-200 text-sm font-medium
-                ${isActive(item.path)
-                  ? 'bg-comademig-gold text-comademig-blue'
-                  : 'text-white hover:bg-blue-600'
-                }
-              `}
-            >
-              <item.icon size={18} />
-              <span>{item.label}</span>
-            </Link>
-          ))}
+          {menuItems.map((item) => {
+            const notificationCounts = getNotificationCounts();
+            const showBadge = item.path === "/dashboard/financeiro" && notificationCounts.actionRequired > 0;
+            
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={onClose}
+                className={`
+                  flex items-center justify-between p-2 lg:p-3 rounded-lg transition-colors duration-200 text-sm font-medium
+                  ${isActive(item.path)
+                    ? 'bg-comademig-gold text-comademig-blue'
+                    : 'text-white hover:bg-blue-600'
+                  }
+                `}
+              >
+                <div className="flex items-center space-x-3">
+                  <item.icon size={18} />
+                  <span>{item.label}</span>
+                </div>
+                {showBadge && (
+                  <Badge 
+                    variant="destructive" 
+                    className="h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center"
+                  >
+                    {notificationCounts.actionRequired > 99 ? '99+' : notificationCounts.actionRequired}
+                  </Badge>
+                )}
+              </Link>
+            );
+          })}
 
           {/* Admin Section - Visível apenas para administradores */}
           {!loading && isAdmin() && (

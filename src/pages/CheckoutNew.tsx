@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { CreditCard, QrCode, Smartphone, Loader2 } from 'lucide-react';
+import RenewalCheckout from '@/components/checkout/RenewalCheckout';
 
 interface CobrancaData {
     id: string;
@@ -26,6 +27,27 @@ export default function CheckoutNew() {
     const { cobrancaId } = useParams();
     const navigate = useNavigate();
     const { toast } = useToast();
+    const [searchParams] = useSearchParams();
+    
+    // Verificar se é renovação
+    const isRenewal = searchParams.get('type') === 'renewal';
+    const subscriptionId = searchParams.get('subscriptionId');
+    const planId = searchParams.get('planId');
+    const memberTypeId = searchParams.get('memberTypeId');
+    const currentStatus = searchParams.get('currentStatus');
+
+    // Se for renovação, usar componente específico
+    if (isRenewal) {
+        return (
+            <RenewalCheckout 
+                subscriptionId={subscriptionId}
+                planId={planId}
+                memberTypeId={memberTypeId}
+                currentStatus={currentStatus}
+            />
+        );
+    }
+
     const [cobranca, setCobranca] = useState<CobrancaData | null>(null);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);

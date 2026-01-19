@@ -6,6 +6,8 @@ import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useFinancialDashboard } from '@/hooks/useFinancialDashboard'
 import { formatCurrency } from '@/lib/utils'
+import SubscriptionStatusAlert from './SubscriptionStatusAlert'
+import SubscriptionNotifications from './SubscriptionNotifications'
 import { 
   DollarSign, 
   TrendingUp, 
@@ -104,6 +106,12 @@ export default function FinancialDashboard({ userId }: FinancialDashboardProps) 
 
   return (
     <div className="space-y-6">
+      {/* Notificações de Assinatura - NOVO */}
+      {userId && <SubscriptionNotifications />}
+      
+      {/* Alerta de Status da Assinatura */}
+      {userId && <SubscriptionStatusAlert />}
+
       {/* Header com Filtros */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
