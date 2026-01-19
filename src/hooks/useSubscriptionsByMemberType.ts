@@ -80,6 +80,11 @@ export function useSubscriptionsByMemberType(memberTypeId?: string) {
           );
         }
 
+        // Filtrar planos com valor zero (ocultar da interface)
+        filteredPlans = filteredPlans.filter((plan: any) => 
+          plan.price > 0
+        );
+
         // Validar dados
         try {
           return filteredPlans.map(plan => FilteredSubscriptionPlanSchema.parse(plan));
@@ -135,7 +140,12 @@ export function useAllSubscriptionsWithTypes() {
           };
         });
 
-        return processedPlans.map(plan => FilteredSubscriptionPlanSchema.parse(plan));
+        // Filtrar planos com valor zero (ocultar da interface)
+        const filteredPlans = processedPlans.filter((plan: any) => 
+          plan.price > 0
+        );
+
+        return filteredPlans.map(plan => FilteredSubscriptionPlanSchema.parse(plan));
       } catch (error) {
         console.error('Erro ao buscar todos os planos:', error);
         return [];
