@@ -1,0 +1,459 @@
+================================================================================
+              DETALHAMENTO TÉCNICO - ANÁLISE DO SISTEMA COMADEMIG
+================================================================================
+
+================================================================================
+1. FLUXOS CRÍTICOS ANALISADOS
+================================================================================
+
+1.1 FLUXO DE AUTENTICAÇÃO
+────────────────────────────────────────────────────────────────────────────
+Arquivos Envolvidos:
+- src/contexts/AuthContext.tsx
+- src/hooks/useAuthState.ts
+- src/hooks/useAuthActions.ts
+- src/hooks/useAuthPermissions.ts
+- src/components/ProtectedRoute.tsx
+
+Análise:
+✅ Context API implementado corretamente
+✅ Hooks separados por responsabilidade
+✅ ProtectedRoute implementado
+⚠️ Falta validação de email após cadastro
+⚠️ Falta implementação de 2FA
+⚠️ Falta timeout de sessão
+
+Problemas Identificados:
+- Sem política de senha forte
+- Sem bloqueio após múltiplas tentativas falhas
+- Sem log de tentativas de login
+
+1.2 FLUXO DE PAGAMENTO (FILIAÇÃO)
+────────────────────────────────────────────────────────────────────────────
+Arquivos Envolvidos:
+- src/pages/Filiacao.tsx
+- src/pages/Checkout.tsx
+- src/hooks/useFiliacaoFlow.ts
+- src/hooks/useFiliacaoPayment.ts
+- src/hooks/useAsaasCardPayments.ts
+- src/hooks/useAsaasPixPayments.ts
+- src/hooks/useAsaasBoletoPayments.ts
+- supabase/functions/asaas-process-card/
+- supabase/functions/asaas-create-pix-payment/
+- supabase/functions/asaas-create-boleto/
+- supabase/functions/asaas-webhook/
+
+Análise:
+✅ Múltiplos métodos de pagamento implementados
+✅ Edge Functions separadas por tipo de pagamento
+✅ Webhook configurado para confirmação
+⚠️ Falta validação de dados de cartão no frontend
+⚠️ Falta tratamento de timeout em pagamentos
+⚠️ Webhook sem retry automático em caso de falha
+
+Problemas Identificados:
+- Dados de cartão podem ser enviados sem validação completa
+- Falta confirmação de recebimento do webhook
+- Falta rollback em caso de falha parcial
+- Sem validação de valor mínimo/máximo
+
+1.3 FLUXO DE AFILIADOS E COMISSÕES
+────────────────────────────────────────────────────────────────────────────
+Arquivos Envolvidos:
+- src/pages/dashboard/Afiliados.tsx
+- src/hooks/useAffiliate.ts
+- src/hooks/useAsaasSplits.ts
+- src/hooks/useSplitConfiguration.ts
+- src/hooks/useSplitManagement.ts
+- supabase/functions/asaas-configure-split/
+- supabase/functions/asaas-process-splits/
+
+Análise:
+✅ Sistema de referral code implementado
+✅ Cálculo de comissões automatizado
+✅ Split configurável
+⚠️ Falta validação de saldo antes de processar split
+⚠️ Falta auditoria de comissões pagas
+⚠️ Falta limite de saque mínimo
+
+Problemas Identificados:
+- Comissões podem ser calculadas incorretamente se webhook falhar
+- Sem validação de conta bancária do afiliado
+- Falta histórico detalhado de transações
+- Sem proteção contra fraude (múltiplas contas)
+
+1.4 FLUXO DE TICKETS DE SUPORTE
+────────────────────────────────────────────────────────────────────────────
+Arquivos Envolvidos:
+- src/pages/dashboard/Suporte.tsx
+- src/pages/admin/SupportManagement.tsx
+- src/hooks/useSupport.ts
+- src/hooks/useSupportMessages.ts
+
+Análise:
+✅ Sistema de tickets implementado
+✅ Mensagens em tempo real
+✅ Interface admin separada
+⚠️ Falta SLA de atendimento
+⚠️ Falta categorização de tickets
+⚠️ Falta priorização automática
+
+Problemas Identificados:
+- Sem notificação de novos tickets para admin
+- Sem busca/filtro avançado
+- Falta anexo de arquivos
+- Sem avaliação de atendimento
+
+1.5 FLUXO DE SOLICITAÇÃO DE SERVIÇOS
+────────────────────────────────────────────────────────────────────────────
+Arquivos Envolvidos:
+- src/pages/dashboard/SolicitacaoServicos.tsx
+- src/pages/dashboard/CheckoutServico.tsx
+- src/hooks/useServicos.ts
+- src/hooks/useSolicitacoes.ts
+- src/hooks/useServiceCategories.ts
+- supabase/functions/asaas-process-certidao/
+- supabase/functions/asaas-process-regularizacao/
+
+Análise:
+✅ Múltiplos tipos de serviços
+✅ Categorização implementada
+✅ Checkout separado
+⚠️ Falta validação de documentos anexados
+⚠️ Falta tracking de status
+⚠️ Falta prazo de entrega
+
+Problemas Identificados:
+- Sem validação de formato de documentos
+- Falta notificação de mudança de status
+- Sem histórico de solicitações anteriores
+- Falta cancelamento de solicitação
+
+================================================================================
+2. ANÁLISE DE EDGE FUNCTIONS
+================================================================================
+
+2.1 asaas-webhook
+────────────────────────────────────────────────────────────────────────────
+Localização: supabase/functions/asaas-webhook/
+Responsabilidade: Receber e processar webhooks do Asaas
+
+Problemas Identificados:
+🔴 CRÍTICO: Sem validação de assinatura do webhook
+🔴 CRÍTICO: Sem retry em caso de falha de processamento
+🟠 ALTO: Sem logging estruturado
+🟠 ALTO: Sem rate limiting
+🟡 MOD: Sem versionamento
+
+Recomendações:
+1. Implementar validação de assinatura HMAC
+2. Implementar fila de retry com backoff exponencial
+3. Adicionar logging com contexto completo
+4. Implementar idempotência
+
+2.2 asaas-process-card
+────────────────────────────────────────────────────────────────────────────
+Localização: supabase/functions/asaas-process-card/
+Responsabilidade: Processar pagamentos com cartão
+
+Problemas Identificados:
+🔴 CRÍTICO: Dados de cartão podem ser logados
+🟠 ALTO: Sem validação de CVV
+🟠 ALTO: Sem detecção de fraude
+🟡 MOD: Sem cache de customer
+
+Recomendações:
+1. Nunca logar dados de cartão completos
+2. Validar CVV antes de enviar para Asaas
+3. Implementar score de fraude
+4. Cachear dados de customer
+
+2.3 asaas-configure-split
+────────────────────────────────────────────────────────────────────────────
+Localização: supabase/functions/asaas-configure-split/
+Responsabilidade: Configurar split de pagamentos
+
+Problemas Identificados:
+🔴 CRÍTICO: Sem validação de soma de percentuais (deve ser 100%)
+🟠 ALTO: Sem validação de conta bancária
+🟡 MOD: Sem auditoria de mudanças
+
+Recomendações:
+1. Validar que soma de splits = 100%
+2. Validar dados bancários antes de configurar
+3. Logar todas as mudanças de configuração
+4. Implementar aprovação para mudanças
+
+2.4 asaas-process-splits
+────────────────────────────────────────────────────────────────────────────
+Localização: supabase/functions/asaas-process-splits/
+Responsabilidade: Processar splits de comissões
+
+Problemas Identificados:
+🔴 CRÍTICO: Sem validação de saldo disponível
+🟠 ALTO: Sem rollback em caso de falha parcial
+🟡 MOD: Sem notificação de processamento
+
+Recomendações:
+1. Validar saldo antes de processar
+2. Implementar transação atômica
+3. Notificar afiliados de comissões processadas
+4. Implementar reconciliação diária
+
+================================================================================
+3. ANÁLISE DE BANCO DE DADOS
+================================================================================
+
+3.1 ESTRUTURA IDENTIFICADA (via migrações)
+────────────────────────────────────────────────────────────────────────────
+
+Tabelas Principais:
+- profiles (usuários)
+- member_types (tipos de membro)
+- subscription_plans (planos de assinatura)
+- user_subscriptions (assinaturas ativas)
+- asaas_cobrancas (cobranças)
+- asaas_customers (clientes no Asaas)
+- payment_splits (configuração de splits)
+- affiliates (afiliados)
+- affiliate_commissions (comissões)
+- affiliate_withdrawals (saques)
+- servicos (serviços disponíveis)
+- service_categories (categorias de serviços)
+- solicitacoes_servicos (solicitações)
+- support_tickets (tickets)
+- support_messages (mensagens)
+- events (eventos)
+- event_registrations (inscrições)
+- carteira_digital (carteiras)
+- notifications (notificações)
+- noticias (notícias)
+- albums_fotos (álbuns)
+- fotos (fotos)
+- videos (vídeos)
+- paginas_legais (termos/privacidade)
+
+3.2 PROBLEMAS DE INTEGRIDADE IDENTIFICADOS
+────────────────────────────────────────────────────────────────────────────
+
+🔴 CRÍTICO: Falta foreign keys em várias relações
+- asaas_cobrancas.user_id -> profiles.id (sem FK)
+- affiliate_commissions.affiliate_id -> affiliates.id (sem FK)
+- solicitacoes_servicos.user_id -> profiles.id (sem FK)
+
+🟠 ALTO: Falta índices em colunas de busca frequente
+- profiles.email (sem índice)
+- asaas_cobrancas.asaas_id (sem índice)
+- affiliates.referral_code (sem índice)
+
+🟡 MOD: Falta constraints de validação
+- CPF/CNPJ sem validação de formato
+- Email sem validação de formato
+- Valores monetários sem check >= 0
+
+3.3 POLÍTICAS RLS IDENTIFICADAS
+────────────────────────────────────────────────────────────────────────────
+
+Políticas Encontradas (via migrações):
+✅ affiliates: Leitura pública de afiliados ativos
+✅ asaas_cobrancas: RLS corrigido para admin
+✅ solicitacoes_servicos: RLS implementado
+⚠️ Falta documentação de todas as políticas
+⚠️ Falta testes de todas as políticas
+
+Problemas Potenciais:
+- Políticas muito permissivas podem expor dados
+- Políticas muito restritivas podem bloquear operações legítimas
+- Falta auditoria de acessos negados
+
+================================================================================
+4. ANÁLISE DE HOOKS CUSTOMIZADOS
+================================================================================
+
+Total de Hooks: 78
+
+Hooks Críticos Analisados:
+
+4.1 useFiliacaoPayment.ts (21.662 bytes)
+────────────────────────────────────────────────────────────────────────────
+Responsabilidade: Gerenciar fluxo completo de pagamento de filiação
+Complexidade: ALTA
+Problemas:
+- Arquivo muito grande (deveria ser dividido)
+- Lógica complexa dificulta testes
+- Múltiplas responsabilidades
+
+4.2 useAsaasSplits.ts (11.248 bytes)
+────────────────────────────────────────────────────────────────────────────
+Responsabilidade: Gerenciar splits de pagamento
+Complexidade: ALTA
+Problemas:
+- Falta validação de percentuais
+- Sem tratamento de erros robusto
+
+4.3 useFinancial.ts (15.832 bytes)
+────────────────────────────────────────────────────────────────────────────
+Responsabilidade: Dashboard financeiro
+Complexidade: ALTA
+Problemas:
+- Queries não otimizadas
+- Falta cache adequado
+
+4.4 useSecurityValidations.ts (11.192 bytes)
+────────────────────────────────────────────────────────────────────────────
+Responsabilidade: Validações de segurança
+Complexidade: MÉDIA
+Análise:
+✅ Implementado
+⚠️ Falta validação de CPF/CNPJ
+⚠️ Falta validação de força de senha
+
+================================================================================
+5. ANÁLISE DE COMPONENTES
+================================================================================
+
+5.1 PerfilCompleto.tsx (61.214 bytes)
+────────────────────────────────────────────────────────────────────────────
+🔴 CRÍTICO: Componente MUITO grande
+Recomendação: Dividir em subcomponentes
+- Seção de dados pessoais
+- Seção de endereço
+- Seção de documentos
+- Seção de foto
+
+5.2 ContactContentEdit.tsx (25.626 bytes)
+────────────────────────────────────────────────────────────────────────────
+🟡 MOD: Componente grande
+Recomendação: Extrair formulários para componentes separados
+
+5.3 Notifications.tsx (20.324 bytes)
+────────────────────────────────────────────────────────────────────────────
+🟡 MOD: Componente grande
+Recomendação: Separar lista de notificações e detalhes
+
+================================================================================
+6. TESTES ESPECÍFICOS RECOMENDADOS
+================================================================================
+
+6.1 TESTES DE PAGAMENTO
+────────────────────────────────────────────────────────────────────────────
+[ ] Cartão de crédito válido
+[ ] Cartão de crédito inválido
+[ ] Cartão expirado
+[ ] CVV inválido
+[ ] Saldo insuficiente
+[ ] PIX gerado corretamente
+[ ] PIX expirado
+[ ] Boleto gerado corretamente
+[ ] Boleto expirado
+[ ] Webhook de confirmação
+[ ] Webhook de falha
+[ ] Timeout de pagamento
+[ ] Cancelamento de pagamento
+
+6.2 TESTES DE AFILIADOS
+────────────────────────────────────────────────────────────────────────────
+[ ] Cadastro de afiliado
+[ ] Geração de código de referral
+[ ] Indicação de novo usuário
+[ ] Cálculo de comissão
+[ ] Processamento de split
+[ ] Saque de comissão
+[ ] Validação de conta bancária
+[ ] Histórico de comissões
+[ ] Dashboard de afiliado
+
+6.3 TESTES DE SEGURANÇA
+────────────────────────────────────────────────────────────────────────────
+[ ] SQL Injection em formulários
+[ ] XSS em campos de texto
+[ ] CSRF em ações críticas
+[ ] Acesso sem autenticação
+[ ] Acesso com role incorreto
+[ ] Bypass de RLS
+[ ] Força bruta em login
+[ ] Enumeração de usuários
+[ ] Upload de arquivo malicioso
+[ ] Validação de token JWT
+
+6.4 TESTES DE INTEGRIDADE
+────────────────────────────────────────────────────────────────────────────
+[ ] Cobrança sem customer
+[ ] Comissão sem afiliado
+[ ] Solicitação sem usuário
+[ ] Ticket sem mensagens
+[ ] Evento sem inscrições
+[ ] Carteira sem usuário
+[ ] Notificação sem destinatário
+
+================================================================================
+7. MÉTRICAS DE CÓDIGO
+================================================================================
+
+Arquivos TypeScript/TSX: ~150+
+Linhas de Código: ~50.000+ (estimado)
+Componentes React: ~100+
+Hooks Customizados: 78
+Edge Functions: 17
+Migrações: 21
+Rotas: ~50+
+
+Complexidade Ciclomática (estimada):
+- Alta: 15 arquivos
+- Média: 40 arquivos
+- Baixa: 95 arquivos
+
+Cobertura de Testes: 0% (nenhum teste encontrado)
+
+================================================================================
+8. DEPENDÊNCIAS E VERSÕES
+================================================================================
+
+Principais Dependências:
+- React: 18.2.0
+- TypeScript: 5.2.2
+- Vite: 5.0.0
+- Supabase JS: 2.38.4
+- TanStack Query: 5.8.4
+- React Router: 6.18.0
+- Tailwind CSS: 3.3.5
+- shadcn/ui: (múltiplos componentes)
+
+Dependências de Desenvolvimento:
+- Vitest: 1.0.0 (configurado mas não usado)
+- ESLint: 9.9.0
+
+Vulnerabilidades Conhecidas: Não verificado (recomenda-se npm audit)
+
+================================================================================
+9. CHECKLIST DE CORREÇÕES PRIORITÁRIAS
+================================================================================
+
+IMEDIATO (Hoje):
+[ ] Remover .env do Git
+[ ] Rotacionar todas as chaves de API
+[ ] Adicionar .env ao .gitignore (já está, mas arquivo foi commitado)
+[ ] Linkar Supabase CLI ao projeto
+[ ] Regenerar types.ts
+
+URGENTE (Esta Semana):
+[ ] Implementar validação de CPF/CNPJ
+[ ] Adicionar tratamento de erros em webhooks
+[ ] Implementar retry logic em webhooks
+[ ] Adicionar validação de assinatura em webhooks
+[ ] Corrigir políticas RLS muito permissivas
+[ ] Adicionar foreign keys faltantes
+[ ] Adicionar índices em colunas de busca
+
+IMPORTANTE (Este Mês):
+[ ] Dividir componentes grandes
+[ ] Implementar testes unitários críticos
+[ ] Configurar logging centralizado
+[ ] Implementar rate limiting
+[ ] Adicionar validação de entrada em todas as Edge Functions
+[ ] Implementar backup automatizado
+[ ] Criar ambiente de staging
+
+================================================================================
+FIM DO DETALHAMENTO TÉCNICO
+================================================================================

@@ -11,6 +11,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 // Imports compartilhados
 import { asaasClient } from '../shared/asaas-client.ts';
 import { validateCpfCnpj, validateEmail, validatePhone, formatCpfCnpj, formatPhone } from '../shared/validation.ts';
+import { getSplitConfiguration, formatSplitsForAsaas } from '../shared/split-config.ts';
 import type { 
   CreatePaymentData,
   AsaasPayment,
@@ -53,6 +54,7 @@ interface ProcessCardPaymentRequest {
   credit_card_holder_info: CreditCardHolderInfo;
   user_id: string; // OBRIGATÓRIO - Conta deve ser criada antes do pagamento
   save_card?: boolean; // Para assinaturas recorrentes
+  affiliate_code?: string; // OPCIONAL - Código de afiliado para split
 }
 
 interface CardPaymentResponse {
@@ -148,18 +150,44 @@ function validateCardHolder(holderInfo: CreditCardHolderInfo): string[] {
 }
 
 /**
- * Cria pagamento com cartão no Asaas
+ * Cria pagamento com cartão no Asaas COM split configurado
  */
 async function createCardPaymentAsaas(
   customerId: string,
   paymentData: ProcessCardPaymentRequest['payment_data'],
   creditCard: CreditCardData,
   holderInfo: CreditCardHolderInfo,
+  affiliateCode?: string,
+  serviceType: ServiceType = 'servico',
   remoteIp?: string
 ): Promise<AsaasPayment> {
   
   const installmentCount = paymentData.installmentCount || 1;
   const installmentValue = paymentData.value / installmentCount;
+  
+  // Calcular splits ANTES de criar pagamento
+  let splits = undefined;
+  try {
+    const splitConfig = await getSplitConfiguration({
+      affiliateCode,
+      serviceType,
+      totalValue: paymentData.value
+    });
+    
+    // Formatar splits com suporte a totalFixedValue para parcelamentos
+    splits = formatSplitsForAsaas(splitConfig, installmentCount);
+    
+    console.log('✅ Splits configurados para cartão:', {
+      hasAffiliate: splitConfig.hasAffiliate,
+      splitCount: splits.length,
+      installmentCount,
+      usesTotalFixedValue: installmentCount > 1,
+      splits: splits.map(s => `${s.description}`)
+    });
+  } catch (error) {
+    console.warn('⚠️ Erro ao configurar splits, continuando sem split:', error);
+    // Não falha o pagamento se split der erro
+  }
   
   const cardPaymentData: CreatePaymentData = {
     customer: customerId,
@@ -187,7 +215,8 @@ async function createCardPaymentAsaas(
       phone: formatPhone(holderInfo.phone),
       mobilePhone: holderInfo.mobilePhone ? formatPhone(holderInfo.mobilePhone) : undefined
     },
-    remoteIp: remoteIp || '127.0.0.1'
+    remoteIp: remoteIp || '127.0.0.1',
+    split: splits // ✅ ADICIONAR SPLIT NA CRIAÇÃO (com totalFixedValue se parcelado)
   };
 
   return await asaasClient.post<AsaasPayment>('/payments', cardPaymentData);
@@ -235,6 +264,50 @@ async function saveCardPaymentLocally(
   }
 
   return data.id;
+}
+
+/**
+ * Salva splits localmente na tabela asaas_splits
+ */
+async function saveSplitsLocally(
+  paymentId: string,
+  asaasPaymentId: string,
+  splitConfig: any
+): Promise<void> {
+  if (!splitConfig || !splitConfig.splits || splitConfig.splits.length === 0) {
+    console.log('Nenhum split para salvar');
+    return;
+  }
+
+  const splitsToInsert = splitConfig.splits
+    .filter((split: any) => split.recipientType !== 'comademig') // COMADEMIG não precisa de registro
+    .map((split: any) => ({
+      payment_id: paymentId,
+      asaas_payment_id: asaasPaymentId,
+      recipient_type: split.recipientType,
+      recipient_name: split.recipientName,
+      wallet_id: split.walletId,
+      percentual_value: split.percentualValue,
+      fixed_value: split.fixedValue,
+      status: 'pending',
+      created_at: new Date().toISOString()
+    }));
+
+  if (splitsToInsert.length === 0) {
+    console.log('Nenhum split para salvar após filtrar COMADEMIG');
+    return;
+  }
+
+  const { error } = await supabase
+    .from('asaas_splits')
+    .insert(splitsToInsert);
+
+  if (error) {
+    console.error('Erro ao salvar splits localmente:', error);
+    // Não falha o pagamento se split não for salvo
+  } else {
+    console.log(`✅ ${splitsToInsert.length} split(s) salvos localmente`);
+  }
 }
 
 /**
@@ -337,12 +410,31 @@ serve(async (req) => {
                      req.headers.get('x-real-ip') || 
                      '127.0.0.1';
 
-    // Criar pagamento com cartão no Asaas
+    // Buscar configuração de split ANTES de criar pagamento
+    let splitConfig = null;
+    try {
+      splitConfig = await getSplitConfiguration({
+        affiliateCode: requestData.affiliate_code,
+        serviceType: requestData.service_type,
+        totalValue: requestData.payment_data.value
+      });
+      console.log('✅ Split configurado:', {
+        hasAffiliate: splitConfig.hasAffiliate,
+        splitCount: splitConfig.splits.length,
+        installmentCount: requestData.payment_data.installmentCount || 1
+      });
+    } catch (splitError) {
+      console.warn('⚠️ Erro ao configurar split, continuando sem split:', splitError);
+    }
+
+    // Criar pagamento com cartão no Asaas COM splits
     const asaasPayment = await createCardPaymentAsaas(
       requestData.customer_id,
       requestData.payment_data,
       requestData.credit_card,
       requestData.credit_card_holder_info,
+      requestData.affiliate_code,
+      requestData.service_type,
       clientIp
     );
 
@@ -359,6 +451,11 @@ serve(async (req) => {
     );
 
     console.log('Pagamento salvo localmente:', localPaymentId);
+
+    // Salvar splits localmente (se houver)
+    if (splitConfig) {
+      await saveSplitsLocally(localPaymentId, asaasPayment.id, splitConfig);
+    }
 
     // Calcular valor da parcela se parcelado
     const installmentValue = requestData.payment_data.installmentCount && requestData.payment_data.installmentCount > 1

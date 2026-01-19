@@ -1,0 +1,222 @@
+{
+  "tech_stack": [
+    "TypeScript",
+    "React 18",
+    "Vite 5",
+    "TanStack Query (React Query) v5",
+    "React Router DOM v6",
+    "Tailwind CSS",
+    "shadcn/ui",
+    "Radix UI",
+    "React Hook Form",
+    "Zod",
+    "Supabase",
+    "PostgreSQL",
+    "Edge Functions",
+    "Asaas Payment Gateway",
+    "jsPDF",
+    "html2canvas",
+    "QR Code",
+    "date-fns",
+    "Recharts",
+    "Sonner"
+  ],
+  "features": [
+    {
+      "name": "Authentication System",
+      "description": "Complete authentication system with login, registration, password reset, and role-based access control",
+      "files": [
+        "src/contexts/AuthContext.tsx",
+        "src/components/ProtectedRoute.tsx",
+        "src/pages/Auth.tsx",
+        "src/pages/EsqueciSenha.tsx",
+        "src/pages/ResetPassword.tsx"
+      ]
+    },
+    {
+      "name": "Admin Dashboard",
+      "description": "Administrative dashboard with user management, financial controls, content management, and system diagnostics",
+      "files": [
+        "src/components/layout/AdminLayout.tsx",
+        "src/components/admin/AdminSidebar.tsx",
+        "src/pages/admin/UsersAdmin.tsx",
+        "src/pages/admin/FinancialAdmin.tsx",
+        "src/pages/admin/ContentManagement.tsx",
+        "src/pages/admin/SystemDiagnosticsPage.tsx",
+        "src/pages/admin/AuditLogs.tsx",
+        "src/pages/admin/SupportManagement.tsx",
+        "src/pages/admin/AffiliatesManagement.tsx",
+        "src/pages/admin/SplitManagement.tsx",
+        "src/pages/admin/MemberTypeManagement.tsx",
+        "src/pages/admin/AdminNotificationsPage.tsx",
+        "src/pages/admin/NotificationManagementPage.tsx",
+        "src/pages/admin/ServicosAdmin.tsx",
+        "src/pages/admin/ServicoCategorias.tsx",
+        "src/pages/admin/SolicitacoesAdmin.tsx",
+        "src/pages/admin/WebhookErrors.tsx"
+      ]
+    },
+    {
+      "name": "Content Management System",
+      "description": "CMS for managing website content including pages, news, multimedia, and legal documents",
+      "files": [
+        "src/pages/admin/content/HomeContentEdit.tsx",
+        "src/pages/admin/content/AboutContentEdit.tsx",
+        "src/pages/admin/content/LeadershipContentEdit.tsx",
+        "src/pages/admin/content/EventosContentEdit.tsx",
+        "src/pages/admin/content/MultimidiaContentEdit.tsx",
+        "src/pages/admin/content/AlbumFotosEdit.tsx",
+        "src/pages/admin/content/ContatoContentEdit.tsx",
+        "src/pages/admin/content/NoticiasContentEdit.tsx",
+        "src/pages/admin/content/PrivacidadeContentEdit.tsx",
+        "src/pages/admin/content/TermosContentEdit.tsx",
+        "src/pages/admin/ContentEdit.tsx"
+      ]
+    },
+    {
+      "name": "User Dashboard",
+      "description": "User dashboard with profile management, digital wallet, financial information, and service requests",
+      "files": [
+        "src/components/dashboard/DashboardLayout.tsx",
+        "src/components/dashboard/DashboardSidebar.tsx",
+        "src/pages/dashboard/Dashboard.tsx",
+        "src/pages/dashboard/MeusDados.tsx",
+        "src/pages/dashboard/CarteiraDigital.tsx",
+        "src/pages/dashboard/Financeiro.tsx",
+        "src/pages/dashboard/SolicitacaoServicos.tsx",
+        "src/pages/dashboard/Suporte.tsx",
+        "src/pages/dashboard/Afiliados.tsx",
+        "src/pages/dashboard/Notifications.tsx",
+        "src/pages/dashboard/PerfilCompleto.tsx",
+        "src/pages/dashboard/MinhasNoticias.tsx",
+        "src/pages/dashboard/NoticiaForm.tsx"
+      ]
+    },
+    {
+      "name": "Digital Wallet System",
+      "description": "Digital professional wallet with QR code generation, validation, and PDF export",
+      "files": [
+        "src/pages/dashboard/CarteiraDigital.tsx",
+        "src/pages/ValidarCarteira.tsx",
+        "src/components/carteira/CarteiraDigitalCard.tsx",
+        "src/utils/pdfUtils.ts",
+        "src/utils/qrCodeUtils.ts"
+      ]
+    },
+    {
+      "name": "Payment System",
+      "description": "Complete payment system with Asaas integration, multiple payment methods, and split payments",
+      "files": [
+        "src/components/payments/PaymentFormEnhanced.tsx",
+        "src/hooks/useAsaasCardPayments.ts",
+        "src/hooks/useAsaasBoletoPayments.ts",
+        "src/hooks/useAsaasPixPayments.ts",
+        "src/hooks/useFiliacaoPayment.ts",
+        "src/hooks/usePaymentActions.ts",
+        "src/pages/Checkout.tsx",
+        "src/pages/PagamentoSucesso.tsx",
+        "src/pages/PagamentoPendente.tsx",
+        "supabase/functions/asaas-webhook/index.ts",
+        "supabase/functions/asaas-create-subscription/index.ts"
+      ]
+    },
+    {
+      "name": "Affiliate System",
+      "description": "Affiliate program with referral tracking, commission management, and dashboard",
+      "files": [
+        "src/pages/dashboard/Afiliados.tsx",
+        "src/components/affiliates/AffiliatesDashboard.tsx",
+        "src/components/affiliates/AffiliateReferralsList.tsx",
+        "src/hooks/useAffiliate.ts",
+        "src/pages/admin/AffiliatesManagement.tsx",
+        "src/pages/admin/components/ReferralsManagement.tsx"
+      ]
+    },
+    {
+      "name": "Service Request System",
+      "description": "System for requesting professional services like certificates and regularization",
+      "files": [
+        "src/pages/dashboard/SolicitacaoServicos.tsx",
+        "src/pages/dashboard/CheckoutServico.tsx",
+        "src/pages/dashboard/PagamentoSucesso.tsx",
+        "src/pages/admin/ServicosAdmin.tsx",
+        "src/pages/admin/ServicoCategorias.tsx",
+        "src/pages/admin/SolicitacoesAdmin.tsx"
+      ]
+    },
+    {
+      "name": "Membership System",
+      "description": "Professional membership registration and management system",
+      "files": [
+        "src/pages/Filiacao.tsx",
+        "src/pages/admin/MemberTypeManagement.tsx",
+        "src/hooks/useSubscriptionPlans.ts",
+        "src/hooks/useUserSubscriptionsAdmin.ts"
+      ]
+    },
+    {
+      "name": "Public Website",
+      "description": "Public website with home, about, leadership, news, events, multimedia, and contact pages",
+      "files": [
+        "src/pages/Index.tsx",
+        "src/pages/Home.tsx",
+        "src/pages/Sobre.tsx",
+        "src/pages/Lideranca.tsx",
+        "src/pages/Noticias.tsx",
+        "src/pages/NoticiaDetalhes.tsx",
+        "src/pages/Eventos.tsx",
+        "src/pages/Multimidia.tsx",
+        "src/pages/AlbumDetalhes.tsx",
+        "src/pages/Contato.tsx",
+        "src/pages/Privacidade.tsx",
+        "src/pages/Termos.tsx"
+      ]
+    },
+    {
+      "name": "Communication System",
+      "description": "Internal communication system with messaging and notifications",
+      "files": [
+        "src/pages/dashboard/Comunicacao.tsx",
+        "src/pages/dashboard/ComunicacaoDashboard.tsx",
+        "src/pages/dashboard/Notifications.tsx",
+        "src/pages/admin/AdminNotificationsPage.tsx",
+        "src/pages/admin/NotificationManagementPage.tsx"
+      ]
+    },
+    {
+      "name": "Support System",
+      "description": "Support ticket system for user assistance and issue tracking",
+      "files": [
+        "src/pages/dashboard/Suporte.tsx",
+        "src/pages/admin/SupportManagement.tsx"
+      ]
+    },
+    {
+      "name": "Events Management",
+      "description": "Event management system with registration and certificate generation",
+      "files": [
+        "src/pages/Eventos.tsx",
+        "src/pages/dashboard/EventosDashboard.tsx",
+        "src/pages/ValidarCertificado.tsx"
+      ]
+    },
+    {
+      "name": "Certificate System",
+      "description": "Professional certificate issuance and validation system",
+      "files": [
+        "src/pages/ValidarCertidao.tsx",
+        "src/pages/ValidarCertificado.tsx"
+      ]
+    },
+    {
+      "name": "Database Integration",
+      "description": "Supabase integration with PostgreSQL database, RLS policies, and Edge Functions",
+      "files": [
+        "src/integrations/supabase/client.ts",
+        "src/integrations/supabase/types.ts",
+        "supabase/migrations/",
+        "supabase/functions/"
+      ]
+    }
+  ]
+}

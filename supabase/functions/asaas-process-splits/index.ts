@@ -1,6 +1,23 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+/**
+ * ⚠️ DEPRECATED - Esta Edge Function está OBSOLETA
+ * 
+ * Data de Deprecação: 16/01/2026
+ * Motivo: Splits agora são processados AUTOMATICAMENTE pelo Asaas via webhooks
+ * 
+ * Nova Abordagem:
+ * - Splits são enviados NA CRIAÇÃO do pagamento
+ * - Asaas processa automaticamente
+ * - Webhooks TRANSFER_* atualizam status dos splits
+ * - Não é mais necessário processamento manual
+ * 
+ * Esta function será REMOVIDA em: 15/02/2026 (30 dias)
+ * 
+ * Migração: Não é necessária - sistema já usa webhooks automáticos
+ */
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -60,6 +77,9 @@ interface ProcessSplitsRequest {
 }
 
 serve(async (req) => {
+  // ⚠️ WARNING: Esta function está DEPRECATED
+  console.warn('⚠️ DEPRECATED: asaas-process-splits está obsoleta. Splits são processados automaticamente via webhooks.')
+  
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }

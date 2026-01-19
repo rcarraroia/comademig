@@ -5,18 +5,21 @@
  * entre COMADEMIG, RENUM e afiliados (quando aplicável)
  * 
  * Regras de Split:
- * - COM afiliado: 40% RENUM + 40% COMADEMIG + 20% Afiliado
- * - SEM afiliado: 50% RENUM + 50% COMADEMIG
+ * - Filiação COM afiliado: 40% COMADEMIG + 40% RENUM + 20% Afiliado
+ * - Filiação SEM afiliado: 50% COMADEMIG + 50% RENUM
+ * - Serviços: 60% COMADEMIG + 40% RENUM
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import type { AsaasSplitData } from './types.ts'
 
 /**
  * Interface para configuração de um split individual
  */
 export interface SplitConfig {
   walletId: string
-  percentualValue: number
+  percentualValue?: number
+  fixedValue?: number
   recipientType: 'renum' | 'comademig' | 'affiliate'
   recipientName: string
 }
@@ -35,35 +38,40 @@ export interface SplitConfigurationResult {
 }
 
 /**
- * Busca a configuração de split baseada no código de afiliado (opcional)
+ * Parâmetros para getSplitConfiguration
+ */
+export interface GetSplitConfigParams {
+  affiliateCode?: string
+  serviceType: 'filiacao' | 'servico'
+  totalValue: number
+}
+
+/**
+ * Busca a configuração de split baseada no código de afiliado e tipo de serviço
  * 
- * @param affiliateCode - Código de referral do afiliado (opcional)
- * @returns Configuração de splits formatada para o Asaas
+ * @param params - Parâmetros de configuração
+ * @returns Configuração de splits formatada
  * @throws Error se variáveis de ambiente não estiverem configuradas
  * @throws Error se código de afiliado for inválido
  */
 export async function getSplitConfiguration(
-  affiliateCode?: string
+  params: GetSplitConfigParams
 ): Promise<SplitConfigurationResult> {
+  const { affiliateCode, serviceType, totalValue } = params
 
   // 1. Buscar wallet_id da RENUM (variável de ambiente)
   const RENUM_WALLET_ID = Deno.env.get('RENUM_WALLET_ID')
-  const COMADEMIG_WALLET_ID = Deno.env.get('COMADEMIG_WALLET_ID')
 
   if (!RENUM_WALLET_ID) {
     throw new Error('RENUM_WALLET_ID não configurada nas variáveis de ambiente')
-  }
-
-  if (!COMADEMIG_WALLET_ID) {
-    throw new Error('COMADEMIG_WALLET_ID não configurada nas variáveis de ambiente')
   }
 
   const splits: SplitConfig[] = []
   let hasAffiliate = false
   let affiliateInfo: SplitConfigurationResult['affiliateInfo'] = undefined
 
-  // 2. Verificar se há código de afiliado
-  if (affiliateCode) {
+  // 2. Verificar se há código de afiliado (apenas para filiação)
+  if (affiliateCode && serviceType === 'filiacao') {
     // Buscar dados do afiliado no banco
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -78,71 +86,91 @@ export async function getSplitConfiguration(
       .single()
 
     if (error || !affiliate) {
-      throw new Error(`Código de afiliado inválido ou inativo: ${affiliateCode}`)
+      console.warn(`Código de afiliado inválido ou inativo: ${affiliateCode}`)
+      // Não falha - continua sem afiliado
+    } else if (!affiliate.asaas_wallet_id) {
+      console.warn(`Afiliado ${affiliateCode} não possui wallet_id configurado`)
+      // Não falha - continua sem afiliado
+    } else {
+      hasAffiliate = true
+      affiliateInfo = {
+        id: affiliate.id,
+        name: affiliate.display_name || 'Afiliado',
+        walletId: affiliate.asaas_wallet_id
+      }
+
+      // 3. Calcular percentuais COM afiliado (40% COMADEMIG + 40% RENUM + 20% Afiliado)
+      // COMADEMIG recebe direto (não precisa de split no Asaas)
+      splits.push({
+        walletId: '', // COMADEMIG não tem wallet (será removido no formatSplitsForAsaas)
+        percentualValue: 40.00,
+        recipientType: 'comademig',
+        recipientName: 'COMADEMIG'
+      })
+
+      splits.push({
+        walletId: RENUM_WALLET_ID,
+        percentualValue: 40.00,
+        recipientType: 'renum',
+        recipientName: 'RENUM'
+      })
+
+      splits.push({
+        walletId: affiliate.asaas_wallet_id,
+        percentualValue: 20.00,
+        recipientType: 'affiliate',
+        recipientName: affiliate.display_name || 'Afiliado'
+      })
+
+      console.log('✅ Split configurado COM afiliado:', {
+        affiliateCode,
+        affiliateName: affiliate.display_name,
+        splits: splits.map(s => `${s.recipientName}: ${s.percentualValue}%`)
+      })
+    }
+  }
+
+  // 4. Se não houver afiliado, calcular percentuais baseado no tipo de serviço
+  if (!hasAffiliate) {
+    if (serviceType === 'filiacao') {
+      // Filiação SEM afiliado: 50% COMADEMIG + 50% RENUM
+      splits.push({
+        walletId: '',
+        percentualValue: 50.00,
+        recipientType: 'comademig',
+        recipientName: 'COMADEMIG'
+      })
+
+      splits.push({
+        walletId: RENUM_WALLET_ID,
+        percentualValue: 50.00,
+        recipientType: 'renum',
+        recipientName: 'RENUM'
+      })
+    } else {
+      // Serviços: 60% COMADEMIG + 40% RENUM
+      splits.push({
+        walletId: '',
+        percentualValue: 60.00,
+        recipientType: 'comademig',
+        recipientName: 'COMADEMIG'
+      })
+
+      splits.push({
+        walletId: RENUM_WALLET_ID,
+        percentualValue: 40.00,
+        recipientType: 'renum',
+        recipientName: 'RENUM'
+      })
     }
 
-    if (!affiliate.asaas_wallet_id) {
-      throw new Error(`Afiliado ${affiliateCode} não possui wallet_id configurado`)
-    }
-
-    hasAffiliate = true
-    affiliateInfo = {
-      id: affiliate.id,
-      name: affiliate.display_name || 'Afiliado',
-      walletId: affiliate.asaas_wallet_id
-    }
-
-    // 3. Calcular percentuais COM afiliado (40% + 40% + 20%)
-    splits.push({
-      walletId: RENUM_WALLET_ID,
-      percentualValue: 40.00,
-      recipientType: 'renum',
-      recipientName: 'RENUM'
-    })
-
-    splits.push({
-      walletId: COMADEMIG_WALLET_ID,
-      percentualValue: 40.00,
-      recipientType: 'comademig',
-      recipientName: 'COMADEMIG'
-    })
-
-    splits.push({
-      walletId: affiliate.asaas_wallet_id,
-      percentualValue: 20.00,
-      recipientType: 'affiliate',
-      recipientName: affiliate.display_name || 'Afiliado'
-    })
-
-    console.log('✅ Split configurado COM afiliado:', {
-      affiliateCode,
-      affiliateName: affiliate.display_name,
-      splits: splits.map(s => `${s.recipientName}: ${s.percentualValue}%`)
-    })
-
-  } else {
-    // 4. Calcular percentuais SEM afiliado (50% + 50%)
-    splits.push({
-      walletId: RENUM_WALLET_ID,
-      percentualValue: 50.00,
-      recipientType: 'renum',
-      recipientName: 'RENUM'
-    })
-
-    splits.push({
-      walletId: COMADEMIG_WALLET_ID,
-      percentualValue: 50.00,
-      recipientType: 'comademig',
-      recipientName: 'COMADEMIG'
-    })
-
-    console.log('✅ Split configurado SEM afiliado:', {
+    console.log(`✅ Split configurado SEM afiliado (${serviceType}):`, {
       splits: splits.map(s => `${s.recipientName}: ${s.percentualValue}%`)
     })
   }
 
   // 5. Validar que a soma dos percentuais é 100%
-  const totalPercentage = splits.reduce((sum, split) => sum + split.percentualValue, 0)
+  const totalPercentage = splits.reduce((sum, split) => sum + (split.percentualValue || 0), 0)
   if (Math.abs(totalPercentage - 100) > 0.01) {
     throw new Error(`Soma dos percentuais de split inválida: ${totalPercentage}%. Deve ser 100%.`)
   }
@@ -156,15 +184,49 @@ export async function getSplitConfiguration(
 
 /**
  * Formata os splits para o formato esperado pela API do Asaas
+ * Suporta parcelamentos usando totalFixedValue
  * 
  * @param splitConfig - Configuração de splits retornada por getSplitConfiguration
+ * @param installmentCount - Número de parcelas (opcional, default = 1)
  * @returns Array de splits no formato do Asaas
  */
-export function formatSplitsForAsaas(splitConfig: SplitConfigurationResult) {
-  return splitConfig.splits.map(split => ({
-    walletId: split.walletId,
-    percentualValue: split.percentualValue
-  }))
+export function formatSplitsForAsaas(
+  splitConfig: SplitConfigurationResult,
+  installmentCount: number = 1
+): AsaasSplitData[] {
+  const asaasSplits: AsaasSplitData[] = []
+
+  for (const split of splitConfig.splits) {
+    // COMADEMIG não precisa de split (recebe direto)
+    if (split.recipientType === 'comademig') {
+      continue
+    }
+
+    const asaasSplit: AsaasSplitData = {
+      walletId: split.walletId,
+      description: `${split.recipientName} - ${split.percentualValue}%`,
+      externalReference: split.recipientType
+    }
+
+    // Decidir entre fixedValue, percentualValue ou totalFixedValue
+    if (split.fixedValue) {
+      // Se há valor fixo definido
+      if (installmentCount > 1) {
+        // Parcelamento: usar totalFixedValue
+        asaasSplit.totalFixedValue = split.fixedValue
+      } else {
+        // À vista: usar fixedValue
+        asaasSplit.fixedValue = split.fixedValue
+      }
+    } else if (split.percentualValue) {
+      // Usar percentual (funciona para ambos os casos)
+      asaasSplit.percentualValue = split.percentualValue
+    }
+
+    asaasSplits.push(asaasSplit)
+  }
+
+  return asaasSplits
 }
 
 /**
@@ -203,5 +265,68 @@ export async function validateAffiliateCode(affiliateCode: string) {
     name: affiliate.display_name || 'Afiliado',
     walletId: affiliate.asaas_wallet_id,
     status: affiliate.status
+  }
+}
+
+/**
+ * Calcula os valores de comissão para cada split
+ * 
+ * @param totalValue - Valor total do pagamento
+ * @param splitConfig - Configuração de splits
+ * @returns Objeto com valores calculados por recipiente
+ */
+export function calculateSplitAmounts(
+  totalValue: number,
+  splitConfig: SplitConfigurationResult
+): Record<string, number> {
+  const amounts: Record<string, number> = {}
+
+  for (const split of splitConfig.splits) {
+    if (split.fixedValue) {
+      amounts[split.recipientType] = split.fixedValue
+    } else if (split.percentualValue) {
+      amounts[split.recipientType] = Math.round((totalValue * split.percentualValue) / 100 * 100) / 100
+    }
+  }
+
+  return amounts
+}
+
+/**
+ * Valida se os wallet IDs são válidos
+ * 
+ * @param walletIds - Array de wallet IDs para validar
+ * @returns Resultado da validação
+ */
+export async function validateWalletIds(walletIds: string[]): Promise<{
+  allValid: boolean
+  results: Array<{
+    walletId: string
+    valid: boolean
+    error?: string
+  }>
+}> {
+  const results = []
+  
+  // Por enquanto, apenas valida se não estão vazios
+  // Validação completa com API do Asaas pode ser adicionada depois
+  for (const walletId of walletIds) {
+    if (!walletId || walletId.trim() === '') {
+      results.push({
+        walletId,
+        valid: false,
+        error: 'Wallet ID vazio'
+      })
+    } else {
+      results.push({
+        walletId,
+        valid: true
+      })
+    }
+  }
+  
+  return {
+    allValid: results.every(r => r.valid),
+    results
   }
 }

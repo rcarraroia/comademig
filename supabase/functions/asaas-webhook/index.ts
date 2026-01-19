@@ -348,14 +348,9 @@ async function handlePaymentReceived(
   if (cobranca) {
     console.log('📦 Cobrança encontrada:', cobranca.id)
 
-    // 2. Processar splits automaticamente
-    try {
-      await processPaymentSplits(supabaseClient, cobranca)
-      console.log('✅ Splits processados automaticamente')
-    } catch (splitError) {
-      console.error('❌ Erro ao processar splits:', splitError)
-      // Não falhar o webhook por causa de erro nos splits
-    }
+    // ✅ Splits serão processados automaticamente pelo Asaas
+    // Eventos TRANSFER_* atualizarão o status dos splits
+    console.log('ℹ️ Splits serão processados automaticamente pelo Asaas via eventos TRANSFER_*')
   }
 
   // 3. Buscar assinatura pelo asaas_subscription_id OU initial_payment_id

@@ -165,7 +165,7 @@ export interface CreatePaymentData {
     type?: 'FIXED' | 'PERCENTAGE';
   };
   postalService?: boolean;
-  split?: CreatePaymentSplitData[];
+  split?: AsaasSplitData[];
   callback?: {
     successUrl?: string;
     autoRedirect?: boolean;
@@ -200,6 +200,7 @@ export interface PaymentSplit {
   walletId: string;
   fixedValue?: number;
   percentualValue?: number;
+  totalFixedValue?: number;
   totalValue: number;
   status: 'PENDING' | 'AWAITING_CREDIT' | 'CREDITED' | 'CANCELLED';
   refusalReason?: string;
@@ -209,6 +210,15 @@ export interface CreatePaymentSplitData {
   walletId: string;
   fixedValue?: number;
   percentualValue?: number;
+}
+
+export interface AsaasSplitData {
+  walletId: string;
+  fixedValue?: number;
+  percentualValue?: number;
+  totalFixedValue?: number;
+  description?: string;
+  externalReference?: string;
 }
 
 // ============================================================================

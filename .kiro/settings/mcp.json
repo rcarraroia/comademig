@@ -8,6 +8,18 @@
       },
       "disabled": false,
       "autoApprove": []
+    },
+    "asaas": {
+      "url": "https://docs.asaas.com/mcp",
+      "autoApprove": [
+        "list-specs",
+        "list-endpoints",
+        "get-endpoint",
+        "search-specs",
+        "get-request-body",
+        "get-response-schema",
+        "execute-request"
+      ]
     }
   }
 }

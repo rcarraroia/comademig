@@ -1,6 +1,22 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+/**
+ * ⚠️ DEPRECATED - Esta Edge Function está OBSOLETA
+ * 
+ * Data de Deprecação: 16/01/2026
+ * Motivo: Splits agora são enviados NA CRIAÇÃO do pagamento, não depois
+ * 
+ * Nova Abordagem:
+ * - asaas-create-pix-payment: Envia splits no payload de criação
+ * - asaas-process-card: Envia splits no payload de criação
+ * - asaas-create-subscription: Envia splits no pagamento inicial e assinatura
+ * 
+ * Esta function será REMOVIDA em: 15/02/2026 (30 dias)
+ * 
+ * Migração: Não é necessária - novos pagamentos já usam a nova abordagem
+ */
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -43,6 +59,9 @@ interface ConfigureSplitRequest {
 }
 
 serve(async (req) => {
+  // ⚠️ WARNING: Esta function está DEPRECATED
+  console.warn('⚠️ DEPRECATED: asaas-configure-split está obsoleta. Use splits no payload de criação do pagamento.')
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })

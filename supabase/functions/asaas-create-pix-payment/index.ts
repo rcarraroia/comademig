@@ -11,6 +11,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 // Imports compartilhados
 import { asaasClient } from '../shared/asaas-client.ts';
 import { logInfo, logError, logWarning } from '../shared/logger.ts';
+import { getSplitConfiguration, formatSplitsForAsaas } from '../shared/split-config.ts';
 import type { 
   CreatePaymentData,
   AsaasPayment,
@@ -30,6 +31,7 @@ interface CreatePixPaymentRequest {
     externalReference?: string;
   };
   user_id: string; // OBRIGATÓRIO - Conta deve ser criada antes do pagamento
+  affiliate_code?: string; // OPCIONAL - Código de afiliado para split
 }
 
 interface PixPaymentResponse {
@@ -65,15 +67,38 @@ function applyPixDiscount(originalValue: number): { discountedValue: number; dis
 }
 
 /**
- * Cria cobrança PIX no Asaas
+ * Cria cobrança PIX no Asaas com split configurado
  */
 async function createPixPaymentAsaas(
   customerId: string,
-  paymentData: CreatePixPaymentRequest['payment_data']
+  paymentData: CreatePixPaymentRequest['payment_data'],
+  affiliateCode?: string,
+  serviceType: ServiceType = 'servico'
 ): Promise<AsaasPayment> {
   
   // Aplicar desconto PIX
   const { discountedValue } = applyPixDiscount(paymentData.value);
+  
+  // Calcular splits ANTES de criar pagamento
+  let splits = undefined;
+  try {
+    const splitConfig = await getSplitConfiguration({
+      affiliateCode,
+      serviceType,
+      totalValue: discountedValue
+    });
+    
+    splits = formatSplitsForAsaas(splitConfig);
+    
+    console.log('✅ Splits configurados:', {
+      hasAffiliate: splitConfig.hasAffiliate,
+      splitCount: splits.length,
+      splits: splits.map(s => `${s.description}`)
+    });
+  } catch (error) {
+    console.warn('⚠️ Erro ao configurar splits, continuando sem split:', error);
+    // Não falha o pagamento se split der erro
+  }
   
   const pixPaymentData: CreatePaymentData = {
     customer: customerId,
@@ -86,7 +111,8 @@ async function createPixPaymentAsaas(
       value: 5,
       type: 'PERCENTAGE',
       dueDateLimitDays: 0 // Desconto válido até o vencimento
-    }
+    },
+    split: splits // ✅ ADICIONAR SPLIT NA CRIAÇÃO
   };
 
   return await asaasClient.post<AsaasPayment>('/payments', pixPaymentData);
@@ -131,6 +157,50 @@ async function savePaymentLocally(
   }
 
   return data.id;
+}
+
+/**
+ * Salva splits localmente na tabela asaas_splits
+ */
+async function saveSplitsLocally(
+  paymentId: string,
+  asaasPaymentId: string,
+  splitConfig: any
+): Promise<void> {
+  if (!splitConfig || !splitConfig.splits || splitConfig.splits.length === 0) {
+    console.log('Nenhum split para salvar');
+    return;
+  }
+
+  const splitsToInsert = splitConfig.splits
+    .filter((split: any) => split.recipientType !== 'comademig') // COMADEMIG não precisa de registro
+    .map((split: any) => ({
+      payment_id: paymentId,
+      asaas_payment_id: asaasPaymentId,
+      recipient_type: split.recipientType,
+      recipient_name: split.recipientName,
+      wallet_id: split.walletId,
+      percentual_value: split.percentualValue,
+      fixed_value: split.fixedValue,
+      status: 'pending',
+      created_at: new Date().toISOString()
+    }));
+
+  if (splitsToInsert.length === 0) {
+    console.log('Nenhum split para salvar após filtrar COMADEMIG');
+    return;
+  }
+
+  const { error } = await supabase
+    .from('asaas_splits')
+    .insert(splitsToInsert);
+
+  if (error) {
+    console.error('Erro ao salvar splits localmente:', error);
+    // Não falha o pagamento se split não for salvo
+  } else {
+    console.log(`✅ ${splitsToInsert.length} split(s) salvos localmente`);
+  }
 }
 
 /**
@@ -244,10 +314,28 @@ serve(async (req) => {
     console.log('Valor com desconto PIX:', discountedValue);
     console.log('Desconto aplicado:', discountAmount);
 
-    // Criar cobrança PIX no Asaas
+    // Buscar configuração de split ANTES de criar pagamento
+    let splitConfig = null;
+    try {
+      splitConfig = await getSplitConfiguration({
+        affiliateCode: requestData.affiliate_code,
+        serviceType: requestData.service_type,
+        totalValue: discountedValue
+      });
+      console.log('✅ Split configurado:', {
+        hasAffiliate: splitConfig.hasAffiliate,
+        splitCount: splitConfig.splits.length
+      });
+    } catch (splitError) {
+      console.warn('⚠️ Erro ao configurar split, continuando sem split:', splitError);
+    }
+
+    // Criar cobrança PIX no Asaas COM splits
     const asaasPayment = await createPixPaymentAsaas(
       requestData.customer_id,
-      requestData.payment_data
+      requestData.payment_data,
+      requestData.affiliate_code,
+      requestData.service_type
     );
 
     console.log('Pagamento PIX criado no Asaas:', asaasPayment.id);
@@ -271,6 +359,11 @@ serve(async (req) => {
 
     console.log('Pagamento salvo localmente:', localPaymentId);
 
+    // Salvar splits localmente (se houver)
+    if (splitConfig) {
+      await saveSplitsLocally(localPaymentId, asaasPayment.id, splitConfig);
+    }
+
     // Log: PIX criado com sucesso
     await logInfo({
       source: 'edge_function',
@@ -282,7 +375,9 @@ serve(async (req) => {
         original_value: requestData.payment_data.value,
         discounted_value: discountedValue,
         discount_amount: discountAmount,
-        has_qr_code: !!asaasPayment.pixTransaction?.qrCode?.payload
+        has_qr_code: !!asaasPayment.pixTransaction?.qrCode?.payload,
+        has_split: !!splitConfig,
+        split_count: splitConfig?.splits?.length || 0
       },
       userId: requestData.user_id
     });

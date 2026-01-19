@@ -68,7 +68,11 @@ serve(async (req) => {
 
         // NOVO: Buscar configuração de split
         console.log('🔍 Buscando configuração de split...')
-        const splitConfig = await getSplitConfiguration(affiliateCode)
+        const splitConfig = await getSplitConfiguration({
+            affiliateCode,
+            serviceType: 'filiacao', // Assinaturas são sempre filiação
+            totalValue: value
+        })
         const splits = formatSplitsForAsaas(splitConfig)
 
         console.log('✅ Split configurado:', {
@@ -77,8 +81,61 @@ serve(async (req) => {
             splits: splitConfig.splits.map(s => `${s.recipientName}: ${s.percentualValue}%`)
         })
 
-        // Pagamento inicial já foi processado no frontend
-        // Apenas criar assinatura recorrente
+        // 1. CRIAR PAGAMENTO INICIAL COM SPLIT (se não foi fornecido)
+        let actualInitialPaymentId = initialPaymentId
+        
+        if (!initialPaymentId) {
+            console.log('💳 Criando pagamento inicial COM split...')
+            
+            const today = new Date().toISOString().split('T')[0]
+            
+            const initialPaymentPayload: any = {
+                customer,
+                billingType,
+                value,
+                dueDate: today, // Pagamento inicial vence HOJE
+                description: description || 'Pagamento Inicial - Assinatura COMADEMIG',
+                externalReference: externalReference ? `${externalReference}-initial` : undefined,
+                split: splits // ✅ SPLIT NO PAGAMENTO INICIAL
+            }
+
+            if (discount) {
+                initialPaymentPayload.discount = discount
+            }
+
+            // Adicionar dados do cartão
+            if (billingType === 'CREDIT_CARD') {
+                if (creditCardToken) {
+                    initialPaymentPayload.creditCardToken = creditCardToken
+                } else if (creditCard && creditCardHolderInfo) {
+                    initialPaymentPayload.creditCard = creditCard
+                    initialPaymentPayload.creditCardHolderInfo = creditCardHolderInfo
+                }
+            }
+
+            const initialPaymentResponse = await fetch(`${ASAAS_BASE_URL}/payments`, {
+                method: 'POST',
+                headers: {
+                    'access_token': ASAAS_API_KEY,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(initialPaymentPayload),
+            })
+
+            const initialPayment = await initialPaymentResponse.json()
+
+            if (!initialPaymentResponse.ok) {
+                console.error('❌ Erro ao criar pagamento inicial:', initialPayment)
+                throw new Error(initialPayment.errors?.[0]?.description || initialPayment.message || 'Erro ao criar pagamento inicial')
+            }
+
+            console.log('✅ Pagamento inicial criado:', initialPayment.id)
+            actualInitialPaymentId = initialPayment.id
+        } else {
+            console.log('ℹ️ Usando pagamento inicial já processado:', initialPaymentId)
+        }
+
+        // 2. Criar assinatura recorrente COM SPLIT
         console.log('📅 Criando assinatura recorrente...')
 
         const subscriptionPayload: any = {
@@ -139,8 +196,8 @@ serve(async (req) => {
                 subscription_plan_id: subscriptionPlanId,
                 member_type_id: memberTypeId,
                 status: 'active', // Já ativo pois pagamento inicial foi confirmado
-                payment_id: initialPaymentId,
-                initial_payment_id: initialPaymentId, // ID da cobrança inicial
+                payment_id: actualInitialPaymentId,
+                initial_payment_id: actualInitialPaymentId, // ID da cobrança inicial
                 asaas_subscription_id: subscription.id, // ID da assinatura recorrente
                 asaas_customer_id: customer,
                 billing_type: billingType,
@@ -162,16 +219,18 @@ serve(async (req) => {
         // NOVO: 4. Registrar splits em asaas_splits
         console.log('📊 Registrando splits em asaas_splits...')
 
-        const splitsToInsert = splitConfig.splits.map(split => ({
-            subscription_id: userSubscription.id,
-            payment_id: initialPaymentId,
-            affiliate_id: split.recipientType === 'affiliate' ? splitConfig.affiliateInfo?.id : null,
-            recipient_type: split.recipientType,
-            recipient_name: split.recipientName,
-            wallet_id: split.walletId,
-            percentage: split.percentualValue,
-            status: 'pending', // Será atualizado quando receber webhook
-        }))
+        const splitsToInsert = splitConfig.splits
+            .filter(split => split.recipientType !== 'comademig') // COMADEMIG não precisa de registro
+            .map(split => ({
+                subscription_id: userSubscription.id,
+                payment_id: actualInitialPaymentId,
+                affiliate_id: split.recipientType === 'affiliate' ? splitConfig.affiliateInfo?.id : null,
+                recipient_type: split.recipientType,
+                recipient_name: split.recipientName,
+                wallet_id: split.walletId,
+                percentage: split.percentualValue,
+                status: 'pending', // Será atualizado quando receber webhook
+            }))
 
         const { error: splitsError } = await supabaseClient
             .from('asaas_splits')
@@ -214,7 +273,7 @@ serve(async (req) => {
                     status: subscription.status,
                     nextDueDate: subscription.nextDueDate,
                 },
-                initialPaymentId: initialPaymentId,
+                initialPaymentId: actualInitialPaymentId,
                 userSubscriptionId: userSubscription.id,
                 split: {
                     configured: true,

@@ -1,0 +1,816 @@
+================================================================================
+                    PLANO DE AÇÃO PRIORITÁRIO - COMADEMIG
+================================================================================
+Data: 2025-11-26
+Baseado em: Relatório Completo de Testes
+Status: AGUARDANDO APROVAÇÃO E EXECUÇÃO
+
+================================================================================
+SUMÁRIO EXECUTIVO
+================================================================================
+
+Total de Problemas Identificados: 24
+🔴 Críticos (Ação Imediata): 5
+🟠 Altos (Ação Urgente): 7
+🟡 Moderados (Ação Importante): 8
+🟢 Baixos (Ação Desejável): 4
+
+Tempo Estimado Total: 2-3 semanas
+Custo Estimado: Variável (depende da equipe)
+Risco se Não Corrigido: ALTÍSSIMO
+
+================================================================================
+FASE 1: EMERGÊNCIA (HOJE - 24 HORAS)
+================================================================================
+Objetivo: Corrigir problemas de segurança e bloqueadores críticos
+Prioridade: MÁXIMA
+Responsável: Equipe completa
+Tempo Estimado: 4-8 horas
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 1.1: SEGURANÇA - Remover Chaves Expostas
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🔴 CRÍTICA MÁXIMA
+Tempo: 30 minutos
+Responsável: DevOps + Segurança
+
+Passos:
+1. [ ] Fazer backup do arquivo .env localmente
+2. [ ] Remover .env do histórico do Git:
+    ```bash
+    git filter-branch --force --index-filter \
+    "git rm --cached --ignore-unmatch .env" \
+    --prune-empty --tag-name-filter cat -- --all
+    ```
+3. [ ] Forçar push para remover do remoto:
+    ```bash
+    git push origin --force --all
+    ```
+4. [ ] Verificar que .env está no .gitignore (já está)
+5. [ ] Notificar equipe para não usar as chaves antigas
+
+Verificação:
+- [ ] Arquivo .env não aparece no histórico do Git
+- [ ] Arquivo .env não está no repositório remoto
+- [ ] .gitignore contém .env
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 1.2: SEGURANÇA - Rotacionar Todas as Chaves
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🔴 CRÍTICA MÁXIMA
+Tempo: 1 hora
+Responsável: DevOps + Backend
+
+Chaves a Rotacionar:
+
+1. [ ] SUPABASE_SERVICE_ROLE_KEY
+   - Acessar: https://supabase.com/dashboard/project/amkelczfwazutrciqtlk/settings/api
+   - Gerar nova service_role key
+   - Atualizar em variáveis de ambiente de produção
+   - Revogar chave antiga
+
+2. [ ] ASAAS_API_KEY
+   - Acessar: https://www.asaas.com/config/api
+   - Gerar nova API key
+   - Atualizar em Edge Functions secrets
+   - Revogar chave antiga
+
+3. [ ] ASAAS_WEBHOOK_TOKEN
+   - Gerar novo token aleatório seguro
+   - Atualizar em Edge Functions
+   - Atualizar configuração de webhook no Asaas
+
+4. [ ] VITE_ENCRYPTION_KEY
+   - Gerar nova chave de criptografia
+   - Migrar dados criptografados (se houver)
+   - Atualizar em produção
+
+Comandos para Atualizar Secrets:
+```bash
+cd E:\PROJETOS SITE\repositorios\comademig
+supabase secrets set ASAAS_API_KEY=nova_chave_aqui
+supabase secrets set ASAAS_WEBHOOK_TOKEN=novo_token_aqui
+```
+
+Verificação:
+- [ ] Todas as chaves antigas revogadas
+- [ ] Todas as chaves novas funcionando
+- [ ] Sistema operacional com novas chaves
+- [ ] Logs verificados para atividades suspeitas
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 1.3: INFRAESTRUTURA - Linkar Supabase CLI
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🔴 CRÍTICA
+Tempo: 15 minutos
+Responsável: Backend
+
+Passos:
+1. [ ] Verificar se CLI está instalado:
+    ```bash
+    supabase --version
+    ```
+2. [ ] Fazer login (se necessário):
+    ```bash
+    supabase login
+    ```
+3. [ ] Linkar ao projeto:
+    ```bash
+    cd E:\PROJETOS SITE\repositorios\comademig
+    supabase link --project-ref amkelczfwazutrciqtlk
+    ```
+4. [ ] Verificar conexão:
+    ```bash
+    supabase status
+    ```
+
+Verificação:
+- [ ] CLI linkado com sucesso
+- [ ] Comando supabase status funciona
+- [ ] Possível executar queries
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 1.4: BANCO DE DADOS - Regenerar types.ts
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🔴 CRÍTICA
+Tempo: 10 minutos
+Responsável: Backend
+
+Passos:
+1. [ ] Gerar tipos TypeScript do banco:
+    ```bash
+    supabase gen types typescript --linked > src/integrations/supabase/types.ts
+    ```
+2. [ ] Verificar arquivo gerado
+3. [ ] Corrigir imports se necessário
+4. [ ] Testar compilação:
+    ```bash
+    npm run build
+    ```
+
+Verificação:
+- [ ] Arquivo types.ts não está vazio
+- [ ] Tipos correspondem ao banco de dados
+- [ ] Compilação TypeScript sem erros
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 1.5: BANCO DE DADOS - Verificar Member Types
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🔴 BLOQUEADOR
+Tempo: 2 horas
+Responsável: Backend + DBA
+
+Passos:
+1. [ ] Verificar se tabela member_types existe:
+    ```bash
+    supabase db execute "SELECT * FROM member_types LIMIT 5"
+    ```
+
+2. [ ] Verificar se tabela member_type_subscriptions existe:
+    ```bash
+    supabase db execute "SELECT * FROM member_type_subscriptions LIMIT 5"
+    ```
+
+3. [ ] Verificar se tabela subscription_plans existe:
+    ```bash
+    supabase db execute "SELECT * FROM subscription_plans LIMIT 5"
+    ```
+
+4. [ ] Se tabelas estiverem vazias, popular com dados de teste:
+    ```sql
+    -- Inserir tipos de membro
+    INSERT INTO member_types (name, description, is_active, sort_order) VALUES
+    ('Pastor', 'Ministro ordenado responsável por uma igreja', true, 1),
+    ('Evangelista', 'Ministro itinerante focado em evangelização', true, 2),
+    ('Diácono', 'Auxiliar ministerial', true, 3),
+    ('Membro', 'Membro regular da convenção', true, 4);
+
+    -- Inserir planos de assinatura
+    INSERT INTO subscription_plans (name, price, recurrence, description) VALUES
+    ('Plano Mensal Pastor', 50.00, 'monthly', 'Assinatura mensal para pastores'),
+    ('Plano Anual Pastor', 500.00, 'annual', 'Assinatura anual para pastores'),
+    ('Plano Mensal Evangelista', 40.00, 'monthly', 'Assinatura mensal para evangelistas'),
+    ('Plano Mensal Diácono', 30.00, 'monthly', 'Assinatura mensal para diáconos'),
+    ('Plano Mensal Membro', 20.00, 'monthly', 'Assinatura mensal para membros');
+    ```
+
+5. [ ] Verificar RLS policies:
+    ```bash
+    supabase db execute "SELECT * FROM pg_policies WHERE tablename = 'member_types'"
+    ```
+
+6. [ ] Se necessário, criar policy de leitura pública:
+    ```sql
+    CREATE POLICY "Allow public read active member types"
+    ON member_types FOR SELECT
+    USING (is_active = true);
+    ```
+
+7. [ ] Testar query do hook:
+    ```bash
+    supabase db execute "
+    SELECT 
+      id, name, description, sort_order, is_active, created_at, updated_at
+    FROM member_types
+    WHERE is_active = true
+    ORDER BY sort_order
+    "
+    ```
+
+Verificação:
+- [ ] Tabelas existem e têm dados
+- [ ] RLS permite leitura pública
+- [ ] Query do hook retorna dados
+- [ ] Frontend carrega tipos de membro
+
+────────────────────────────────────────────────────────────────────────────
+CHECKPOINT FASE 1
+────────────────────────────────────────────────────────────────────────────
+Antes de prosseguir para Fase 2, verificar:
+
+✅ Critérios de Sucesso:
+- [ ] Chaves antigas removidas do Git
+- [ ] Chaves novas funcionando
+- [ ] CLI linkado e operacional
+- [ ] types.ts gerado corretamente
+- [ ] Member types carregando no frontend
+- [ ] Página de filiação funcional
+
+❌ Se algum critério falhar:
+- PARAR e resolver antes de continuar
+- Não prosseguir para Fase 2
+
+================================================================================
+FASE 2: ESTABILIZAÇÃO (DIAS 2-3)
+================================================================================
+Objetivo: Garantir funcionalidade básica e segurança
+Prioridade: ALTA
+Tempo Estimado: 16 horas
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 2.1: VALIDAÇÃO - Implementar Validação de CPF/CNPJ
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🟠 ALTA
+Tempo: 2 horas
+Responsável: Frontend
+
+Arquivos a Modificar:
+- src/hooks/useFormValidation.ts
+- src/components/payments/PaymentFormEnhanced.tsx
+
+Implementação:
+```typescript
+// Adicionar ao useFormValidation.ts
+export const validateCPF = (cpf: string): boolean => {
+  cpf = cpf.replace(/[^\d]/g, '');
+  if (cpf.length !== 11) return false;
+  
+  // Validar dígitos verificadores
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(cpf.charAt(i)) * (10 - i);
+  }
+  let digit = 11 - (sum % 11);
+  if (digit >= 10) digit = 0;
+  if (digit !== parseInt(cpf.charAt(9))) return false;
+  
+  sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += parseInt(cpf.charAt(i)) * (11 - i);
+  }
+  digit = 11 - (sum % 11);
+  if (digit >= 10) digit = 0;
+  if (digit !== parseInt(cpf.charAt(10))) return false;
+  
+  return true;
+};
+```
+
+Verificação:
+- [ ] CPF válido aceito
+- [ ] CPF inválido rejeitado
+- [ ] Mensagem de erro clara
+- [ ] Validação no frontend e backend
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 2.2: SEGURANÇA - Validar Assinatura de Webhooks
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🟠 ALTA
+Tempo: 3 horas
+Responsável: Backend
+
+Arquivo: supabase/functions/asaas-webhook/index.ts
+
+Implementação:
+```typescript
+import { createHmac } from 'crypto';
+
+function validateWebhookSignature(
+  payload: string,
+  signature: string,
+  secret: string
+): boolean {
+  const hmac = createHmac('sha256', secret);
+  hmac.update(payload);
+  const expectedSignature = hmac.digest('hex');
+  return signature === expectedSignature;
+}
+
+// No handler do webhook:
+const signature = req.headers.get('x-asaas-signature');
+const rawBody = await req.text();
+
+if (!validateWebhookSignature(rawBody, signature, WEBHOOK_SECRET)) {
+  return new Response('Invalid signature', { status: 401 });
+}
+```
+
+Verificação:
+- [ ] Webhook com assinatura válida aceito
+- [ ] Webhook com assinatura inválida rejeitado
+- [ ] Logs de tentativas inválidas
+- [ ] Alertas de segurança configurados
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 2.3: RESILIÊNCIA - Implementar Retry em Webhooks
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🟠 ALTA
+Tempo: 4 horas
+Responsável: Backend
+
+Criar tabela de fila de webhooks:
+```sql
+CREATE TABLE webhook_queue (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_type TEXT NOT NULL,
+  payload JSONB NOT NULL,
+  attempts INTEGER DEFAULT 0,
+  max_attempts INTEGER DEFAULT 3,
+  status TEXT DEFAULT 'pending',
+  last_error TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  processed_at TIMESTAMPTZ
+);
+```
+
+Implementar processamento com retry:
+```typescript
+async function processWebhookWithRetry(event: WebhookEvent) {
+  const maxRetries = 3;
+  let attempt = 0;
+  
+  while (attempt < maxRetries) {
+    try {
+      await processWebhook(event);
+      return { success: true };
+    } catch (error) {
+      attempt++;
+      if (attempt >= maxRetries) {
+        await logFailedWebhook(event, error);
+        throw error;
+      }
+      await sleep(Math.pow(2, attempt) * 1000); // Backoff exponencial
+    }
+  }
+}
+```
+
+Verificação:
+- [ ] Webhooks com falha temporária são retentados
+- [ ] Backoff exponencial funciona
+- [ ] Falhas permanentes são logadas
+- [ ] Dashboard mostra webhooks falhados
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 2.4: BANCO DE DADOS - Adicionar Foreign Keys
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🟠 ALTA
+Tempo: 2 horas
+Responsável: DBA
+
+Criar migração:
+```sql
+-- Adicionar FKs faltantes
+ALTER TABLE asaas_cobrancas
+ADD CONSTRAINT fk_asaas_cobrancas_user
+FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
+
+ALTER TABLE affiliate_commissions
+ADD CONSTRAINT fk_affiliate_commissions_affiliate
+FOREIGN KEY (affiliate_id) REFERENCES affiliates(id) ON DELETE CASCADE;
+
+ALTER TABLE solicitacoes_servicos
+ADD CONSTRAINT fk_solicitacoes_servicos_user
+FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
+
+-- Adicionar índices
+CREATE INDEX idx_asaas_cobrancas_user_id ON asaas_cobrancas(user_id);
+CREATE INDEX idx_asaas_cobrancas_asaas_id ON asaas_cobrancas(asaas_id);
+CREATE INDEX idx_affiliates_referral_code ON affiliates(referral_code);
+CREATE INDEX idx_profiles_email ON profiles(email);
+```
+
+Verificação:
+- [ ] Foreign keys criadas
+- [ ] Índices criados
+- [ ] Performance de queries melhorada
+- [ ] Integridade referencial garantida
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 2.5: LOGGING - Implementar Sistema de Logs
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🟠 ALTA
+Tempo: 3 horas
+Responsável: Backend
+
+Criar tabela de logs:
+```sql
+CREATE TABLE system_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  level TEXT NOT NULL, -- error, warn, info, debug
+  category TEXT NOT NULL, -- webhook, payment, auth, etc
+  message TEXT NOT NULL,
+  metadata JSONB,
+  user_id UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_system_logs_level ON system_logs(level);
+CREATE INDEX idx_system_logs_category ON system_logs(category);
+CREATE INDEX idx_system_logs_created_at ON system_logs(created_at);
+```
+
+Implementar helper de logging:
+```typescript
+export async function log(
+  level: 'error' | 'warn' | 'info' | 'debug',
+  category: string,
+  message: string,
+  metadata?: any,
+  userId?: string
+) {
+  await supabase.from('system_logs').insert({
+    level,
+    category,
+    message,
+    metadata,
+    user_id: userId
+  });
+  
+  // Também logar no console
+  console[level](`[${category}] ${message}`, metadata);
+}
+```
+
+Verificação:
+- [ ] Logs sendo salvos no banco
+- [ ] Logs visíveis no dashboard admin
+- [ ] Filtros funcionando
+- [ ] Performance adequada
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 2.6: TESTES - Implementar Testes Críticos
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🟠 ALTA
+Tempo: 4 horas
+Responsável: QA + Desenvolvedores
+
+Testes a Implementar:
+
+1. [ ] Teste de carregamento de member_types:
+```typescript
+// src/__tests__/hooks/useMemberTypeWithPlan.test.ts
+import { renderHook, waitFor } from '@testing-library/react';
+import { useMemberTypeWithPlan } from '@/hooks/useMemberTypeWithPlan';
+
+describe('useMemberTypeWithPlan', () => {
+  it('should load member types', async () => {
+    const { result } = renderHook(() => useMemberTypeWithPlan());
+    
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+    
+    expect(result.current.memberTypes.length).toBeGreaterThan(0);
+  });
+});
+```
+
+2. [ ] Teste de validação de CPF:
+```typescript
+// src/__tests__/utils/validation.test.ts
+import { validateCPF } from '@/utils/validation';
+
+describe('validateCPF', () => {
+  it('should accept valid CPF', () => {
+    expect(validateCPF('123.456.789-09')).toBe(true);
+  });
+  
+  it('should reject invalid CPF', () => {
+    expect(validateCPF('123.456.789-00')).toBe(false);
+  });
+});
+```
+
+3. [ ] Teste de processamento de webhook:
+```typescript
+// supabase/functions/asaas-webhook/__tests__/index.test.ts
+import { processWebhook } from '../index';
+
+describe('Webhook Processing', () => {
+  it('should process payment confirmation', async () => {
+    const event = {
+      event: 'PAYMENT_CONFIRMED',
+      payment: { id: 'pay_123', value: 50.00 }
+    };
+    
+    const result = await processWebhook(event);
+    expect(result.success).toBe(true);
+  });
+});
+```
+
+Verificação:
+- [ ] Testes executando com sucesso
+- [ ] Cobertura mínima de 50%
+- [ ] CI/CD configurado para rodar testes
+
+────────────────────────────────────────────────────────────────────────────
+CHECKPOINT FASE 2
+────────────────────────────────────────────────────────────────────────────
+✅ Critérios de Sucesso:
+- [ ] Validações implementadas
+- [ ] Webhooks seguros e resilientes
+- [ ] Foreign keys e índices criados
+- [ ] Sistema de logs funcionando
+- [ ] Testes críticos implementados
+
+================================================================================
+FASE 3: OTIMIZAÇÃO (DIAS 4-7)
+================================================================================
+Objetivo: Melhorar performance e UX
+Prioridade: MÉDIA
+Tempo Estimado: 24 horas
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 3.1: PERFORMANCE - Implementar Lazy Loading
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🟡 MODERADA
+Tempo: 3 horas
+
+Modificar App.tsx:
+```typescript
+import { lazy, Suspense } from 'react';
+
+const Dashboard = lazy(() => import('@/pages/dashboard/Dashboard'));
+const AdminUsers = lazy(() => import('@/pages/admin/UsersAdmin'));
+// ... outros imports lazy
+
+// No componente:
+<Suspense fallback={<LoadingSpinner />}>
+  <Routes>
+    <Route path="/dashboard" element={<Dashboard />} />
+    {/* ... */}
+  </Routes>
+</Suspense>
+```
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 3.2: UX - Adicionar Loading Skeletons
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🟡 MODERADA
+Tempo: 4 horas
+
+Criar componente de skeleton:
+```typescript
+// src/components/ui/skeleton.tsx
+export function MemberTypeSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="h-12 bg-gray-200 rounded" />
+      <div className="h-32 bg-gray-200 rounded" />
+      <div className="h-32 bg-gray-200 rounded" />
+    </div>
+  );
+}
+```
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 3.3: PERFORMANCE - Otimizar Queries
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🟡 MODERADA
+Tempo: 4 horas
+
+Analisar e otimizar queries lentas:
+```sql
+-- Identificar queries lentas
+SELECT * FROM pg_stat_statements
+ORDER BY mean_exec_time DESC
+LIMIT 10;
+
+-- Adicionar índices necessários
+CREATE INDEX CONCURRENTLY idx_name ON table(column);
+```
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 3.4: CÓDIGO - Refatorar Componentes Grandes
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🟡 MODERADA
+Tempo: 8 horas
+
+Componentes a Refatorar:
+- PerfilCompleto.tsx (61KB) → Dividir em 5 componentes
+- MemberTypeSelector.tsx (13KB) → Dividir em 3 componentes
+- ContactContentEdit.tsx (25KB) → Dividir em 4 componentes
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 3.5: MONITORAMENTO - Configurar Sentry
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🟡 MODERADA
+Tempo: 2 horas
+
+Instalar e configurar:
+```bash
+npm install @sentry/react @sentry/tracing
+```
+
+```typescript
+// src/main.tsx
+import * as Sentry from "@sentry/react";
+
+Sentry.init({
+  dsn: "https://...@sentry.io/...",
+  integrations: [new Sentry.BrowserTracing()],
+  tracesSampleRate: 1.0,
+});
+```
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 3.6: DOCUMENTAÇÃO - Criar Documentação Técnica
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🟡 MODERADA
+Tempo: 3 horas
+
+Documentos a Criar:
+- [ ] README.md atualizado
+- [ ] CONTRIBUTING.md
+- [ ] API.md (documentação de Edge Functions)
+- [ ] DEPLOYMENT.md
+- [ ] TROUBLESHOOTING.md
+
+================================================================================
+FASE 4: CONSOLIDAÇÃO (DIAS 8-14)
+================================================================================
+Objetivo: Preparar para produção
+Prioridade: MÉDIA
+Tempo Estimado: 40 horas
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 4.1: AMBIENTE - Criar Staging
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🟠 ALTA
+Tempo: 4 horas
+
+1. [ ] Criar projeto Supabase de staging
+2. [ ] Configurar variáveis de ambiente
+3. [ ] Aplicar migrações
+4. [ ] Popular com dados de teste
+5. [ ] Configurar deploy automático
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 4.2: TESTES - Implementar Testes E2E
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🟠 ALTA
+Tempo: 16 horas
+
+Usar Playwright ou Cypress:
+```typescript
+// e2e/filiacao.spec.ts
+test('complete affiliation flow', async ({ page }) => {
+  await page.goto('/filiacao');
+  await page.selectOption('#member-type', 'Pastor');
+  await page.fill('#name', 'Teste E2E');
+  await page.fill('#email', 'teste@e2e.com');
+  await page.fill('#cpf', '123.456.789-09');
+  await page.click('#submit');
+  await expect(page).toHaveURL('/pagamento-sucesso');
+});
+```
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 4.3: SEGURANÇA - Auditoria Completa
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🔴 CRÍTICA
+Tempo: 8 horas
+
+Executar:
+1. [ ] OWASP ZAP scan
+2. [ ] npm audit
+3. [ ] Análise de dependências
+4. [ ] Revisão de RLS policies
+5. [ ] Teste de penetração básico
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 4.4: BACKUP - Configurar Backup Automatizado
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🟠 ALTA
+Tempo: 4 horas
+
+Configurar:
+1. [ ] Backup diário do banco de dados
+2. [ ] Backup de arquivos do storage
+3. [ ] Retenção de 30 dias
+4. [ ] Testes de restauração
+
+────────────────────────────────────────────────────────────────────────────
+TAREFA 4.5: CI/CD - Configurar Pipeline
+────────────────────────────────────────────────────────────────────────────
+Severidade: 🟠 ALTA
+Tempo: 8 horas
+
+Criar .github/workflows/ci.yml:
+```yaml
+name: CI/CD
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+```
+
+================================================================================
+CHECKLIST FINAL PRÉ-PRODUÇÃO
+================================================================================
+
+SEGURANÇA:
+- [ ] Chaves antigas removidas e rotacionadas
+- [ ] Auditoria de segurança completa
+- [ ] Pentest realizado
+- [ ] Vulnerabilidades corrigidas
+- [ ] RLS policies testadas
+- [ ] Validação de entrada em todos os formulários
+
+FUNCIONALIDADE:
+- [ ] Filiação funcionando end-to-end
+- [ ] Pagamentos testados (sandbox)
+- [ ] Webhooks funcionando
+- [ ] Split de comissões funcionando
+- [ ] Carteira digital sendo gerada
+- [ ] Emails sendo enviados
+
+INFRAESTRUTURA:
+- [ ] CLI linkado e funcional
+- [ ] types.ts atualizado
+- [ ] Migrações aplicadas
+- [ ] Backup configurado
+- [ ] Monitoramento ativo
+- [ ] Logs centralizados
+
+QUALIDADE:
+- [ ] Testes unitários > 50% cobertura
+- [ ] Testes E2E críticos implementados
+- [ ] Performance aceitável (< 3s load)
+- [ ] Sem erros no console
+- [ ] Documentação completa
+
+DEPLOY:
+- [ ] Staging testado
+- [ ] CI/CD configurado
+- [ ] Rollback plan definido
+- [ ] Equipe treinada
+- [ ] Monitoramento configurado
+
+================================================================================
+ESTIMATIVAS FINAIS
+================================================================================
+
+Tempo Total Estimado:
+- Fase 1 (Emergência): 8 horas
+- Fase 2 (Estabilização): 16 horas
+- Fase 3 (Otimização): 24 horas
+- Fase 4 (Consolidação): 40 horas
+TOTAL: 88 horas (11 dias úteis)
+
+Equipe Recomendada:
+- 1 DevOps/Segurança
+- 2 Backend Developers
+- 1 Frontend Developer
+- 1 QA Engineer
+- 1 DBA (part-time)
+
+Custo Estimado (variável):
+- Equipe: Depende de salários
+- Ferramentas: ~$200/mês (Sentry, etc)
+- Infraestrutura: ~$100/mês (Staging)
+
+Risco se Não Executado:
+🔴 ALTÍSSIMO - Sistema inseguro e não funcional
+
+================================================================================
+FIM DO PLANO DE AÇÃO
+================================================================================

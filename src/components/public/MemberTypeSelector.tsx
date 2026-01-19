@@ -275,24 +275,7 @@ export const MemberTypeSelector: React.FC<MemberTypeSelectorProps> = ({
               )}
             </div>
 
-            {/* Informação sobre o plano principal (se existir) */}
-            {selectedTypeData.plan_name && (
-              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4" />
-                  Plano Principal Associado
-                </h4>
-                <p className="text-sm text-blue-700">
-                  <strong>{selectedTypeData.plan_name}</strong> - R$ {selectedTypeData.plan_value?.toFixed(2)} 
-                  ({selectedTypeData.plan_recurrence === 'monthly' ? 'Mensal' : 
-                    selectedTypeData.plan_recurrence === 'semestral' ? 'Semestral' : 
-                    selectedTypeData.plan_recurrence === 'annual' ? 'Anual' : selectedTypeData.plan_recurrence})
-                </p>
-                {selectedTypeData.plan_description && (
-                  <p className="text-sm text-blue-600 mt-1">{selectedTypeData.plan_description}</p>
-                )}
-              </div>
-            )}
+
           </CardContent>
         </Card>
       )}
