@@ -104,20 +104,20 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
       console.log('🔍 Validando dados antes de criar conta...');
       
       // Validar CPF
-      const cleanCPF = data.cpf.replace(/\D/g, '');
-      if (!validateCPF(cleanCPF)) {
+      const cleanCPF = (data.cpf || '').replace(/\D/g, '');
+      if (!cleanCPF || !validateCPF(cleanCPF)) {
         throw new Error('CPF inválido. Verifique os números digitados e tente novamente.');
       }
       
       // Validar telefone
-      const cleanPhone = data.telefone.replace(/\D/g, '');
-      if (!validatePhone(cleanPhone)) {
+      const cleanPhone = (data.telefone || '').replace(/\D/g, '');
+      if (!cleanPhone || !validatePhone(cleanPhone)) {
         throw new Error('Telefone inválido. Use formato (XX) XXXXX-XXXX ou XXXXXXXXXXX.');
       }
       
       // Validar CEP
-      const cleanCEP = data.cep.replace(/\D/g, '');
-      if (!validateCEP(cleanCEP)) {
+      const cleanCEP = (data.cep || '').replace(/\D/g, '');
+      if (!cleanCEP || !validateCEP(cleanCEP)) {
         throw new Error('CEP inválido. Use formato XXXXX-XXX ou XXXXXXXX.');
       }
       
@@ -125,17 +125,17 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
 
       // 3. Preparar dados do cliente ANTES de criar conta
       const customerData = {
-        name: data.nome_completo,
-        email: data.email,
-        phone: data.telefone,
+        name: data.nome_completo || '',
+        email: data.email || '',
+        phone: (data.telefone || '').replace(/\D/g, ''), // Garantir que não seja null
         cpfCnpj: cleanCPF, // Usar CPF já validado e limpo
         postalCode: cleanCEP, // Usar CEP já validado e limpo
-        address: data.endereco,
-        addressNumber: data.numero,
+        address: data.endereco || '',
+        addressNumber: data.numero || '',
         complement: data.complemento || undefined,
-        province: data.bairro,
-        city: data.cidade,
-        state: data.estado,
+        province: data.bairro || '',
+        city: data.cidade || '',
+        state: data.estado || '',
       };
 
       console.log('📋 Dados do cliente preparados:', {
@@ -308,12 +308,12 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
           ccv: data.cardData.ccv,
         },
         creditCardHolderInfo: {
-          name: data.nome_completo,
-          email: data.email,
-          cpfCnpj: data.cpf,
-          postalCode: data.cep,
-          addressNumber: data.numero,
-          phone: data.telefone,
+          name: data.nome_completo || '',
+          email: data.email || '',
+          cpfCnpj: (data.cpf || '').replace(/\D/g, ''),
+          postalCode: (data.cep || '').replace(/\D/g, ''),
+          addressNumber: data.numero || '',
+          phone: (data.telefone || '').replace(/\D/g, ''),
         },
         saveCard: true // IMPORTANTE: Salvar cartão para renovações futuras
       };
@@ -392,12 +392,12 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
               initialPaymentId: initialPaymentResult.asaas_id,
               creditCardToken: initialPaymentResult.credit_card_token,
               creditCardHolderInfo: {
-                name: data.nome_completo,
-                email: data.email,
-                cpfCnpj: data.cpf.replace(/\D/g, ''),
-                postalCode: data.cep.replace(/\D/g, ''),
-                addressNumber: data.numero,
-                phone: data.telefone.replace(/\D/g, '')
+                name: data.nome_completo || '',
+                email: data.email || '',
+                cpfCnpj: (data.cpf || '').replace(/\D/g, ''),
+                postalCode: (data.cep || '').replace(/\D/g, ''),
+                addressNumber: data.numero || '',
+                phone: (data.telefone || '').replace(/\D/g, '')
               }
             }
           }

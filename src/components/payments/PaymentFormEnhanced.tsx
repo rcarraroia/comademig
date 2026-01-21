@@ -383,27 +383,47 @@ export default function PaymentFormEnhanced({
       // Para usuários logados, usar dados do perfil se não fornecidos no formulário
       let filiacaoData: FiliacaoPaymentData;
       
-      if (user && userProfile) {
-        // Usuário logado - usar dados do perfil
+      if (user) {
+        // Usuário logado - combinar dados do perfil com dados do formulário
+        // CORREÇÃO: Para usuários logados, usar dados do formulário se fornecidos, senão usar do perfil
         filiacaoData = {
-          nome_completo: userProfile.nome_completo || user.user_metadata?.nome_completo || user.email,
-          cpf: userProfile.cpf,
-          telefone: userProfile.telefone,
-          email: user.email,
-          cep: userProfile.cep,
-          endereco: userProfile.endereco,
-          numero: userProfile.numero,
-          complemento: userProfile.complemento,
-          bairro: userProfile.bairro,
-          cidade: userProfile.cidade,
-          estado: userProfile.estado,
+          nome_completo: userProfile?.nome_completo || user.user_metadata?.nome_completo || user.email || '',
+          cpf: data.cpf || userProfile?.cpf || '', // Usar do formulário primeiro, depois do perfil
+          telefone: data.telefone || userProfile?.telefone || '', // Usar do formulário primeiro, depois do perfil
+          email: user.email || '',
+          cep: data.cep || userProfile?.cep || '', // Usar do formulário primeiro, depois do perfil
+          endereco: data.endereco || userProfile?.endereco || '',
+          numero: data.numero || userProfile?.numero || '',
+          complemento: data.complemento || userProfile?.complemento || '',
+          bairro: data.bairro || userProfile?.bairro || '',
+          cidade: data.cidade || userProfile?.cidade || '',
+          estado: data.estado || userProfile?.estado || '',
           payment_method: data.payment_method,
         };
         
-        console.log('👤 USUÁRIO LOGADO - Usando dados do perfil:');
+        console.log('👤 USUÁRIO LOGADO - Combinando dados:');
         console.log('   Nome:', filiacaoData.nome_completo);
         console.log('   CPF:', filiacaoData.cpf);
+        console.log('   Telefone:', filiacaoData.telefone);
         console.log('   Email:', filiacaoData.email);
+        
+        // Validar se dados obrigatórios estão presentes
+        if (!filiacaoData.cpf) {
+          toast.error('CPF é obrigatório. Complete seus dados no formulário.');
+          return;
+        }
+        if (!filiacaoData.telefone) {
+          toast.error('Telefone é obrigatório. Complete seus dados no formulário.');
+          return;
+        }
+        if (!filiacaoData.cep) {
+          toast.error('CEP é obrigatório. Complete seus dados no formulário.');
+          return;
+        }
+        if (!filiacaoData.endereco) {
+          toast.error('Endereço é obrigatório. Complete seus dados no formulário.');
+          return;
+        }
       } else {
         // Usuário não logado - usar dados do formulário
         filiacaoData = {
@@ -675,12 +695,168 @@ export default function PaymentFormEnhanced({
               
               <div className="mt-4 pt-4 border-t border-blue-200">
                 <p className="text-xs text-blue-600">
-                  ✅ Seus dados pessoais já estão salvos. Prossiga direto para o pagamento.
+                  ✅ Filiação será vinculada a esta conta existente.
                 </p>
-                <p className="text-xs text-blue-500 mt-1">
-                  💡 Para alterar seus dados, acesse seu perfil após a filiação.
-                </p>
+                {(!userProfile?.cpf || !userProfile?.telefone) && (
+                  <p className="text-xs text-orange-600 mt-1">
+                    ⚠️ Complete os dados obrigatórios abaixo para prosseguir.
+                  </p>
+                )}
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Dados Obrigatórios Faltantes - Para usuários logados sem dados completos */}
+        {user && (!userProfile?.cpf || !userProfile?.telefone || !userProfile?.cep) && (
+          <Card className="border-orange-200 bg-orange-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-orange-800">
+                <AlertTriangle className="h-5 w-5" />
+                Complete Seus Dados
+              </CardTitle>
+              <CardDescription className="text-orange-700">
+                Alguns dados obrigatórios estão faltando no seu perfil. Complete-os abaixo para prosseguir com a filiação.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!userProfile?.cpf && (
+                <div>
+                  <Label htmlFor="cpf">CPF *</Label>
+                  <Input
+                    id="cpf"
+                    {...register('cpf')}
+                    placeholder="000.000.000-00 ou 00000000000"
+                    maxLength={14}
+                  />
+                  {errors.cpf && (
+                    <p className="text-sm text-destructive">{errors.cpf.message}</p>
+                  )}
+                  {cpfValidationMessage && !errors.cpf && (
+                    <p className={`text-sm ${cpfValidationMessage.includes('✅') ? 'text-green-600' : 'text-orange-500'}`}>
+                      {cpfValidationMessage}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {!userProfile?.telefone && (
+                <div>
+                  <Label htmlFor="telefone">Telefone *</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="telefone"
+                      {...register('telefone')}
+                      placeholder="(31) 99999-9999 ou 31999999999"
+                      className="pl-10"
+                      maxLength={15}
+                    />
+                  </div>
+                  {errors.telefone && (
+                    <p className="text-sm text-destructive">{errors.telefone.message}</p>
+                  )}
+                  {phoneValidationMessage && !errors.telefone && (
+                    <p className={`text-sm ${phoneValidationMessage.includes('✅') ? 'text-green-600' : 'text-orange-500'}`}>
+                      {phoneValidationMessage}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {!userProfile?.cep && (
+                <div>
+                  <Label htmlFor="cep">CEP *</Label>
+                  <Input
+                    id="cep"
+                    {...register('cep')}
+                    placeholder="00000-000 ou 00000000"
+                    maxLength={9}
+                  />
+                  {errors.cep && (
+                    <p className="text-sm text-destructive">{errors.cep.message}</p>
+                  )}
+                  {cepValidationMessage && !errors.cep && (
+                    <p className={`text-sm ${cepValidationMessage.includes('✅') ? 'text-green-600' : 'text-orange-500'}`}>
+                      {cepValidationMessage}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {!userProfile?.endereco && (
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <Label htmlFor="endereco">Endereço *</Label>
+                    <Input
+                      id="endereco"
+                      {...register('endereco')}
+                      placeholder="Rua, Avenida, etc."
+                    />
+                    {errors.endereco && (
+                      <p className="text-sm text-destructive">{errors.endereco.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="numero">Número *</Label>
+                    <Input
+                      id="numero"
+                      {...register('numero')}
+                      placeholder="123"
+                    />
+                    {errors.numero && (
+                      <p className="text-sm text-destructive">{errors.numero.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="complemento">Complemento</Label>
+                    <Input
+                      id="complemento"
+                      {...register('complemento')}
+                      placeholder="Apto, Sala, etc."
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="bairro">Bairro *</Label>
+                    <Input
+                      id="bairro"
+                      {...register('bairro')}
+                      placeholder="Nome do bairro"
+                    />
+                    {errors.bairro && (
+                      <p className="text-sm text-destructive">{errors.bairro.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="cidade">Cidade *</Label>
+                    <Input
+                      id="cidade"
+                      {...register('cidade')}
+                      placeholder="Nome da cidade"
+                    />
+                    {errors.cidade && (
+                      <p className="text-sm text-destructive">{errors.cidade.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="estado">Estado *</Label>
+                    <Input
+                      id="estado"
+                      {...register('estado')}
+                      placeholder="MG"
+                      maxLength={2}
+                    />
+                    {errors.estado && (
+                      <p className="text-sm text-destructive">{errors.estado.message}</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
