@@ -131,7 +131,7 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         cpfCnpj: cleanCPF, // Usar CPF já validado e limpo
         postalCode: cleanCEP, // Usar CEP já validado e limpo
         address: data.endereco || '',
-        addressNumber: data.numero || '',
+        addressNumber: data.numero || 'S/N', // ✅ CORREÇÃO: Usar 'S/N' se vazio
         complement: data.complemento || undefined,
         province: data.bairro || '',
         city: data.cidade || '',
@@ -312,7 +312,7 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
           email: data.email || '',
           cpfCnpj: (data.cpf || '').replace(/\D/g, ''),
           postalCode: (data.cep || '').replace(/\D/g, ''),
-          addressNumber: data.numero || '',
+          addressNumber: data.numero || 'S/N', // ✅ CORREÇÃO: Usar 'S/N' se vazio
           phone: (data.telefone || '').replace(/\D/g, ''),
         },
         saveCard: true // IMPORTANTE: Salvar cartão para renovações futuras
@@ -396,7 +396,7 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
                 email: data.email || '',
                 cpfCnpj: (data.cpf || '').replace(/\D/g, ''),
                 postalCode: (data.cep || '').replace(/\D/g, ''),
-                addressNumber: data.numero || '',
+                addressNumber: data.numero || 'S/N', // ✅ CORREÇÃO: Usar 'S/N' se vazio
                 phone: (data.telefone || '').replace(/\D/g, '')
               }
             }

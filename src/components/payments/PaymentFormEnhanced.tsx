@@ -163,15 +163,7 @@ export default function PaymentFormEnhanced({
   const [phoneValidationMessage, setPhoneValidationMessage] = useState<string>('');
   const [userProfile, setUserProfile] = useState<any>(null);
   
-  // DEBUG: Log do estado do usuário
-  React.useEffect(() => {
-    console.log('🔍 DEBUG PaymentFormEnhanced:');
-    console.log('  user:', user);
-    console.log('  user?.id:', user?.id);
-    console.log('  user?.email:', user?.email);
-    console.log('  !!user:', !!user);
-    console.log('  loading:', loading);
-  }, [user, loading]);
+
   
   const { 
     processarFiliacaoComPagamento, 
@@ -208,12 +200,7 @@ export default function PaymentFormEnhanced({
             if (!profile?.telefone) missingFields.push('Telefone');
             
             if (missingFields.length > 0) {
-              console.warn('⚠️ Dados obrigatórios faltando no perfil:', missingFields);
-              toast.warning(
-                `Alguns dados obrigatórios estão faltando no seu perfil: ${missingFields.join(', ')}. ` +
-                'Complete seu perfil antes de fazer a filiação.',
-                { duration: 8000 }
-              );
+              console.log('ℹ️ Dados faltando no perfil:', missingFields);
             }
           }
         } catch (error) {
