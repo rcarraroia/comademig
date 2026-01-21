@@ -406,9 +406,150 @@ async function handlePaymentReceived(
 
   console.log('✅ Assinatura atualizada para active:', subscription.id)
 
+  // 5. Executar ações pós-pagamento (Serviços, Protocolos, Notificações)
+  await executePostPaymentActions(supabaseClient, payment)
+
   return {
     success: true,
-    message: 'Subscription activated and splits processed'
+    message: 'Subscription activated, splits and post-payment actions processed'
+  }
+}
+
+/**
+ * Executa ações pós-pagamento baseadas no tipo de serviço
+ */
+async function executePostPaymentActions(
+  supabaseClient: any,
+  payment: any
+): Promise<void> {
+  try {
+    // Buscar dados da cobrança local
+    const { data: cobranca } = await supabaseClient
+      .from('asaas_cobrancas')
+      .select('id, service_type, service_data, user_id')
+      .eq('asaas_id', payment.id)
+      .single();
+
+    if (!cobranca) {
+      console.warn('⚠️ Cobrança local não encontrada para ações pós-pagamento:', payment.id);
+      return;
+    }
+
+    const serviceType = cobranca.service_type;
+    const serviceData = cobranca.service_data;
+    const userId = cobranca.user_id;
+
+    console.log(`🚀 Executando ações pós-pagamento para serviço: ${serviceType}`);
+
+    // Ações específicas por tipo de serviço
+    switch (serviceType) {
+      case 'filiacao':
+        // Já tratado na ativação da assinatura, mas garantimos aqui se necessário
+        break;
+
+      case 'certidao':
+      case 'regularizacao':
+      case 'servico':
+      case 'servicos':
+        await handleServiceRequest(supabaseClient, userId, serviceType, serviceData, payment);
+        break;
+
+      case 'evento':
+        if (serviceData?.evento_id) {
+          await supabaseClient
+            .from('inscricoes_eventos')
+            .update({
+              status: 'confirmado',
+              confirmed_at: new Date().toISOString()
+            })
+            .eq('user_id', userId)
+            .eq('evento_id', serviceData.evento_id);
+          console.log(`✅ Inscrição em evento confirmada para user: ${userId}`);
+        }
+        break;
+
+      case 'taxa_anual':
+        await supabaseClient
+          .from('profiles')
+          .update({
+            is_adimplent: true,
+            last_payment_date: new Date().toISOString()
+          })
+          .eq('id', userId);
+        console.log(`✅ Adimplência atualizada para user: ${userId}`);
+        break;
+    }
+  } catch (error) {
+    console.error('❌ Erro em executePostPaymentActions:', error);
+  }
+}
+
+/**
+ * Cria solicitação de serviço e notificações
+ */
+async function handleServiceRequest(
+  supabaseClient: any,
+  userId: string,
+  serviceType: string,
+  serviceData: any,
+  payment: any
+): Promise<void> {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 11).toUpperCase();
+  const protocolo = `SRV-${timestamp}-${random}`;
+
+  const { data: solicitacao, error: solicitacaoError } = await supabaseClient
+    .from('solicitacoes_servicos')
+    .insert({
+      user_id: userId,
+      servico_id: serviceData?.servico_id || serviceData?.details?.servico_id,
+      protocolo: protocolo,
+      status: 'pago',
+      dados_enviados: serviceData?.dados_formulario || serviceData?.details?.dados_formulario || {},
+      payment_reference: payment.id,
+      valor_pago: payment.value,
+      forma_pagamento: payment.billingType === 'PIX' ? 'pix' : 'cartao',
+      data_pagamento: payment.paymentDate || new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (solicitacaoError) {
+    console.error('❌ Erro ao criar solicitação de serviço:', solicitacaoError);
+    return;
+  }
+
+  console.log(`✅ Solicitação criada: ${solicitacao.id} | Protocolo: ${protocolo}`);
+
+  // Notificação para o Usuário
+  await supabaseClient
+    .from('notifications')
+    .insert({
+      user_id: userId,
+      title: 'Pagamento Confirmado',
+      message: `Seu pagamento foi confirmado! Protocolo: ${protocolo}. Sua solicitação está sendo processada.`,
+      type: 'payment_confirmed',
+      link: `/dashboard/solicitacao-servicos?protocolo=${protocolo}`,
+      read: false,
+    });
+
+  // Notificações para Admins
+  const { data: admins } = await supabaseClient
+    .from('profiles')
+    .select('id')
+    .in('tipo_membro', ['admin', 'super_admin']);
+
+  if (admins && admins.length > 0) {
+    const adminNotifications = admins.map((admin: any) => ({
+      user_id: admin.id,
+      title: 'Nova Solicitação de Serviço',
+      message: `Nova solicitação recebida. Protocolo: ${protocolo}`,
+      type: 'new_service_request',
+      link: `/admin/solicitacoes?protocolo=${protocolo}`,
+      read: false,
+    }));
+
+    await supabaseClient.from('notifications').insert(adminNotifications);
   }
 }
 
@@ -531,7 +672,7 @@ async function processPaymentSplits(
     try {
       const { data: updateResult, error: updateError } = await supabaseClient
         .from('affiliate_referrals')
-        .update({ 
+        .update({
           status: 'confirmed'
         })
         .eq('id', referralId)

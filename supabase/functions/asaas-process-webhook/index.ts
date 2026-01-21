@@ -9,7 +9,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // Imports compartilhados
-import type { 
+import type {
   WebhookEvent,
   WebhookPayload,
   AsaasPayment
@@ -27,15 +27,15 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
  * Valida token do webhook
  */
 function validateWebhookToken(headers: Headers): boolean {
-  const receivedToken = headers.get('asaas-access-token') || 
-                       headers.get('x-asaas-token') || 
-                       headers.get('authorization')?.replace('Bearer ', '');
-  
+  const receivedToken = headers.get('asaas-access-token') ||
+    headers.get('x-asaas-token') ||
+    headers.get('authorization')?.replace('Bearer ', '');
+
   if (!WEBHOOK_TOKEN) {
     console.warn('ASAAS_WEBHOOK_TOKEN não configurado - validação de token desabilitada');
     return true; // Permitir em desenvolvimento se token não estiver configurado
   }
-  
+
   return receivedToken === WEBHOOK_TOKEN;
 }
 
@@ -46,38 +46,44 @@ function validateWebhookPayload(payload: any): payload is WebhookPayload {
   return (
     payload &&
     typeof payload.event === 'string' &&
-    payload.payment &&
-    typeof payload.payment.id === 'string' &&
-    typeof payload.dateCreated === 'string'
+    typeof payload.dateCreated === 'string' &&
+    ((payload.payment && typeof payload.payment.id === 'string') ||
+      (payload.subscription && typeof payload.subscription.id === 'string'))
   );
 }
 
 /**
  * Registra webhook no banco para auditoria
+ * Versão resiliente que nunca lança exceção síncrona
  */
 async function logWebhook(
   event: WebhookEvent,
-  paymentId: string,
+  entityId: string,
   payload: any,
   processed: boolean = false
 ): Promise<string> {
-  const { data, error } = await supabase
-    .from('asaas_webhooks')
-    .insert({
-      asaas_payment_id: paymentId,
-      event_type: event,
-      payload: payload,
-      processed: processed
-    })
-    .select('id')
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('asaas_webhooks')
+      .insert({
+        asaas_payment_id: entityId, // Pode ser ID de pagamento ou assinatura
+        event_type: event,
+        payload: payload,
+        processed: processed
+      })
+      .select('id')
+      .maybeSingle(); // Usar maybeSingle por segurança
 
-  if (error) {
-    console.error('Erro ao registrar webhook:', error);
-    throw new Error(`Erro ao registrar webhook: ${error.message}`);
+    if (error) {
+      console.error(`Erro ao registrar webhook ${event} (${entityId}):`, error);
+      return '';
+    }
+
+    return data?.id || '';
+  } catch (criticalError) {
+    console.error('Falha catastrófica ao tentar logar webhook:', criticalError);
+    return ''; // Retorna vazio para permitir que o fluxo continue
   }
-
-  return data.id;
 }
 
 /**
@@ -109,6 +115,17 @@ async function updateLocalPayment(payment: AsaasPayment): Promise<void> {
     updateData.credit_card_token = payment.creditCard.creditCardToken;
   }
 
+  const { data: existingPayment, error: checkError } = await supabase
+    .from('asaas_cobrancas')
+    .select('id')
+    .eq('asaas_id', payment.id)
+    .maybeSingle();
+
+  if (checkError || !existingPayment) {
+    console.warn(`Cobrança local não encontrada para atualizar: ${payment.id}. Pulando atualização.`);
+    return;
+  }
+
   const { error } = await supabase
     .from('asaas_cobrancas')
     .update(updateData)
@@ -136,7 +153,7 @@ async function processSplits(payment: AsaasPayment): Promise<void> {
       .from('asaas_cobrancas')
       .select('id')
       .eq('asaas_id', payment.id)
-      .single();
+      .maybeSingle();
 
     if (cobrancaError || !cobranca) {
       console.log('Cobrança local não encontrada para processar splits');
@@ -145,7 +162,7 @@ async function processSplits(payment: AsaasPayment): Promise<void> {
 
     // Chamar Edge Function para processar splits
     console.log('Processando splits automaticamente via webhook');
-    
+
     const { data: splitResult, error: splitError } = await supabase.functions.invoke('asaas-process-splits', {
       body: {
         cobrancaId: cobranca.id,
@@ -181,7 +198,7 @@ async function executePostPaymentActions(payment: AsaasPayment): Promise<void> {
       .from('asaas_cobrancas')
       .select('service_type, service_data, user_id')
       .eq('asaas_id', payment.id)
-      .single();
+      .maybeSingle();
 
     if (error || !cobranca) {
       console.warn('Cobrança local não encontrada para:', payment.id);
@@ -200,7 +217,7 @@ async function executePostPaymentActions(payment: AsaasPayment): Promise<void> {
         // Ativar assinatura do usuário
         await supabase
           .from('user_subscriptions')
-          .update({ 
+          .update({
             status: 'active',
             activated_at: new Date().toISOString()
           })
@@ -385,7 +402,7 @@ async function executePostPaymentActions(payment: AsaasPayment): Promise<void> {
         if (serviceData?.evento_id) {
           await supabase
             .from('inscricoes_eventos')
-            .update({ 
+            .update({
               status: 'confirmado',
               confirmed_at: new Date().toISOString()
             })
@@ -398,7 +415,7 @@ async function executePostPaymentActions(payment: AsaasPayment): Promise<void> {
         // Atualizar status de adimplência
         await supabase
           .from('profiles')
-          .update({ 
+          .update({
             is_adimplent: true,
             last_payment_date: new Date().toISOString()
           })
@@ -455,12 +472,12 @@ async function processWebhookEvent(
         console.log(`Evento de pagamento ${event} processado - apenas atualização de status`);
     }
   }
-  
+
   // Processar eventos de assinatura
   else if (event.startsWith('SUBSCRIPTION_')) {
     await processSubscriptionEvent(event, payment);
   }
-  
+
   else {
     console.log(`Evento ${event} processado - sem ação específica`);
   }
@@ -468,48 +485,61 @@ async function processWebhookEvent(
 
 /**
  * Processa eventos específicos de assinatura
+ * Suporta payloads com 'payment' ou apenas 'subscription'
  */
 async function processSubscriptionEvent(
   event: WebhookEvent,
-  payment: AsaasPayment
+  entity: any
 ): Promise<void> {
-  console.log(`Processando evento de assinatura: ${event}`);
+  // Extrair ID da assinatura de forma robusta
+  // Pode vir como entity.subscription (se for um payment) ou entity.id (se for a assinatura direta)
+  const subscriptionId = entity.subscription || entity.id;
 
-  // Buscar dados da assinatura se disponível
-  const subscriptionId = payment.subscription;
-  if (!subscriptionId) {
-    console.warn('Evento de assinatura sem ID de subscription no payload');
+  console.log(`[SUBSCRIPTION] Processando evento: ${event} para assinatura: ${subscriptionId}`);
+
+  if (!subscriptionId || typeof subscriptionId !== 'string') {
+    console.warn(`[SUBSCRIPTION] Evento ${event} ignorado: ID de assinatura inválido ou ausente`);
     return;
   }
 
   try {
-    // Buscar usuário relacionado à assinatura via cobrança
+    // Buscar usuário relacionado à assinatura via cobrança local
+    // O ID pode ser o ID do pagamento (se entity for payment) ou o ID da assinatura
+    const filterId = entity.id;
+
+    console.log(`[SUBSCRIPTION] Buscando cobrança local com ID: ${filterId} ou SubscriptionID: ${subscriptionId}`);
+
     const { data: cobranca, error } = await supabase
       .from('asaas_cobrancas')
       .select('user_id, service_type')
-      .eq('asaas_payment_id', payment.id)
-      .single();
+      .or(`asaas_payment_id.eq.${filterId},asaas_id.eq.${filterId},asaas_id.eq.${subscriptionId}`)
+      .limit(1)
+      .maybeSingle();
 
-    if (error || !cobranca) {
-      console.warn('Cobrança não encontrada para evento de assinatura:', payment.id);
+    if (error) {
+      console.error(`[SUBSCRIPTION] Erro ao buscar cobrança local para ${subscriptionId}:`, error);
+      return;
+    }
+
+    if (!cobranca) {
+      console.warn(`[SUBSCRIPTION] Cobrança/Assinatura não encontrada localmente para: ${subscriptionId}. Ignorando processamento de regra de negócio.`);
       return;
     }
 
     const userId = cobranca.user_id;
+    console.log(`[SUBSCRIPTION] Entidade encontrada. Usuário: ${userId}.`);
 
     // Ações específicas por evento de assinatura
     switch (event) {
       case 'SUBSCRIPTION_CREATED':
-        console.log(`Assinatura criada: ${subscriptionId} para usuário: ${userId}`);
-        // Registrar criação da assinatura
+        console.log(`[SUBSCRIPTION] Assinatura criada: ${subscriptionId} para usuário: ${userId}`);
         break;
 
       case 'SUBSCRIPTION_SUSPENDED':
-        console.log(`Assinatura suspensa: ${subscriptionId}`);
-        // Suspender acesso do usuário
+        console.log(`[SUBSCRIPTION] Suspendendo acesso para assinatura: ${subscriptionId}`);
         await supabase
           .from('user_subscriptions')
-          .update({ 
+          .update({
             status: 'suspended',
             suspended_at: new Date().toISOString()
           })
@@ -518,11 +548,10 @@ async function processSubscriptionEvent(
         break;
 
       case 'SUBSCRIPTION_REACTIVATED':
-        console.log(`Assinatura reativada: ${subscriptionId}`);
-        // Reativar acesso do usuário
+        console.log(`[SUBSCRIPTION] Reativando acesso para assinatura: ${subscriptionId}`);
         await supabase
           .from('user_subscriptions')
-          .update({ 
+          .update({
             status: 'active',
             reactivated_at: new Date().toISOString()
           })
@@ -531,11 +560,10 @@ async function processSubscriptionEvent(
         break;
 
       case 'SUBSCRIPTION_DELETED':
-        console.log(`Assinatura cancelada: ${subscriptionId}`);
-        // Cancelar assinatura do usuário
+        console.log(`[SUBSCRIPTION] Cancelando assinatura e removendo acesso: ${subscriptionId}`);
         await supabase
           .from('user_subscriptions')
-          .update({ 
+          .update({
             status: 'cancelled',
             cancelled_at: new Date().toISOString()
           })
@@ -544,17 +572,15 @@ async function processSubscriptionEvent(
         break;
 
       case 'SUBSCRIPTION_UPDATED':
-        console.log(`Assinatura atualizada: ${subscriptionId}`);
-        // Atualizar dados da assinatura se necessário
+        console.log(`[SUBSCRIPTION] Assinatura atualizada: ${subscriptionId}`);
         break;
 
       default:
-        console.log(`Evento de assinatura ${event} processado sem ação específica`);
+        console.log(`[SUBSCRIPTION] Evento ${event} processado com sucesso (sem ação adicional)`);
     }
 
   } catch (error) {
-    console.error('Erro ao processar evento de assinatura:', error);
-    // Não falhar o webhook por erro de processamento de assinatura
+    console.error(`[SUBSCRIPTION] Falha ao processar regras de negócio para ${subscriptionId}:`, error);
   }
 }
 
@@ -604,45 +630,91 @@ serve(async (req) => {
       );
     }
 
-    // Parse do payload
-    const payload = await req.json();
+    // Parse do payload e validação inicial
+    let payload: any;
+    try {
+      payload = await req.json();
+    } catch (parseError) {
+      console.error('Erro ao ler JSON do payload:', parseError);
+      return new Response(
+        JSON.stringify({ error: 'JSON inválido' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Validar estrutura do payload
     if (!validateWebhookPayload(payload)) {
-      console.error('Payload de webhook inválido:', payload);
+      console.error('Payload de webhook inválido:', JSON.stringify(payload, null, 2));
       return new Response(
         JSON.stringify({ error: 'Payload inválido' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const { event, payment, dateCreated } = payload as WebhookPayload;
+    const { event, payment, subscription } = payload as WebhookPayload;
+    const entityId = payment?.id || subscription?.id || 'unknown';
 
-    console.log(`Webhook recebido: ${event} para pagamento ${payment.id}`);
+    console.log(`[RECEIVE] Webhook recebido: ${event} para entidade ${entityId}`);
 
-    // Registrar webhook para auditoria
-    webhookId = await logWebhook(event, payment.id, payload, false);
+    // Registrar webhook para auditoria (Marcar como iniciada a recepção)
+    // logWebhook é resiliente e não lança exceções
+    webhookId = await logWebhook(event, entityId, payload, false);
 
-    // Processar evento
-    await processWebhookEvent(event, payment);
-
-    // Marcar como processado
-    if (webhookId) {
-      await markWebhookProcessed(webhookId);
-    }
-
-    console.log(`Webhook ${event} processado com sucesso`);
-
-    // Resposta de sucesso (importante para o Asaas)
-    return new Response(
-      JSON.stringify({ 
+    // Resposta de sucesso IMEDIATA para o Asaas (Acknowledge)
+    // Isso evita que o Asaas reenvie o webhook ou pause a fila por demora
+    const response = new Response(
+      JSON.stringify({
         success: true,
-        message: 'Webhook processado com sucesso',
+        message: 'Webhook recebido e em processamento',
         event,
-        payment_id: payment.id
+        entity_id: entityId,
+        webhook_log_id: webhookId
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+
+    // Processar evento em "background" (sem travar a resposta)
+    // No Supabase Edge Functions, o processo continua até a Promise resolver
+    (async () => {
+      try {
+        console.log(`Iniciando processamento assíncrono para ${event} (${entityId})`);
+
+        if (event.startsWith('PAYMENT_') && payment) {
+          await processWebhookEvent(event, payment);
+        } else if (event.startsWith('SUBSCRIPTION_')) {
+          // Normalizar entidade para processamento de assinatura
+          // Pode vir tanto no campo subscription quanto no payment (do subscription event)
+          const entity = subscription || payment;
+          if (entity) {
+            await processSubscriptionEvent(event, entity);
+          } else {
+            console.warn(`[PROCESS] Evento de assinatura ${event} ignorado: Nenhuma entidade encontrada no payload`);
+          }
+        }
+
+        // Marcar como processado
+        if (webhookId) {
+          await markWebhookProcessed(webhookId);
+        }
+
+        console.log(`Processamento assíncrono de ${event} concluído com sucesso`);
+      } catch (processingError) {
+        console.error(`Erro no processamento assíncrono de ${event}:`, processingError);
+
+        // Registrar erro se webhook foi criado
+        if (webhookId) {
+          await supabase
+            .from('asaas_webhooks')
+            .update({
+              processed: false,
+              error_message: processingError instanceof Error ? processingError.message : 'Erro no processamento assíncrono'
+            })
+            .eq('id', webhookId);
+        }
+      }
+    })();
+
+    return response;
 
   } catch (error) {
     console.error('Erro ao processar webhook:', error);
@@ -652,7 +724,7 @@ serve(async (req) => {
       try {
         await supabase
           .from('asaas_webhooks')
-          .update({ 
+          .update({
             processed: false,
             error_message: error instanceof Error ? error.message : 'Erro desconhecido'
           })
@@ -661,12 +733,13 @@ serve(async (req) => {
         console.error('Erro ao registrar erro do webhook:', logError);
       }
     }
-    
-    // Retornar erro 500 para que o Asaas tente reenviar
+
+    // Retornar erro 500 com detalhes para depuração (Somente durante esta fase)
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: 'Erro interno do servidor',
-        message: error instanceof Error ? error.message : 'Erro desconhecido'
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        stack: error instanceof Error ? error.stack : null
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

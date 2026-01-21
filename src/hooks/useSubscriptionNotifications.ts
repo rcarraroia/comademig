@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscriptionActions } from '@/hooks/useSubscriptionActions';
 import { toast } from 'sonner';
-import { differenceInDays, parseISO, isAfter } from 'date-fns';
+import { parseISO, isAfter } from 'date-fns';
 
 interface SubscriptionNotification {
   id: string;
@@ -22,6 +22,14 @@ interface NotificationSettings {
   showAt3Days: boolean;
   showAt1Day: boolean;
   showOnExpiration: boolean;
+  emailReminders: boolean;
+  dashboardReminders: boolean;
+  reminderFrequency: 'once' | 'daily' | 'weekly';
+  quietHours: {
+    enabled: boolean;
+    start: string; // HH:MM format
+    end: string;   // HH:MM format
+  };
 }
 
 const DEFAULT_SETTINGS: NotificationSettings = {
@@ -30,14 +38,21 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   showAt3Days: true,
   showAt1Day: true,
   showOnExpiration: true,
+  emailReminders: false,
+  dashboardReminders: true,
+  reminderFrequency: 'daily',
+  quietHours: {
+    enabled: false,
+    start: '22:00',
+    end: '08:00'
+  }
 };
 
 const STORAGE_KEY = 'subscription-notifications';
 const SETTINGS_KEY = 'subscription-notification-settings';
 
 export function useSubscriptionNotifications() {
-  const { user } = useAuth();
-  const { getSubscriptionStatus, subscription } = useSubscriptionActions();
+  const { subscription } = useSubscriptionActions();
   
   const [notifications, setNotifications] = useState<SubscriptionNotification[]>([]);
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_SETTINGS);
@@ -99,6 +114,7 @@ export function useSubscriptionNotifications() {
   const generateNotifications = (): SubscriptionNotification[] => {
     if (!settings.enabled || !subscription) return [];
 
+    const { getSubscriptionStatus } = useSubscriptionActions();
     const status = getSubscriptionStatus();
     const notifications: SubscriptionNotification[] = [];
 

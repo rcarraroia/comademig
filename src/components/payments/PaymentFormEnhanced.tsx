@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -32,36 +32,49 @@ import { useFiliacaoPayment, type FiliacaoPaymentData } from '@/hooks/useFiliaca
 import { formatCurrency } from '@/hooks/useFiliacaoFlow';
 import { toast } from 'sonner';
 import type { UnifiedMemberType } from '@/hooks/useMemberTypeWithPlan';
-import { validarCPF } from '@/utils/cpfValidator';
+import { validateCPF, validatePhone, validateCEP } from '@/utils/validators';
+import { supabase } from '@/integrations/supabase/client';
 
 // Schema de validação para o formulário
-const PaymentFormSchema = z.object({
-  // Dados pessoais
-  nome_completo: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  cpf: z.string()
-    .min(11, 'CPF deve ter 11 dígitos')
-    .refine((val) => val.replace(/\D/g, '').length === 11, 'CPF deve ter 11 dígitos')
-    .refine((val) => validarCPF(val), 'CPF inválido'),
-  telefone: z.string()
-    .min(10, 'Telefone deve ter pelo menos 10 dígitos')
-    .refine((val) => val.replace(/\D/g, '').length >= 10, 'Telefone deve ter pelo menos 10 dígitos'),
-  email: z.string().email('Email inválido'),
+const createPaymentFormSchema = (isLoggedIn: boolean) => z.object({
+  // Dados pessoais - CONDICIONAIS para usuários logados
+  nome_completo: isLoggedIn 
+    ? z.string().optional() 
+    : z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  cpf: isLoggedIn
+    ? z.string().optional()
+    : z.string()
+        .transform((val) => val.replace(/\D/g, '')) // Limpar ANTES da validação
+        .refine((val) => val.length === 11, 'CPF deve ter 11 dígitos')
+        .refine((val) => validateCPF(val), 'CPF inválido - verifique os números digitados'),
+  telefone: isLoggedIn
+    ? z.string().optional()
+    : z.string()
+        .transform((val) => val.replace(/\D/g, '')) // Limpar ANTES da validação
+        .refine((val) => val.length >= 10 && val.length <= 11, 'Telefone deve ter 10 ou 11 dígitos')
+        .refine((val) => validatePhone(val), 'Telefone inválido - use formato (XX) XXXXX-XXXX'),
+  email: isLoggedIn 
+    ? z.string().optional()
+    : z.string().email('Email inválido'),
   
-  // Endereço
-  cep: z.string()
-    .min(8, 'CEP deve ter 8 dígitos')
-    .refine((val) => val.replace(/\D/g, '').length === 8, 'CEP deve ter 8 dígitos'),
-  endereco: z.string().min(5, 'Endereço deve ter pelo menos 5 caracteres'),
-  numero: z.string().min(1, 'Número é obrigatório'),
+  // Endereço - CONDICIONAIS para usuários logados
+  cep: isLoggedIn
+    ? z.string().optional()
+    : z.string()
+        .transform((val) => val.replace(/\D/g, '')) // Limpar ANTES da validação
+        .refine((val) => val.length === 8, 'CEP deve ter 8 dígitos')
+        .refine((val) => validateCEP(val), 'CEP inválido - use formato XXXXX-XXX'),
+  endereco: isLoggedIn ? z.string().optional() : z.string().min(5, 'Endereço deve ter pelo menos 5 caracteres'),
+  numero: isLoggedIn ? z.string().optional() : z.string().min(1, 'Número é obrigatório'),
   complemento: z.string().optional(),
-  bairro: z.string().min(2, 'Bairro deve ter pelo menos 2 caracteres'),
-  cidade: z.string().min(2, 'Cidade deve ter pelo menos 2 caracteres'),
-  estado: z.string().length(2, 'Estado deve ter 2 caracteres'),
+  bairro: isLoggedIn ? z.string().optional() : z.string().min(2, 'Bairro deve ter pelo menos 2 caracteres'),
+  cidade: isLoggedIn ? z.string().optional() : z.string().min(2, 'Cidade deve ter pelo menos 2 caracteres'),
+  estado: isLoggedIn ? z.string().optional() : z.string().length(2, 'Estado deve ter 2 caracteres'),
   
-  // Método de pagamento (apenas cartão de crédito)
+  // Método de pagamento (sempre obrigatório)
   payment_method: z.literal('credit_card'),
   
-  // Dados do cartão (condicionais)
+  // Dados do cartão (sempre obrigatórios)
   card_holder_name: z.string().optional(),
   card_number: z.string().optional(),
   card_expiry_month: z.string().optional(),
@@ -69,14 +82,16 @@ const PaymentFormSchema = z.object({
   card_ccv: z.string().optional(),
   card_installments: z.string().optional(),
   
-  // Senha (para criar conta)
-  password: z.string()
-    .min(6, 'Senha deve ter pelo menos 6 caracteres')
-    .regex(/[A-Z]/, 'Senha deve conter pelo menos uma letra maiúscula')
-    .regex(/[0-9]/, 'Senha deve conter pelo menos um número'),
-  password_confirmation: z.string(),
+  // Senha (apenas para usuários não logados)
+  password: isLoggedIn 
+    ? z.string().optional()
+    : z.string()
+        .min(6, 'Senha deve ter pelo menos 6 caracteres')
+        .regex(/[A-Z]/, 'Senha deve conter pelo menos uma letra maiúscula')
+        .regex(/[0-9]/, 'Senha deve conter pelo menos um número'),
+  password_confirmation: isLoggedIn ? z.string().optional() : z.string(),
   
-  // Termos
+  // Termos (sempre obrigatórios)
   accept_terms: z.boolean().refine(val => val === true, {
     message: 'Você deve aceitar os termos e condições'
   }),
@@ -96,12 +111,18 @@ const PaymentFormSchema = z.object({
 }, {
   message: 'Todos os dados do cartão são obrigatórios',
   path: ['card_number']
-}).refine((data) => data.password === data.password_confirmation, {
+}).refine((data) => {
+  // Validação condicional para senhas (apenas se não estiver logado)
+  if (!isLoggedIn) {
+    return data.password === data.password_confirmation;
+  }
+  return true;
+}, {
   message: 'As senhas não conferem',
   path: ['password_confirmation']
 });
 
-type PaymentFormData = z.infer<typeof PaymentFormSchema>;
+type PaymentFormData = z.infer<ReturnType<typeof createPaymentFormSchema>>;
 
 interface PaymentFormEnhancedProps {
   selectedMemberType: UnifiedMemberType;
@@ -119,6 +140,10 @@ export default function PaymentFormEnhanced({
   const { user } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
+  const [cpfValidationMessage, setCpfValidationMessage] = useState<string>('');
+  const [cepValidationMessage, setCepValidationMessage] = useState<string>('');
+  const [phoneValidationMessage, setPhoneValidationMessage] = useState<string>('');
+  const [userProfile, setUserProfile] = useState<any>(null);
   
   const { 
     processarFiliacaoComPagamento, 
@@ -130,6 +155,48 @@ export default function PaymentFormEnhanced({
     affiliateInfo
   });
 
+  // Buscar dados do perfil se usuário estiver logado
+  React.useEffect(() => {
+    if (user) {
+      // Buscar dados do perfil do usuário logado
+      const fetchUserProfile = async () => {
+        try {
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('nome_completo, cpf, telefone, cep, endereco, numero, complemento, bairro, cidade, estado')
+            .eq('id', user.id)
+            .single();
+
+          if (error) {
+            console.warn('Não foi possível buscar dados do perfil:', error);
+          } else {
+            setUserProfile(profile);
+            console.log('📋 Dados do perfil carregados:', profile);
+            
+            // Verificar se dados obrigatórios estão presentes
+            const missingFields = [];
+            if (!profile?.nome_completo) missingFields.push('Nome completo');
+            if (!profile?.cpf) missingFields.push('CPF');
+            if (!profile?.telefone) missingFields.push('Telefone');
+            
+            if (missingFields.length > 0) {
+              console.warn('⚠️ Dados obrigatórios faltando no perfil:', missingFields);
+              toast.warning(
+                `Alguns dados obrigatórios estão faltando no seu perfil: ${missingFields.join(', ')}. ` +
+                'Complete seu perfil antes de fazer a filiação.',
+                { duration: 8000 }
+              );
+            }
+          }
+        } catch (error) {
+          console.warn('Erro ao buscar perfil:', error);
+        }
+      };
+
+      fetchUserProfile();
+    }
+  }, [user]);
+
   const {
     register,
     handleSubmit,
@@ -137,10 +204,19 @@ export default function PaymentFormEnhanced({
     watch,
     formState: { errors }
   } = useForm<PaymentFormData>({
-    resolver: zodResolver(PaymentFormSchema),
+    resolver: zodResolver(createPaymentFormSchema(!!user)),
     defaultValues: {
-      nome_completo: user?.user_metadata?.nome_completo || '',
+      nome_completo: user?.user_metadata?.nome_completo || userProfile?.nome_completo || '',
       email: user?.email || '',
+      cpf: userProfile?.cpf || '',
+      telefone: userProfile?.telefone || '',
+      cep: userProfile?.cep || '',
+      endereco: userProfile?.endereco || '',
+      numero: userProfile?.numero || '',
+      complemento: userProfile?.complemento || '',
+      bairro: userProfile?.bairro || '',
+      cidade: userProfile?.cidade || '',
+      estado: userProfile?.estado || '',
       payment_method: 'credit_card',
       card_installments: '1',
       accept_terms: false,
@@ -151,6 +227,103 @@ export default function PaymentFormEnhanced({
   const paymentMethod = watch('payment_method');
   const acceptTerms = watch('accept_terms');
   const acceptPrivacy = watch('accept_privacy');
+  const cpfValue = watch('cpf');
+  const cepValue = watch('cep');
+  const phoneValue = watch('telefone');
+
+  // Validação em tempo real do CPF
+  const validateCPFRealTime = (cpf: string) => {
+    if (!cpf) {
+      setCpfValidationMessage('');
+      return;
+    }
+    
+    const cleanCPF = cpf.replace(/\D/g, '');
+    
+    if (cleanCPF.length < 11) {
+      setCpfValidationMessage(`CPF deve ter 11 dígitos (${cleanCPF.length}/11)`);
+      return;
+    }
+    
+    if (cleanCPF.length === 11) {
+      if (validateCPF(cleanCPF)) {
+        setCpfValidationMessage('✅ CPF válido');
+      } else {
+        setCpfValidationMessage('❌ CPF inválido - verifique os números');
+      }
+    }
+  };
+
+  // Validação em tempo real do CEP
+  const validateCEPRealTime = (cep: string) => {
+    if (!cep) {
+      setCepValidationMessage('');
+      return;
+    }
+    
+    const cleanCEP = cep.replace(/\D/g, '');
+    
+    if (cleanCEP.length < 8) {
+      setCepValidationMessage(`CEP deve ter 8 dígitos (${cleanCEP.length}/8)`);
+      return;
+    }
+    
+    if (cleanCEP.length === 8) {
+      if (validateCEP(cleanCEP)) {
+        setCepValidationMessage('✅ CEP válido');
+      } else {
+        setCepValidationMessage('❌ CEP inválido');
+      }
+    }
+  };
+
+  // Validação em tempo real do telefone
+  const validatePhoneRealTime = (phone: string) => {
+    if (!phone) {
+      setPhoneValidationMessage('');
+      return;
+    }
+    
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    if (cleanPhone.length < 10) {
+      setPhoneValidationMessage(`Telefone deve ter pelo menos 10 dígitos (${cleanPhone.length}/10)`);
+      return;
+    }
+    
+    if (cleanPhone.length >= 10 && cleanPhone.length <= 11) {
+      if (validatePhone(cleanPhone)) {
+        setPhoneValidationMessage('✅ Telefone válido');
+      } else {
+        setPhoneValidationMessage('❌ Telefone inválido');
+      }
+    } else {
+      setPhoneValidationMessage('❌ Telefone deve ter 10 ou 11 dígitos');
+    }
+  };
+
+  // Executar validações em tempo real
+  React.useEffect(() => {
+    validateCPFRealTime(cpfValue || '');
+  }, [cpfValue]);
+
+  React.useEffect(() => {
+    validateCEPRealTime(cepValue || '');
+  }, [cepValue]);
+
+  React.useEffect(() => {
+    validatePhoneRealTime(phoneValue || '');
+  }, [phoneValue]);
+
+  // Debug: Log do estado dos termos
+  React.useEffect(() => {
+    console.log('🔍 Estado dos termos:', {
+      acceptTerms,
+      acceptPrivacy,
+      isProcessing,
+      buttonDisabled: isProcessing || !acceptTerms || !acceptPrivacy
+    });
+  }, [acceptTerms, acceptPrivacy, isProcessing]);
 
   // Valor do plano (sem desconto PIX)
   const originalPrice = selectedMemberType.plan_value || 0;
@@ -163,32 +336,62 @@ export default function PaymentFormEnhanced({
     }
 
     try {
-      // Função para limpar formatação (remover pontos, traços, espaços)
-      const cleanNumericField = (value: string | undefined): string => {
-        return value ? value.replace(/\D/g, '') : '';
-      };
+      // Para usuários logados, usar dados do perfil se não fornecidos no formulário
+      let filiacaoData: FiliacaoPaymentData;
+      
+      if (user && userProfile) {
+        // Usuário logado - usar dados do perfil
+        filiacaoData = {
+          nome_completo: userProfile.nome_completo || user.user_metadata?.nome_completo || user.email,
+          cpf: userProfile.cpf,
+          telefone: userProfile.telefone,
+          email: user.email,
+          cep: userProfile.cep,
+          endereco: userProfile.endereco,
+          numero: userProfile.numero,
+          complemento: userProfile.complemento,
+          bairro: userProfile.bairro,
+          cidade: userProfile.cidade,
+          estado: userProfile.estado,
+          payment_method: data.payment_method,
+        };
+        
+        console.log('👤 USUÁRIO LOGADO - Usando dados do perfil:');
+        console.log('   Nome:', filiacaoData.nome_completo);
+        console.log('   CPF:', filiacaoData.cpf);
+        console.log('   Email:', filiacaoData.email);
+      } else {
+        // Usuário não logado - usar dados do formulário
+        filiacaoData = {
+          nome_completo: data.nome_completo!,
+          cpf: data.cpf!, // Já limpo pelo Zod transform
+          telefone: data.telefone!, // Já limpo pelo Zod transform
+          email: data.email!,
+          cep: data.cep!, // Já limpo pelo Zod transform
+          endereco: data.endereco!,
+          numero: data.numero!,
+          complemento: data.complemento,
+          bairro: data.bairro!,
+          cidade: data.cidade!,
+          estado: data.estado!,
+          payment_method: data.payment_method,
+          // Incluir senha para criar conta
+          password: data.password,
+        };
+        
+        console.log('🆕 USUÁRIO NOVO - Usando dados do formulário:');
+        console.log('   Nome:', filiacaoData.nome_completo);
+        console.log('   CPF:', filiacaoData.cpf);
+        console.log('   Email:', filiacaoData.email);
+      }
 
-      const filiacaoData: FiliacaoPaymentData = {
-        nome_completo: data.nome_completo,
-        cpf: cleanNumericField(data.cpf), // Limpar formatação do CPF
-        telefone: cleanNumericField(data.telefone), // Limpar formatação do telefone
-        email: data.email,
-        cep: cleanNumericField(data.cep), // Limpar formatação do CEP
-        endereco: data.endereco,
-        numero: data.numero,
-        complemento: data.complemento,
-        bairro: data.bairro,
-        cidade: data.cidade,
-        estado: data.estado,
-        payment_method: data.payment_method,
-        password: data.password, // Adicionar senha para criar conta
-      };
-
-      // LOG: Dados limpos antes de enviar
-      console.log('🧹 DADOS LIMPOS (sem formatação):');
-      console.log('  CPF original:', data.cpf, '→ limpo:', filiacaoData.cpf);
-      console.log('  Telefone original:', data.telefone, '→ limpo:', filiacaoData.telefone);
-      console.log('  CEP original:', data.cep, '→ limpo:', filiacaoData.cep);
+      // LOG: Dados já limpos pelo Zod (se aplicável)
+      if (!user) {
+        console.log('🧹 DADOS PROCESSADOS PELO ZOD:');
+        console.log('  CPF:', data.cpf, '(length:', data.cpf?.length, ')');
+        console.log('  Telefone:', data.telefone, '(length:', data.telefone?.length, ')');
+        console.log('  CEP:', data.cep, '(length:', data.cep?.length, ')');
+      }
 
       // Adicionar dados específicos do método de pagamento
       if (data.payment_method === 'credit_card' && data.card_holder_name) {
@@ -217,15 +420,24 @@ export default function PaymentFormEnhanced({
       // Erro já tratado no hook
       console.error('Erro no formulário de filiação:', error);
       
-      // Mostrar mensagem de erro ao usuário
+      // Mostrar mensagem de erro específica ao usuário
       const errorMessage = error?.message || 'Erro ao processar filiação';
       
       if (errorMessage.includes('email_already_exists') || errorMessage.includes('já está cadastrado')) {
         toast.error('Este email já está cadastrado. Faça login ou use "Esqueci minha senha".');
-      } else if (errorMessage.includes('CPF')) {
-        toast.error('CPF inválido. Verifique os dados e tente novamente.');
+      } else if (errorMessage.includes('CPF inválido')) {
+        toast.error('CPF inválido. Verifique os números digitados e tente novamente.');
+      } else if (errorMessage.includes('Telefone inválido')) {
+        toast.error('Telefone inválido. Use o formato (XX) XXXXX-XXXX.');
+      } else if (errorMessage.includes('CEP inválido')) {
+        toast.error('CEP inválido. Use o formato XXXXX-XXX.');
+      } else if (errorMessage.includes('cartão recusado') || errorMessage.includes('card_declined')) {
+        toast.error('Cartão recusado. Verifique os dados ou tente outro cartão.');
+      } else if (errorMessage.includes('dados inválidos')) {
+        toast.error('Alguns dados informados são inválidos. Verifique os campos e tente novamente.');
       } else {
-        toast.error(errorMessage);
+        // Mensagem genérica para outros erros
+        toast.error('Erro ao processar filiação. Tente novamente ou entre em contato com o suporte.');
       }
     }
   };
@@ -269,83 +481,155 @@ export default function PaymentFormEnhanced({
       </Card>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Dados Pessoais */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Dados Pessoais
-            </CardTitle>
-            <CardDescription>
-              Preencha seus dados pessoais para a filiação
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="nome_completo">Nome Completo *</Label>
-                <Input
-                  id="nome_completo"
-                  {...register('nome_completo')}
-                  placeholder="Seu nome completo"
-                />
-                {errors.nome_completo && (
-                  <p className="text-sm text-destructive">{errors.nome_completo.message}</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="cpf">CPF *</Label>
-                <Input
-                  id="cpf"
-                  {...register('cpf')}
-                  placeholder="00000000000"
-                  maxLength={11}
-                />
-                {errors.cpf && (
-                  <p className="text-sm text-destructive">{errors.cpf.message}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="telefone">Telefone *</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        {/* Dados Pessoais - APENAS para usuários NÃO logados */}
+        {!user && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Dados Pessoais
+              </CardTitle>
+              <CardDescription>
+                Preencha seus dados pessoais para criar sua conta e processar a filiação
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="nome_completo">Nome Completo *</Label>
                   <Input
-                    id="telefone"
-                    {...register('telefone')}
-                    placeholder="(31) 99999-9999"
-                    className="pl-10"
+                    id="nome_completo"
+                    {...register('nome_completo')}
+                    placeholder="Seu nome completo"
                   />
+                  {errors.nome_completo && (
+                    <p className="text-sm text-destructive">{errors.nome_completo.message}</p>
+                  )}
                 </div>
-                {errors.telefone && (
-                  <p className="text-sm text-destructive">{errors.telefone.message}</p>
-                )}
-              </div>
 
-              <div>
-                <Label htmlFor="email">Email *</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <div>
+                  <Label htmlFor="cpf">CPF *</Label>
                   <Input
-                    id="email"
-                    type="email"
-                    {...register('email')}
-                    placeholder="seu@email.com"
-                    className="pl-10"
+                    id="cpf"
+                    {...register('cpf')}
+                    placeholder="000.000.000-00 ou 00000000000"
+                    maxLength={14}
                   />
+                  {errors.cpf && (
+                    <p className="text-sm text-destructive">{errors.cpf.message}</p>
+                  )}
+                  {cpfValidationMessage && !errors.cpf && (
+                    <p className={`text-sm ${cpfValidationMessage.includes('✅') ? 'text-green-600' : 'text-orange-500'}`}>
+                      {cpfValidationMessage}
+                    </p>
+                  )}
                 </div>
-                {errors.email && (
-                  <p className="text-sm text-destructive">{errors.email.message}</p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="telefone">Telefone *</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="telefone"
+                      {...register('telefone')}
+                      placeholder="(31) 99999-9999 ou 31999999999"
+                      className="pl-10"
+                      maxLength={15}
+                    />
+                  </div>
+                  {errors.telefone && (
+                    <p className="text-sm text-destructive">{errors.telefone.message}</p>
+                  )}
+                  {phoneValidationMessage && !errors.telefone && (
+                    <p className={`text-sm ${phoneValidationMessage.includes('✅') ? 'text-green-600' : 'text-orange-500'}`}>
+                      {phoneValidationMessage}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="email">Email *</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      {...register('email')}
+                      placeholder="seu@email.com"
+                      className="pl-10"
+                    />
+                  </div>
+                  {errors.email && (
+                    <p className="text-sm text-destructive">{errors.email.message}</p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Informações do usuário logado */}
+        {user && (
+          <Card className="border-blue-200 bg-blue-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-800">
+                <User className="h-5 w-5" />
+                Usuário Logado
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-blue-700">Nome:</p>
+                  <p className="text-blue-800">{userProfile?.nome_completo || user.user_metadata?.nome_completo || user.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-blue-700">Email:</p>
+                  <p className="text-blue-800">{user.email}</p>
+                </div>
+                {userProfile?.cpf && (
+                  <div>
+                    <p className="text-sm font-medium text-blue-700">CPF:</p>
+                    <p className="text-blue-800">{userProfile.cpf}</p>
+                  </div>
+                )}
+                {userProfile?.telefone && (
+                  <div>
+                    <p className="text-sm font-medium text-blue-700">Telefone:</p>
+                    <p className="text-blue-800">{userProfile.telefone}</p>
+                  </div>
                 )}
               </div>
-            </div>
-          </CardContent>
-        </Card>
+              
+              {userProfile?.cep && userProfile?.endereco && (
+                <div className="mt-4 pt-4 border-t border-blue-200">
+                  <p className="text-sm font-medium text-blue-700 mb-2">Endereço:</p>
+                  <p className="text-blue-800 text-sm">
+                    {userProfile.endereco}, {userProfile.numero}
+                    {userProfile.complemento && `, ${userProfile.complemento}`}
+                    <br />
+                    {userProfile.bairro} - {userProfile.cidade}/{userProfile.estado}
+                    <br />
+                    CEP: {userProfile.cep}
+                  </p>
+                </div>
+              )}
+              
+              <div className="mt-4 pt-4 border-t border-blue-200">
+                <p className="text-xs text-blue-600">
+                  ✅ Seus dados pessoais já estão salvos. Prossiga direto para o pagamento.
+                </p>
+                <p className="text-xs text-blue-500 mt-1">
+                  💡 Para alterar seus dados, acesse seu perfil após a filiação.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Criar Senha */}
+        {/* Criar Senha - APENAS se usuário NÃO estiver logado */}
         {!user && (
           <Card>
             <CardHeader>
@@ -415,103 +699,113 @@ export default function PaymentFormEnhanced({
           </Card>
         )}
 
-        {/* Endereço */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              Endereço
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-3 gap-4">
+        {/* Endereço - APENAS para usuários NÃO logados */}
+        {!user && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Endereço
+              </CardTitle>
+              <CardDescription>
+                Informe seu endereço para completar o cadastro
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="cep">CEP *</Label>
+                  <Input
+                    id="cep"
+                    {...register('cep')}
+                    placeholder="00000-000 ou 00000000"
+                    maxLength={9}
+                  />
+                  {errors.cep && (
+                    <p className="text-sm text-destructive">{errors.cep.message}</p>
+                  )}
+                  {cepValidationMessage && !errors.cep && (
+                    <p className={`text-sm ${cepValidationMessage.includes('✅') ? 'text-green-600' : 'text-orange-500'}`}>
+                      {cepValidationMessage}
+                    </p>
+                  )}
+                </div>
+
+                <div className="md:col-span-2">
+                  <Label htmlFor="endereco">Endereço *</Label>
+                  <Input
+                    id="endereco"
+                    {...register('endereco')}
+                    placeholder="Rua, Avenida, etc."
+                  />
+                  {errors.endereco && (
+                    <p className="text-sm text-destructive">{errors.endereco.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-4 gap-4">
+                <div>
+                  <Label htmlFor="numero">Número *</Label>
+                  <Input
+                    id="numero"
+                    {...register('numero')}
+                    placeholder="123"
+                  />
+                  {errors.numero && (
+                    <p className="text-sm text-destructive">{errors.numero.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="complemento">Complemento</Label>
+                  <Input
+                    id="complemento"
+                    {...register('complemento')}
+                    placeholder="Apto, Sala, etc."
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="bairro">Bairro *</Label>
+                  <Input
+                    id="bairro"
+                    {...register('bairro')}
+                    placeholder="Nome do bairro"
+                  />
+                  {errors.bairro && (
+                    <p className="text-sm text-destructive">{errors.bairro.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="estado">Estado *</Label>
+                  <Input
+                    id="estado"
+                    {...register('estado')}
+                    placeholder="MG"
+                    maxLength={2}
+                  />
+                  {errors.estado && (
+                    <p className="text-sm text-destructive">{errors.estado.message}</p>
+                  )}
+                </div>
+              </div>
+
               <div>
-                <Label htmlFor="cep">CEP *</Label>
+                <Label htmlFor="cidade">Cidade *</Label>
                 <Input
-                  id="cep"
-                  {...register('cep')}
-                  placeholder="00000000"
-                  maxLength={8}
+                  id="cidade"
+                  {...register('cidade')}
+                  placeholder="Nome da cidade"
                 />
-                {errors.cep && (
-                  <p className="text-sm text-destructive">{errors.cep.message}</p>
+                {errors.cidade && (
+                  <p className="text-sm text-destructive">{errors.cidade.message}</p>
                 )}
               </div>
-
-              <div className="md:col-span-2">
-                <Label htmlFor="endereco">Endereço *</Label>
-                <Input
-                  id="endereco"
-                  {...register('endereco')}
-                  placeholder="Rua, Avenida, etc."
-                />
-                {errors.endereco && (
-                  <p className="text-sm text-destructive">{errors.endereco.message}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-4 gap-4">
-              <div>
-                <Label htmlFor="numero">Número *</Label>
-                <Input
-                  id="numero"
-                  {...register('numero')}
-                  placeholder="123"
-                />
-                {errors.numero && (
-                  <p className="text-sm text-destructive">{errors.numero.message}</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="complemento">Complemento</Label>
-                <Input
-                  id="complemento"
-                  {...register('complemento')}
-                  placeholder="Apto, Sala, etc."
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="bairro">Bairro *</Label>
-                <Input
-                  id="bairro"
-                  {...register('bairro')}
-                  placeholder="Nome do bairro"
-                />
-                {errors.bairro && (
-                  <p className="text-sm text-destructive">{errors.bairro.message}</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="estado">Estado *</Label>
-                <Input
-                  id="estado"
-                  {...register('estado')}
-                  placeholder="MG"
-                  maxLength={2}
-                />
-                {errors.estado && (
-                  <p className="text-sm text-destructive">{errors.estado.message}</p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="cidade">Cidade *</Label>
-              <Input
-                id="cidade"
-                {...register('cidade')}
-                placeholder="Nome da cidade"
-              />
-              {errors.cidade && (
-                <p className="text-sm text-destructive">{errors.cidade.message}</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Método de Pagamento */}
         <Card>
@@ -780,7 +1074,7 @@ export default function PaymentFormEnhanced({
               </>
             ) : (
               <>
-                Finalizar Filiação
+                {user ? 'Processar Pagamento' : 'Finalizar Filiação'}
                 <CheckCircle className="h-4 w-4 ml-2" />
               </>
             )}

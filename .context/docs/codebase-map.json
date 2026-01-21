@@ -1,0 +1,2412 @@
+{
+  "version": "1.0.0",
+  "generated": "2026-01-20T03:39:26.705Z",
+  "stack": {
+    "primaryLanguage": "typescript",
+    "languages": [
+      "javascript",
+      "typescript",
+      "python"
+    ],
+    "frameworks": [],
+    "buildTools": [
+      "vite"
+    ],
+    "testFrameworks": [
+      "vitest"
+    ],
+    "packageManager": "bun",
+    "isMonorepo": false,
+    "hasDocker": false,
+    "hasCI": false
+  },
+  "structure": {
+    "totalFiles": 923,
+    "topDirectories": [
+      {
+        "name": "_archive",
+        "fileCount": 140
+      },
+      {
+        "name": "ANALISE_ARQUITETURA_MEMBER_TYPES.md",
+        "fileCount": 1
+      },
+      {
+        "name": "ANALISE_COMPARATIVA_REFATORACAO.md",
+        "fileCount": 1
+      },
+      {
+        "name": "ANALISE_COMPLETA_PROBLEMAS.md",
+        "fileCount": 1
+      },
+      {
+        "name": "ANALISE_CRITICA_FLUXO_PAGAMENTO_FILIACAO.md",
+        "fileCount": 1
+      },
+      {
+        "name": "ANALISE_CRITICA_ROTAS_LAYOUTS_COMPLETA.md",
+        "fileCount": 1
+      },
+      {
+        "name": "ANALISE_DASHBOARD_FINANCEIRO_COMPLETA.md",
+        "fileCount": 1
+      },
+      {
+        "name": "analise_dashboard_financeiro.py",
+        "fileCount": 1
+      },
+      {
+        "name": "ANALISE_FLUXO_AFILIADOS_COMPLETO.md",
+        "fileCount": 1
+      },
+      {
+        "name": "ANALISE_FLUXO_PAGAMENTO_COMPLETO.md",
+        "fileCount": 1
+      },
+      {
+        "name": "ANALISE_LOGOUT_APOS_ERRO_PAGAMENTO.md",
+        "fileCount": 1
+      },
+      {
+        "name": "ANALISE_LOGOUT_AUTOMATICO.md",
+        "fileCount": 1
+      },
+      {
+        "name": "ANALISE_PROBLEMA_AUTENTICACAO.md",
+        "fileCount": 1
+      },
+      {
+        "name": "ANALISE_PROBLEMA_SOLICITACAO.md",
+        "fileCount": 1
+      },
+      {
+        "name": "ANALISE_PROFUNDA_ROTAS_LAYOUTS.md",
+        "fileCount": 1
+      },
+      {
+        "name": "ANALISE_SISTEMA_AFILIADOS.md",
+        "fileCount": 1
+      },
+      {
+        "name": "ANALISE_STATUS_PENDENTE_COMISSOES.md",
+        "fileCount": 1
+      },
+      {
+        "name": "api",
+        "fileCount": 33
+      },
+      {
+        "name": "AUDITORIA_ARQUITETURAL_SISTEMA.md",
+        "fileCount": 1
+      },
+      {
+        "name": "AUDITORIA_COMPLETA_DUPLICIDADES.py",
+        "fileCount": 1
+      },
+      {
+        "name": "AUDITORIA_COMPLETA_SISTEMA_FILIACAO.md",
+        "fileCount": 1
+      },
+      {
+        "name": "AUDITORIA_DUPLICIDADES_RESULTADO.json",
+        "fileCount": 1
+      },
+      {
+        "name": "bun.lockb",
+        "fileCount": 1
+      },
+      {
+        "name": "CARTOES_TESTE_ASAAS.md",
+        "fileCount": 1
+      },
+      {
+        "name": "check_profile_defaults.py",
+        "fileCount": 1
+      },
+      {
+        "name": "CLI_CONFIGURADO_SUCESSO.md",
+        "fileCount": 1
+      },
+      {
+        "name": "comademig.code-workspace",
+        "fileCount": 1
+      },
+      {
+        "name": "components.json",
+        "fileCount": 1
+      },
+      {
+        "name": "CONFIGURACAO_WEBHOOKS_ASAAS.md",
+        "fileCount": 1
+      },
+      {
+        "name": "CONFIGURAR_WEBHOOK_AGORA.md",
+        "fileCount": 1
+      },
+      {
+        "name": "CONFIGURAR_WEBHOOK_ASAAS.md",
+        "fileCount": 1
+      },
+      {
+        "name": "CORRECAO_DASHBOARD_FINANCEIRO.md",
+        "fileCount": 1
+      },
+      {
+        "name": "CORRECAO_FINAL_APLICADA.md",
+        "fileCount": 1
+      },
+      {
+        "name": "CORRECOES_APLICADAS_AFILIADOS.md",
+        "fileCount": 1
+      },
+      {
+        "name": "CORRECOES_APLICADAS.md",
+        "fileCount": 1
+      },
+      {
+        "name": "CORRECOES_FINAIS_APLICADAS.md",
+        "fileCount": 1
+      },
+      {
+        "name": "CORRECOES_FINAIS_COMPLETAS.md",
+        "fileCount": 1
+      },
+      {
+        "name": "CORRECOES_PROBLEMAS_CRITICOS_2025-11-28.md",
+        "fileCount": 1
+      },
+      {
+        "name": "corrigir_indicacao_pendente.sql",
+        "fileCount": 1
+      },
+      {
+        "name": "debug",
+        "fileCount": 1
+      },
+      {
+        "name": "debug_solicitacao_problema.py",
+        "fileCount": 1
+      },
+      {
+        "name": "DETALHAMENTO_TECNICO_TESTES.txt",
+        "fileCount": 1
+      },
+      {
+        "name": "diagnostico_afiliados.py",
+        "fileCount": 1
+      },
+      {
+        "name": "DIAGNOSTICO_BASEADO_SCREENSHOTS.md",
+        "fileCount": 1
+      },
+      {
+        "name": "diagnostico_queries.sql",
+        "fileCount": 1
+      },
+      {
+        "name": "diagnostico_simples.py",
+        "fileCount": 1
+      },
+      {
+        "name": "diagnostico_via_dashboard.md",
+        "fileCount": 1
+      },
+      {
+        "name": "DIFERENCAS_SANDBOX_PRODUCAO.md",
+        "fileCount": 1
+      },
+      {
+        "name": "docs",
+        "fileCount": 98
+      },
+      {
+        "name": "DOCUMENTACAO_SISTEMA_COMADEMIG.md",
+        "fileCount": 1
+      },
+      {
+        "name": "eslint.config.js",
+        "fileCount": 1
+      },
+      {
+        "name": "EVENTOS_WEBHOOK_CORRETOS.md",
+        "fileCount": 1
+      },
+      {
+        "name": "forcar_atualizacao_indicacao.sql",
+        "fileCount": 1
+      },
+      {
+        "name": "generate_proper_types.py",
+        "fileCount": 1
+      },
+      {
+        "name": "generate_types.py",
+        "fileCount": 1
+      },
+      {
+        "name": "GUIA_CONFIGURACAO_WEBHOOKS_ASAAS.md",
+        "fileCount": 1
+      },
+      {
+        "name": "GUIA_MIGRACAO_SANDBOX_PARA_PRODUCAO.md",
+        "fileCount": 1
+      },
+      {
+        "name": "index.html",
+        "fileCount": 1
+      },
+      {
+        "name": "INSTRUCOES_PASTA_ARCHIVE.md",
+        "fileCount": 1
+      },
+      {
+        "name": "LIMPEZA_REALIZADA.md",
+        "fileCount": 1
+      },
+      {
+        "name": "package-lock.json",
+        "fileCount": 1
+      },
+      {
+        "name": "package.json",
+        "fileCount": 1
+      },
+      {
+        "name": "PLANO_ACAO_PRIORITARIO.txt",
+        "fileCount": 1
+      },
+      {
+        "name": "PLANO_REFATORACAO_COMPLETO.md",
+        "fileCount": 1
+      },
+      {
+        "name": "postcss.config.js",
+        "fileCount": 1
+      },
+      {
+        "name": "PROBLEMA_CONSTRAINT_TIPO_MEMBRO.md",
+        "fileCount": 1
+      },
+      {
+        "name": "PROBLEMA_RESOLVIDO_SOLICITACOES.md",
+        "fileCount": 1
+      },
+      {
+        "name": "public",
+        "fileCount": 9
+      },
+      {
+        "name": "README.md",
+        "fileCount": 1
+      },
+      {
+        "name": "REFATORACAO_CONCLUIDA.md",
+        "fileCount": 1
+      },
+      {
+        "name": "REFATORACAO_ROTAS_ADMIN_LOG.md",
+        "fileCount": 1
+      },
+      {
+        "name": "RELATORIO_COMPLETO_DUPLICIDADES.md",
+        "fileCount": 1
+      },
+      {
+        "name": "RELATORIO_TESTES_FUNCIONAIS_COMPLETO.txt",
+        "fileCount": 1
+      },
+      {
+        "name": "RELATORIO_TESTES_SISTEMA.txt",
+        "fileCount": 1
+      },
+      {
+        "name": "RESUMO_EXECUTIVO_REFATORACAO.md",
+        "fileCount": 1
+      },
+      {
+        "name": "RESUMO_FINAL_SESSAO_19_10_2025.md",
+        "fileCount": 1
+      },
+      {
+        "name": "RESUMO_MIGRACAO_PRODUCAO.md",
+        "fileCount": 1
+      },
+      {
+        "name": "RESUMO_PROBLEMA_CARTAO_RECUSADO.md",
+        "fileCount": 1
+      },
+      {
+        "name": "scripts",
+        "fileCount": 8
+      },
+      {
+        "name": "setup_supabase_cli.md",
+        "fileCount": 1
+      },
+      {
+        "name": "SOLUCAO_DEFINITIVA_CACHE.md",
+        "fileCount": 1
+      },
+      {
+        "name": "src",
+        "fileCount": 444
+      },
+      {
+        "name": "supabase",
+        "fileCount": 82
+      },
+      {
+        "name": "tailwind.config.ts",
+        "fileCount": 1
+      },
+      {
+        "name": "test_asaas_card_payment.py",
+        "fileCount": 1
+      },
+      {
+        "name": "test_card_payment_flow.py",
+        "fileCount": 1
+      },
+      {
+        "name": "test_create_customer_direct.py",
+        "fileCount": 1
+      },
+      {
+        "name": "test_filiacao_completa_sandbox.py",
+        "fileCount": 1
+      },
+      {
+        "name": "test_filiacao_sandbox.py",
+        "fileCount": 1
+      },
+      {
+        "name": "test_signup_flow.py",
+        "fileCount": 1
+      },
+      {
+        "name": "testar_edge_function_pagamento.py",
+        "fileCount": 1
+      },
+      {
+        "name": "testar_pagamento_direto_asaas.py",
+        "fileCount": 1
+      },
+      {
+        "name": "TESTE_SISTEMA_AFILIADOS.md",
+        "fileCount": 1
+      },
+      {
+        "name": "testsprite_tests",
+        "fileCount": 3
+      },
+      {
+        "name": "tsconfig.app.json",
+        "fileCount": 1
+      },
+      {
+        "name": "tsconfig.app.tsbuildinfo",
+        "fileCount": 1
+      },
+      {
+        "name": "tsconfig.json",
+        "fileCount": 1
+      },
+      {
+        "name": "tsconfig.node.json",
+        "fileCount": 1
+      },
+      {
+        "name": "tsconfig.node.tsbuildinfo",
+        "fileCount": 1
+      },
+      {
+        "name": "validar_cpf.py",
+        "fileCount": 1
+      },
+      {
+        "name": "vercel.json",
+        "fileCount": 1
+      },
+      {
+        "name": "verificar_constraint_exato.py",
+        "fileCount": 1
+      },
+      {
+        "name": "verificar_constraint_tipo_membro.py",
+        "fileCount": 1
+      },
+      {
+        "name": "verificar_erro_edge_function.py",
+        "fileCount": 1
+      },
+      {
+        "name": "verificar_rls_affiliates.py",
+        "fileCount": 1
+      },
+      {
+        "name": "verificar_servicos_e_solicitacoes.py",
+        "fileCount": 1
+      },
+      {
+        "name": "verificar_split_afiliados.py",
+        "fileCount": 1
+      },
+      {
+        "name": "verificar_ultima_filiacao.py",
+        "fileCount": 1
+      },
+      {
+        "name": "verify_affiliates_columns.py",
+        "fileCount": 1
+      },
+      {
+        "name": "verify_constraint_removed.py",
+        "fileCount": 1
+      },
+      {
+        "name": "verify_rls_policies.py",
+        "fileCount": 1
+      },
+      {
+        "name": "verify_rls_via_sql.py",
+        "fileCount": 1
+      },
+      {
+        "name": "vite.config.ts",
+        "fileCount": 1
+      },
+      {
+        "name": "vitest.config.ts",
+        "fileCount": 1
+      }
+    ],
+    "languageDistribution": [
+      {
+        "extension": ".tsx",
+        "count": 318
+      },
+      {
+        "extension": ".md",
+        "count": 263
+      },
+      {
+        "extension": ".ts",
+        "count": 149
+      },
+      {
+        "extension": ".sql",
+        "count": 62
+      },
+      {
+        "extension": ".py",
+        "count": 38
+      },
+      {
+        "extension": ".js",
+        "count": 31
+      },
+      {
+        "extension": ".json",
+        "count": 23
+      },
+      {
+        "extension": ".txt",
+        "count": 9
+      },
+      {
+        "extension": ".ps1",
+        "count": 7
+      },
+      {
+        "extension": ".png",
+        "count": 5
+      }
+    ]
+  },
+  "architecture": {
+    "layers": [
+      {
+        "name": "Config",
+        "description": "Configuration and constants",
+        "directories": [
+          ".",
+          "src\\hooks",
+          "supabase\\functions\\asaas-configure-split",
+          "scripts"
+        ],
+        "symbolCount": 9,
+        "dependsOn": []
+      },
+      {
+        "name": "Utils",
+        "description": "Shared utilities and helpers",
+        "directories": [
+          "src\\utils",
+          "src\\lib",
+          "supabase\\functions\\shared",
+          "src\\__tests__\\lib",
+          "src\\lib\\validations",
+          "src\\lib\\testing",
+          "src\\lib\\security",
+          "src\\lib\\monitoring",
+          "src\\lib\\deployment",
+          "src\\lib\\asaas",
+          "src\\components\\common"
+        ],
+        "symbolCount": 211,
+        "dependsOn": [
+          "Controllers"
+        ]
+      },
+      {
+        "name": "Controllers",
+        "description": "Request handling and routing",
+        "directories": [
+          "src\\utils",
+          "src\\lib\\asaas",
+          "src\\components",
+          "src\\components\\auth",
+          "api",
+          "api\\scripts",
+          "api\\tests\\unit",
+          "api\\src\\utils",
+          "api\\src\\routes",
+          "api\\src\\middleware",
+          "api\\src\\config"
+        ],
+        "symbolCount": 63,
+        "dependsOn": [
+          "Components"
+        ]
+      },
+      {
+        "name": "Services",
+        "description": "Business logic and orchestration",
+        "directories": [
+          "src\\hooks",
+          "api\\src\\services"
+        ],
+        "symbolCount": 6,
+        "dependsOn": []
+      },
+      {
+        "name": "Components",
+        "description": "UI components and views",
+        "directories": [
+          "src\\hooks",
+          "src\\components\\ui",
+          "src\\pages",
+          "src\\components",
+          "src\\__tests__\\components",
+          "src\\pages\\dashboard",
+          "src\\pages\\checkout",
+          "src\\pages\\admin",
+          "src\\components\\testing",
+          "src\\components\\support",
+          "src\\components\\suporte",
+          "src\\components\\solicitacoes",
+          "src\\components\\servicos",
+          "src\\components\\public",
+          "src\\components\\profile",
+          "src\\components\\payments",
+          "src\\components\\notifications",
+          "src\\components\\monitoring",
+          "src\\components\\layout",
+          "src\\components\\forms",
+          "src\\components\\financial",
+          "src\\components\\filiacao",
+          "src\\components\\feedback",
+          "src\\components\\examples",
+          "src\\components\\events",
+          "src\\components\\dashboard",
+          "src\\components\\communication",
+          "src\\components\\checkout",
+          "src\\components\\carteira",
+          "src\\components\\auth",
+          "src\\components\\affiliates",
+          "src\\components\\admin",
+          "src\\pages\\admin\\content",
+          "src\\pages\\admin\\components",
+          "src\\components\\admin\\modals",
+          "src\\components\\admin\\audit"
+        ],
+        "symbolCount": 252,
+        "dependsOn": [
+          "Generators"
+        ]
+      },
+      {
+        "name": "Repositories",
+        "description": "Data access and persistence",
+        "directories": [
+          "src\\hooks",
+          "_archive"
+        ],
+        "symbolCount": 2,
+        "dependsOn": []
+      },
+      {
+        "name": "Generators",
+        "description": "Content and object generation",
+        "directories": [
+          "src\\components\\events"
+        ],
+        "symbolCount": 1,
+        "dependsOn": []
+      }
+    ],
+    "patterns": [
+      {
+        "name": "Service Layer",
+        "confidence": 0.85,
+        "description": "Encapsulates business logic in service classes",
+        "occurrences": 4
+      },
+      {
+        "name": "Controller",
+        "confidence": 0.9,
+        "description": "Handles incoming requests and returns responses",
+        "occurrences": 1
+      },
+      {
+        "name": "Observer",
+        "confidence": 0.75,
+        "description": "Defines a subscription mechanism to notify multiple objects",
+        "occurrences": 1
+      }
+    ],
+    "entryPoints": [
+      "supabase\\functions\\test-asaas-connectivity\\index.ts",
+      "supabase\\functions\\retry-failed-webhooks\\index.ts",
+      "supabase\\functions\\create-system-logs-table\\index.ts",
+      "supabase\\functions\\asaas-webhook\\index.ts",
+      "supabase\\functions\\asaas-process-webhook\\index.ts",
+      "supabase\\functions\\asaas-process-splits\\index.ts",
+      "supabase\\functions\\asaas-process-regularizacao\\index.ts",
+      "supabase\\functions\\asaas-process-certidao\\index.ts",
+      "supabase\\functions\\asaas-process-card\\index.ts",
+      "supabase\\functions\\asaas-create-subscription\\index.ts",
+      "supabase\\functions\\asaas-create-pix-payment\\index.ts",
+      "supabase\\functions\\asaas-create-customer\\index.ts",
+      "supabase\\functions\\asaas-create-boleto\\index.ts",
+      "supabase\\functions\\asaas-configure-split\\index.ts",
+      "supabase\\functions\\asaas-activate-subscription\\index.ts",
+      "supabase\\functions\\affiliates-management\\index.ts",
+      "src\\lib\\asaas\\index.ts",
+      "src\\main.tsx",
+      "api\\index.js",
+      "api\\src\\config\\index.js"
+    ]
+  },
+  "symbols": {
+    "classes": [
+      {
+        "name": "AccessController",
+        "kind": "class",
+        "file": "src\\lib\\security\\access-control.ts",
+        "line": 151,
+        "exported": true
+      },
+      {
+        "name": "AsaasApiClient",
+        "kind": "class",
+        "file": "src\\lib\\asaas\\client.ts",
+        "line": 38,
+        "exported": true
+      },
+      {
+        "name": "AsaasClient",
+        "kind": "class",
+        "file": "supabase\\functions\\shared\\asaas-client.ts",
+        "line": 32,
+        "exported": true
+      },
+      {
+        "name": "AsaasError",
+        "kind": "class",
+        "file": "src\\lib\\asaas\\types.ts",
+        "line": 24,
+        "exported": true
+      },
+      {
+        "name": "AsaasError",
+        "kind": "class",
+        "file": "src\\lib\\asaas\\client.ts",
+        "line": 27,
+        "exported": true
+      },
+      {
+        "name": "AsaasErrorHandler",
+        "kind": "class",
+        "file": "src\\lib\\asaas\\error-handler.ts",
+        "line": 179,
+        "exported": true
+      },
+      {
+        "name": "AuditLogger",
+        "kind": "class",
+        "file": "src\\lib\\security\\audit-logger.ts",
+        "line": 93,
+        "exported": true
+      },
+      {
+        "name": "DataEncryption",
+        "kind": "class",
+        "file": "src\\lib\\security\\encryption.ts",
+        "line": 20,
+        "exported": true
+      },
+      {
+        "name": "IntegrationTester",
+        "kind": "class",
+        "file": "src\\lib\\testing\\integration-tests.ts",
+        "line": 27,
+        "exported": true
+      },
+      {
+        "name": "ProductionValidator",
+        "kind": "class",
+        "file": "src\\lib\\deployment\\production-config.ts",
+        "line": 63,
+        "exported": true
+      },
+      {
+        "name": "SensitiveDataManager",
+        "kind": "class",
+        "file": "src\\lib\\security\\encryption.ts",
+        "line": 181,
+        "exported": true
+      },
+      {
+        "name": "SystemMonitor",
+        "kind": "class",
+        "file": "src\\lib\\monitoring\\system-monitor.ts",
+        "line": 64,
+        "exported": true
+      },
+      {
+        "name": "WebhookSimulator",
+        "kind": "class",
+        "file": "src\\lib\\testing\\webhook-simulator.ts",
+        "line": 26,
+        "exported": true
+      },
+      {
+        "name": "WebhookValidator",
+        "kind": "class",
+        "file": "src\\lib\\security\\webhook-validator.ts",
+        "line": 15,
+        "exported": true
+      },
+      {
+        "name": "AsaasAPI",
+        "kind": "class",
+        "file": "src\\utils\\asaasApi.ts",
+        "line": 69,
+        "exported": false
+      },
+      {
+        "name": "AsaasClient",
+        "kind": "class",
+        "file": "api\\src\\services\\asaasClient.js",
+        "line": 9,
+        "exported": false,
+        "description": "Cliente para integração com API Asaas v3\rImplementa retry automático e circuit breaker"
+      },
+      {
+        "name": "DiagnosticService",
+        "kind": "class",
+        "file": "src\\utils\\diagnostics.ts",
+        "line": 28,
+        "exported": false
+      },
+      {
+        "name": "MockImage",
+        "kind": "class",
+        "file": "src\\__tests__\\lib\\imageUtils.test.ts",
+        "line": 36,
+        "exported": false
+      },
+      {
+        "name": "NotificationService",
+        "kind": "class",
+        "file": "api\\src\\services\\notificationService.js",
+        "line": 10,
+        "exported": false,
+        "description": "Serviço para gerenciar notificações administrativas\rImplementa payload padronizado conforme review t..."
+      },
+      {
+        "name": "SplitService",
+        "kind": "class",
+        "file": "api\\src\\services\\splitService.js",
+        "line": 10,
+        "exported": false,
+        "description": "Serviço para gerenciar split de pagamentos\rImplementa lógica de divisão 40%/40%/20% entre Comademig,..."
+      },
+      {
+        "name": "SupabaseService",
+        "kind": "class",
+        "file": "api\\src\\services\\supabaseClient.js",
+        "line": 8,
+        "exported": false,
+        "description": "Cliente Supabase configurado para a API"
+      },
+      {
+        "name": "WebhookRateLimiter",
+        "kind": "class",
+        "file": "src\\utils\\webhookSecurity.ts",
+        "line": 143,
+        "exported": false,
+        "description": "Rate limiting simples para webhooks"
+      }
+    ],
+    "interfaces": [
+      {
+        "name": "AboutContentData",
+        "kind": "interface",
+        "file": "src\\hooks\\useContent.ts",
+        "line": 159,
+        "exported": true
+      },
+      {
+        "name": "AccessContext",
+        "kind": "interface",
+        "file": "src\\lib\\security\\access-control.ts",
+        "line": 82,
+        "exported": true
+      },
+      {
+        "name": "AdminFilters",
+        "kind": "interface",
+        "file": "src\\hooks\\useSolicitacoes.ts",
+        "line": 59,
+        "exported": true
+      },
+      {
+        "name": "AdminProfile",
+        "kind": "interface",
+        "file": "src\\hooks\\useAdminData.ts",
+        "line": 6,
+        "exported": true
+      },
+      {
+        "name": "AdminTicket",
+        "kind": "interface",
+        "file": "src\\hooks\\useAdminData.ts",
+        "line": 29,
+        "exported": true
+      },
+      {
+        "name": "AdvancedFilters",
+        "kind": "interface",
+        "file": "src\\components\\admin\\AdvancedFiltersPanel.tsx",
+        "line": 10,
+        "exported": true
+      },
+      {
+        "name": "Affiliate",
+        "kind": "interface",
+        "file": "src\\hooks\\useAffiliate.ts",
+        "line": 14,
+        "exported": true
+      },
+      {
+        "name": "AffiliateData",
+        "kind": "interface",
+        "file": "src\\hooks\\useAffiliate.ts",
+        "line": 6,
+        "exported": true
+      },
+      {
+        "name": "AlbumData",
+        "kind": "interface",
+        "file": "src\\hooks\\useMultimidia.ts",
+        "line": 23,
+        "exported": true
+      },
+      {
+        "name": "AlbumWithPhotos",
+        "kind": "interface",
+        "file": "src\\hooks\\useMultimidia.ts",
+        "line": 45,
+        "exported": true
+      },
+      {
+        "name": "Alert",
+        "kind": "interface",
+        "file": "src\\lib\\monitoring\\system-monitor.ts",
+        "line": 29,
+        "exported": true
+      },
+      {
+        "name": "AppError",
+        "kind": "interface",
+        "file": "src\\lib\\errorHandling.ts",
+        "line": 15,
+        "exported": true
+      },
+      {
+        "name": "AsaasConfig",
+        "kind": "interface",
+        "file": "src\\lib\\asaas\\config.ts",
+        "line": 7,
+        "exported": true
+      },
+      {
+        "name": "AsaasCustomer",
+        "kind": "interface",
+        "file": "supabase\\functions\\shared\\types.ts",
+        "line": 27,
+        "exported": true
+      },
+      {
+        "name": "AsaasCustomer",
+        "kind": "interface",
+        "file": "src\\lib\\asaas\\types.ts",
+        "line": 39,
+        "exported": true
+      },
+      {
+        "name": "AsaasCustomerResponse",
+        "kind": "interface",
+        "file": "src\\hooks\\useAsaasCustomers.ts",
+        "line": 35,
+        "exported": true
+      },
+      {
+        "name": "AsaasError",
+        "kind": "interface",
+        "file": "supabase\\functions\\shared\\types.ts",
+        "line": 18,
+        "exported": true
+      },
+      {
+        "name": "AsaasError",
+        "kind": "interface",
+        "file": "supabase\\functions\\shared\\asaas-client.ts",
+        "line": 24,
+        "exported": true
+      },
+      {
+        "name": "AsaasError",
+        "kind": "interface",
+        "file": "src\\lib\\asaas\\error-handler.ts",
+        "line": 23,
+        "exported": true
+      },
+      {
+        "name": "AsaasErrorData",
+        "kind": "interface",
+        "file": "src\\lib\\asaas\\types.ts",
+        "line": 19,
+        "exported": true
+      },
+      {
+        "name": "AsaasErrorData",
+        "kind": "interface",
+        "file": "src\\lib\\asaas\\client.ts",
+        "line": 21,
+        "exported": true
+      },
+      {
+        "name": "AsaasPayment",
+        "kind": "interface",
+        "file": "supabase\\functions\\shared\\types.ts",
+        "line": 98,
+        "exported": true
+      },
+      {
+        "name": "AsaasPayment",
+        "kind": "interface",
+        "file": "src\\lib\\asaas\\types.ts",
+        "line": 122,
+        "exported": true
+      },
+      {
+        "name": "AsaasResponse",
+        "kind": "interface",
+        "file": "supabase\\functions\\shared\\types.ts",
+        "line": 9,
+        "exported": true
+      },
+      {
+        "name": "AsaasResponse",
+        "kind": "interface",
+        "file": "supabase\\functions\\shared\\asaas-client.ts",
+        "line": 15,
+        "exported": true
+      },
+      {
+        "name": "AsaasResponse",
+        "kind": "interface",
+        "file": "src\\lib\\asaas\\types.ts",
+        "line": 9,
+        "exported": true
+      },
+      {
+        "name": "AsaasResponse",
+        "kind": "interface",
+        "file": "src\\lib\\asaas\\client.ts",
+        "line": 10,
+        "exported": true
+      },
+      {
+        "name": "AsaasSplitData",
+        "kind": "interface",
+        "file": "supabase\\functions\\shared\\types.ts",
+        "line": 215,
+        "exported": true
+      },
+      {
+        "name": "AsaasSubscription",
+        "kind": "interface",
+        "file": "src\\lib\\asaas\\types.ts",
+        "line": 267,
+        "exported": true
+      },
+      {
+        "name": "AtualizarStatusInput",
+        "kind": "interface",
+        "file": "src\\hooks\\useSolicitacoes.ts",
+        "line": 42,
+        "exported": true
+      },
+      {
+        "name": "AuditEvent",
+        "kind": "interface",
+        "file": "src\\lib\\security\\audit-logger.ts",
+        "line": 62,
+        "exported": true
+      },
+      {
+        "name": "AuditFilters",
+        "kind": "interface",
+        "file": "src\\hooks\\useAudit.ts",
+        "line": 24,
+        "exported": true
+      },
+      {
+        "name": "AuditLogEntry",
+        "kind": "interface",
+        "file": "src\\hooks\\useAuditLog.ts",
+        "line": 3,
+        "exported": true
+      },
+      {
+        "name": "AuditQuery",
+        "kind": "interface",
+        "file": "src\\lib\\security\\audit-logger.ts",
+        "line": 80,
+        "exported": true
+      },
+      {
+        "name": "AuditStats",
+        "kind": "interface",
+        "file": "src\\hooks\\useAudit.ts",
+        "line": 33,
+        "exported": true
+      },
+      {
+        "name": "BadgeProps",
+        "kind": "interface",
+        "file": "src\\components\\ui\\badge.tsx",
+        "line": 31,
+        "exported": true
+      },
+      {
+        "name": "BoletoPaymentResult",
+        "kind": "interface",
+        "file": "src\\hooks\\useAsaasBoletoPayments.ts",
+        "line": 31,
+        "exported": true
+      },
+      {
+        "name": "ButtonProps",
+        "kind": "interface",
+        "file": "src\\components\\ui\\button.tsx",
+        "line": 36,
+        "exported": true
+      },
+      {
+        "name": "CardPaymentResult",
+        "kind": "interface",
+        "file": "src\\hooks\\useAsaasCardPayments.ts",
+        "line": 46,
+        "exported": true
+      },
+      {
+        "name": "ChecklistItem",
+        "kind": "interface",
+        "file": "src\\lib\\deployment\\production-config.ts",
+        "line": 55,
+        "exported": true
+      },
+      {
+        "name": "CheckoutData",
+        "kind": "interface",
+        "file": "src\\hooks\\useCheckoutTransparente.ts",
+        "line": 13,
+        "exported": true
+      },
+      {
+        "name": "CheckoutResult",
+        "kind": "interface",
+        "file": "src\\hooks\\useCheckoutTransparente.ts",
+        "line": 42,
+        "exported": true
+      },
+      {
+        "name": "ContactContentData",
+        "kind": "interface",
+        "file": "src\\hooks\\useContent.ts",
+        "line": 370,
+        "exported": true
+      },
+      {
+        "name": "ContactEmail",
+        "kind": "interface",
+        "file": "src\\hooks\\useContent.ts",
+        "line": 363,
+        "exported": true
+      },
+      {
+        "name": "ContactPhone",
+        "kind": "interface",
+        "file": "src\\hooks\\useContent.ts",
+        "line": 356,
+        "exported": true
+      },
+      {
+        "name": "ContentData",
+        "kind": "interface",
+        "file": "src\\hooks\\useContent.ts",
+        "line": 6,
+        "exported": true
+      },
+      {
+        "name": "CreateBoletoPaymentData",
+        "kind": "interface",
+        "file": "src\\hooks\\useAsaasBoletoPayments.ts",
+        "line": 14,
+        "exported": true
+      },
+      {
+        "name": "CreateCardPaymentData",
+        "kind": "interface",
+        "file": "src\\hooks\\useAsaasCardPayments.ts",
+        "line": 33,
+        "exported": true
+      },
+      {
+        "name": "CreateConfigurationData",
+        "kind": "interface",
+        "file": "src\\hooks\\useSplitConfiguration.ts",
+        "line": 32,
+        "exported": true
+      },
+      {
+        "name": "CreateCustomerData",
+        "kind": "interface",
+        "file": "src\\hooks\\useAsaasCustomers.ts",
+        "line": 11,
+        "exported": true
+      }
+    ],
+    "functions": [
+      {
+        "name": "AdminNotificationsPage",
+        "kind": "function",
+        "file": "src\\pages\\admin\\AdminNotificationsPage.tsx",
+        "line": 3,
+        "exported": true
+      },
+      {
+        "name": "AdminRoute",
+        "kind": "function",
+        "file": "src\\components\\auth\\ProtectedRoute.tsx",
+        "line": 92,
+        "exported": true
+      },
+      {
+        "name": "AffiliateDetail",
+        "kind": "function",
+        "file": "src\\pages\\admin\\components\\AffiliateDetail.tsx",
+        "line": 24,
+        "exported": true
+      },
+      {
+        "name": "AffiliatesList",
+        "kind": "function",
+        "file": "src\\pages\\admin\\components\\AffiliatesList.tsx",
+        "line": 26,
+        "exported": true
+      },
+      {
+        "name": "AffiliatesManagement",
+        "kind": "function",
+        "file": "src\\pages\\admin\\AffiliatesManagement.tsx",
+        "line": 13,
+        "exported": true
+      },
+      {
+        "name": "AffiliatesSettings",
+        "kind": "function",
+        "file": "src\\pages\\admin\\components\\AffiliatesSettings.tsx",
+        "line": 4,
+        "exported": true
+      },
+      {
+        "name": "analisar_componentes_duplicados",
+        "kind": "function",
+        "file": "AUDITORIA_COMPLETA_DUPLICIDADES.py",
+        "line": 90,
+        "exported": true
+      },
+      {
+        "name": "analisar_edge_functions_duplicadas",
+        "kind": "function",
+        "file": "AUDITORIA_COMPLETA_DUPLICIDADES.py",
+        "line": 145,
+        "exported": true
+      },
+      {
+        "name": "analisar_hooks_duplicados",
+        "kind": "function",
+        "file": "AUDITORIA_COMPLETA_DUPLICIDADES.py",
+        "line": 112,
+        "exported": true
+      },
+      {
+        "name": "analisar_layouts_duplicados",
+        "kind": "function",
+        "file": "AUDITORIA_COMPLETA_DUPLICIDADES.py",
+        "line": 210,
+        "exported": true
+      },
+      {
+        "name": "analisar_paginas_duplicadas",
+        "kind": "function",
+        "file": "AUDITORIA_COMPLETA_DUPLICIDADES.py",
+        "line": 63,
+        "exported": true
+      },
+      {
+        "name": "analisar_rotas_duplicadas",
+        "kind": "function",
+        "file": "AUDITORIA_COMPLETA_DUPLICIDADES.py",
+        "line": 26,
+        "exported": true
+      },
+      {
+        "name": "analisar_tabelas_banco",
+        "kind": "function",
+        "file": "AUDITORIA_COMPLETA_DUPLICIDADES.py",
+        "line": 178,
+        "exported": true
+      },
+      {
+        "name": "analyze_migrations",
+        "kind": "function",
+        "file": "_archive\\analyze_migrations_status.py",
+        "line": 15,
+        "exported": true
+      },
+      {
+        "name": "analyze_table",
+        "kind": "function",
+        "file": "_archive\\auditoria_backend_COMPLETA.py",
+        "line": 21,
+        "exported": true
+      },
+      {
+        "name": "analyze_tables",
+        "kind": "function",
+        "file": "_archive\\analyze_subscriptions_tables.py",
+        "line": 13,
+        "exported": true
+      },
+      {
+        "name": "AuthProvider",
+        "kind": "function",
+        "file": "src\\contexts\\AuthContext.tsx",
+        "line": 26,
+        "exported": true
+      },
+      {
+        "name": "autoConfigureSplit",
+        "kind": "function",
+        "file": "src\\utils\\splitIntegration.ts",
+        "line": 52,
+        "exported": true
+      },
+      {
+        "name": "autoProcessSplits",
+        "kind": "function",
+        "file": "src\\utils\\splitIntegration.ts",
+        "line": 139,
+        "exported": true
+      },
+      {
+        "name": "calculateCustomSplits",
+        "kind": "function",
+        "file": "src\\utils\\splitCalculations.ts",
+        "line": 123,
+        "exported": true
+      },
+      {
+        "name": "calculatePixDiscount",
+        "kind": "function",
+        "file": "src\\hooks\\useFiliacaoFlow.ts",
+        "line": 252,
+        "exported": true
+      },
+      {
+        "name": "calculateSplitAmounts",
+        "kind": "function",
+        "file": "supabase\\functions\\shared\\split-config.ts",
+        "line": 278,
+        "exported": true
+      },
+      {
+        "name": "calculateSplits",
+        "kind": "function",
+        "file": "src\\utils\\splitCalculations.ts",
+        "line": 68,
+        "exported": true
+      },
+      {
+        "name": "CargoFieldDemo",
+        "kind": "function",
+        "file": "src\\components\\profile\\CargoFieldDemo.tsx",
+        "line": 24,
+        "exported": true
+      },
+      {
+        "name": "checkUserReferral",
+        "kind": "function",
+        "file": "src\\utils\\splitIntegration.ts",
+        "line": 14,
+        "exported": true
+      },
+      {
+        "name": "cleanCPF",
+        "kind": "function",
+        "file": "src\\utils\\validators.ts",
+        "line": 67,
+        "exported": true
+      },
+      {
+        "name": "cleanup_migrations",
+        "kind": "function",
+        "file": "_archive\\cleanup_migrations.py",
+        "line": 12,
+        "exported": true
+      },
+      {
+        "name": "cn",
+        "kind": "function",
+        "file": "src\\lib\\utils.ts",
+        "line": 5,
+        "exported": true
+      },
+      {
+        "name": "CommissionsManagement",
+        "kind": "function",
+        "file": "src\\pages\\admin\\components\\CommissionsManagement.tsx",
+        "line": 13,
+        "exported": true
+      },
+      {
+        "name": "compressImage",
+        "kind": "function",
+        "file": "src\\utils\\imageCompression.ts",
+        "line": 47,
+        "exported": true
+      },
+      {
+        "name": "compressMultipleImages",
+        "kind": "function",
+        "file": "src\\utils\\imageCompression.ts",
+        "line": 77,
+        "exported": true
+      },
+      {
+        "name": "ConditionalRender",
+        "kind": "function",
+        "file": "src\\components\\auth\\ConditionalRender.tsx",
+        "line": 12,
+        "exported": true
+      },
+      {
+        "name": "DashboardHeader",
+        "kind": "function",
+        "file": "src\\components\\dashboard\\DashboardHeader.tsx",
+        "line": 12,
+        "exported": true
+      },
+      {
+        "name": "DashboardReminders",
+        "kind": "function",
+        "file": "src\\components\\dashboard\\DashboardReminders.tsx",
+        "line": 28,
+        "exported": true
+      },
+      {
+        "name": "decryptSensitiveData",
+        "kind": "function",
+        "file": "src\\lib\\security\\encryption.ts",
+        "line": 263,
+        "exported": true
+      },
+      {
+        "name": "detectarBandeiraCartao",
+        "kind": "function",
+        "file": "src\\hooks\\useCheckoutTransparente.ts",
+        "line": 382,
+        "exported": true
+      },
+      {
+        "name": "encryptSensitiveData",
+        "kind": "function",
+        "file": "src\\lib\\security\\encryption.ts",
+        "line": 259,
+        "exported": true
+      },
+      {
+        "name": "ErrorHandlingExample",
+        "kind": "function",
+        "file": "src\\components\\examples\\ErrorHandlingExample.tsx",
+        "line": 24,
+        "exported": true
+      },
+      {
+        "name": "filterSubscriptionsByMemberType",
+        "kind": "function",
+        "file": "src\\hooks\\useSubscriptionsByMemberType.ts",
+        "line": 181,
+        "exported": true
+      },
+      {
+        "name": "formatarCPF",
+        "kind": "function",
+        "file": "src\\utils\\cpfValidator.ts",
+        "line": 52,
+        "exported": true
+      },
+      {
+        "name": "formatarNumeroCartao",
+        "kind": "function",
+        "file": "src\\hooks\\useCheckoutTransparente.ts",
+        "line": 372,
+        "exported": true
+      },
+      {
+        "name": "formatAsaasBillingType",
+        "kind": "function",
+        "file": "src\\utils\\asaasApi.ts",
+        "line": 209,
+        "exported": true
+      },
+      {
+        "name": "formatAsaasCycle",
+        "kind": "function",
+        "file": "src\\utils\\asaasApi.ts",
+        "line": 238,
+        "exported": true
+      },
+      {
+        "name": "formatAsaasPaymentStatus",
+        "kind": "function",
+        "file": "src\\utils\\asaasApi.ts",
+        "line": 219,
+        "exported": true
+      },
+      {
+        "name": "formatCEP",
+        "kind": "function",
+        "file": "src\\utils\\validators.ts",
+        "line": 97,
+        "exported": true
+      },
+      {
+        "name": "formatCEP",
+        "kind": "function",
+        "file": "supabase\\functions\\shared\\validation.ts",
+        "line": 119,
+        "exported": true
+      },
+      {
+        "name": "formatCPF",
+        "kind": "function",
+        "file": "src\\utils\\validators.ts",
+        "line": 74,
+        "exported": true
+      },
+      {
+        "name": "formatCpfCnpj",
+        "kind": "function",
+        "file": "supabase\\functions\\shared\\validation.ts",
+        "line": 105,
+        "exported": true
+      },
+      {
+        "name": "formatCurrency",
+        "kind": "function",
+        "file": "src\\utils\\splitCalculations.ts",
+        "line": 227,
+        "exported": true
+      },
+      {
+        "name": "formatCurrency",
+        "kind": "function",
+        "file": "src\\lib\\utils.ts",
+        "line": 9,
+        "exported": true
+      }
+    ],
+    "types": [
+      {
+        "name": "AboutContentData",
+        "kind": "type",
+        "file": "src\\lib\\validations\\content.ts",
+        "line": 232,
+        "exported": true
+      },
+      {
+        "name": "AdminUserSubscription",
+        "kind": "type",
+        "file": "src\\hooks\\useUserSubscriptionsAdmin.ts",
+        "line": 40,
+        "exported": true
+      },
+      {
+        "name": "BillingType",
+        "kind": "type",
+        "file": "supabase\\functions\\shared\\types.ts",
+        "line": 96,
+        "exported": true
+      },
+      {
+        "name": "BillingType",
+        "kind": "type",
+        "file": "src\\lib\\asaas\\types.ts",
+        "line": 120,
+        "exported": true
+      },
+      {
+        "name": "CalendarProps",
+        "kind": "type",
+        "file": "src\\components\\ui\\calendar.tsx",
+        "line": 8,
+        "exported": true
+      },
+      {
+        "name": "ChartConfig",
+        "kind": "type",
+        "file": "src\\components\\ui\\chart.tsx",
+        "line": 9,
+        "exported": true
+      },
+      {
+        "name": "ContactContentData",
+        "kind": "type",
+        "file": "src\\lib\\validations\\content.ts",
+        "line": 234,
+        "exported": true
+      },
+      {
+        "name": "ContentValidationHook",
+        "kind": "type",
+        "file": "src\\hooks\\useFormValidation.ts",
+        "line": 251,
+        "exported": true
+      },
+      {
+        "name": "CreateSubscriptionPlanData",
+        "kind": "type",
+        "file": "src\\hooks\\useSubscriptionPlans.ts",
+        "line": 27,
+        "exported": true
+      },
+      {
+        "name": "CreateUserSubscriptionData",
+        "kind": "type",
+        "file": "src\\hooks\\useUserSubscriptionsAdmin.ts",
+        "line": 52,
+        "exported": true
+      },
+      {
+        "name": "Database",
+        "kind": "type",
+        "file": "src\\integrations\\supabase\\types.ts",
+        "line": 9,
+        "exported": true
+      },
+      {
+        "name": "Enums",
+        "kind": "type",
+        "file": "src\\integrations\\supabase\\types.ts",
+        "line": 709,
+        "exported": true
+      },
+      {
+        "name": "FilteredSubscriptionPlan",
+        "kind": "type",
+        "file": "src\\hooks\\useSubscriptionsByMemberType.ts",
+        "line": 25,
+        "exported": true
+      },
+      {
+        "name": "FormValidationHook",
+        "kind": "type",
+        "file": "src\\hooks\\useFormValidation.ts",
+        "line": 250,
+        "exported": true
+      },
+      {
+        "name": "HomeContentData",
+        "kind": "type",
+        "file": "src\\lib\\validations\\content.ts",
+        "line": 231,
+        "exported": true
+      },
+      {
+        "name": "Json",
+        "kind": "type",
+        "file": "src\\integrations\\supabase\\types.ts",
+        "line": 1,
+        "exported": true
+      },
+      {
+        "name": "LeadershipContentData",
+        "kind": "type",
+        "file": "src\\lib\\validations\\content.ts",
+        "line": 233,
+        "exported": true
+      },
+      {
+        "name": "LogLevel",
+        "kind": "type",
+        "file": "supabase\\functions\\shared\\logger.ts",
+        "line": 11,
+        "exported": true
+      },
+      {
+        "name": "LogSource",
+        "kind": "type",
+        "file": "supabase\\functions\\shared\\logger.ts",
+        "line": 12,
+        "exported": true
+      },
+      {
+        "name": "PaymentStatus",
+        "kind": "type",
+        "file": "src\\hooks\\useAsaasWebhooks.ts",
+        "line": 11,
+        "exported": true
+      },
+      {
+        "name": "PaymentStatus",
+        "kind": "type",
+        "file": "supabase\\functions\\shared\\types.ts",
+        "line": 80,
+        "exported": true
+      },
+      {
+        "name": "PaymentStatus",
+        "kind": "type",
+        "file": "src\\lib\\asaas\\types.ts",
+        "line": 104,
+        "exported": true
+      },
+      {
+        "name": "RecipientIdentifier",
+        "kind": "type",
+        "file": "src\\utils\\splitCalculations.ts",
+        "line": 11,
+        "exported": true
+      },
+      {
+        "name": "RecipientType",
+        "kind": "type",
+        "file": "src\\hooks\\useAsaasSplits.ts",
+        "line": 6,
+        "exported": true
+      },
+      {
+        "name": "ServiceType",
+        "kind": "type",
+        "file": "src\\utils\\splitIntegration.ts",
+        "line": 6,
+        "exported": true
+      },
+      {
+        "name": "ServiceType",
+        "kind": "type",
+        "file": "src\\utils\\splitCalculations.ts",
+        "line": 6,
+        "exported": true
+      },
+      {
+        "name": "ServiceType",
+        "kind": "type",
+        "file": "src\\hooks\\useAsaasSplits.ts",
+        "line": 9,
+        "exported": true
+      },
+      {
+        "name": "ServiceType",
+        "kind": "type",
+        "file": "src\\hooks\\useAsaasPixPayments.ts",
+        "line": 12,
+        "exported": true
+      },
+      {
+        "name": "ServiceType",
+        "kind": "type",
+        "file": "src\\hooks\\useAsaasCardPayments.ts",
+        "line": 12,
+        "exported": true
+      },
+      {
+        "name": "ServiceType",
+        "kind": "type",
+        "file": "src\\hooks\\useAsaasBoletoPayments.ts",
+        "line": 12,
+        "exported": true
+      },
+      {
+        "name": "ServiceType",
+        "kind": "type",
+        "file": "supabase\\functions\\shared\\types.ts",
+        "line": 228,
+        "exported": true
+      },
+      {
+        "name": "ServiceType",
+        "kind": "type",
+        "file": "src\\lib\\asaas\\types.ts",
+        "line": 356,
+        "exported": true
+      },
+      {
+        "name": "SplitStatus",
+        "kind": "type",
+        "file": "src\\hooks\\useAsaasSplits.ts",
+        "line": 12,
+        "exported": true
+      },
+      {
+        "name": "SubscriptionCycle",
+        "kind": "type",
+        "file": "src\\lib\\asaas\\types.ts",
+        "line": 265,
+        "exported": true
+      },
+      {
+        "name": "SubscriptionPlan",
+        "kind": "type",
+        "file": "src\\hooks\\useSubscriptionPlans.ts",
+        "line": 22,
+        "exported": true
+      },
+      {
+        "name": "SubscriptionStatus",
+        "kind": "type",
+        "file": "src\\lib\\asaas\\types.ts",
+        "line": 264,
+        "exported": true
+      },
+      {
+        "name": "Tables",
+        "kind": "type",
+        "file": "src\\integrations\\supabase\\types.ts",
+        "line": 644,
+        "exported": true
+      },
+      {
+        "name": "TablesInsert",
+        "kind": "type",
+        "file": "src\\integrations\\supabase\\types.ts",
+        "line": 667,
+        "exported": true
+      },
+      {
+        "name": "TablesUpdate",
+        "kind": "type",
+        "file": "src\\integrations\\supabase\\types.ts",
+        "line": 688,
+        "exported": true
+      },
+      {
+        "name": "UpdateSubscriptionPlanData",
+        "kind": "type",
+        "file": "src\\hooks\\useSubscriptionPlans.ts",
+        "line": 28,
+        "exported": true
+      },
+      {
+        "name": "UserPermissions",
+        "kind": "type",
+        "file": "src\\hooks\\useUserPermissions.ts",
+        "line": 10,
+        "exported": true
+      },
+      {
+        "name": "UserSubscription",
+        "kind": "type",
+        "file": "src\\hooks\\useUserPermissions.ts",
+        "line": 34,
+        "exported": true
+      },
+      {
+        "name": "ValidationResult",
+        "kind": "type",
+        "file": "src\\lib\\validations\\content.ts",
+        "line": 236,
+        "exported": true
+      },
+      {
+        "name": "WebhookEvent",
+        "kind": "type",
+        "file": "supabase\\functions\\shared\\types.ts",
+        "line": 258,
+        "exported": true
+      },
+      {
+        "name": "WebhookEvent",
+        "kind": "type",
+        "file": "src\\lib\\asaas\\types.ts",
+        "line": 328,
+        "exported": true
+      },
+      {
+        "name": "Action",
+        "kind": "type",
+        "file": "src\\hooks\\use-toast.ts",
+        "line": 34,
+        "exported": false
+      },
+      {
+        "name": "ActionType",
+        "kind": "type",
+        "file": "src\\hooks\\use-toast.ts",
+        "line": 32,
+        "exported": false
+      },
+      {
+        "name": "AppRole",
+        "kind": "type",
+        "file": "src\\hooks\\useUserRoles.ts",
+        "line": 6,
+        "exported": false
+      },
+      {
+        "name": "CardFormData",
+        "kind": "type",
+        "file": "src\\components\\checkout\\CheckoutCard.tsx",
+        "line": 35,
+        "exported": false
+      },
+      {
+        "name": "CarouselApi",
+        "kind": "type",
+        "file": "src\\components\\ui\\carousel.tsx",
+        "line": 10,
+        "exported": false
+      }
+    ],
+    "enums": [
+      {
+        "name": "AsaasErrorType",
+        "kind": "enum",
+        "file": "src\\lib\\asaas\\error-handler.ts",
+        "line": 4,
+        "exported": true
+      },
+      {
+        "name": "AuditEventType",
+        "kind": "enum",
+        "file": "src\\lib\\security\\audit-logger.ts",
+        "line": 8,
+        "exported": true
+      },
+      {
+        "name": "AuditSeverity",
+        "kind": "enum",
+        "file": "src\\lib\\security\\audit-logger.ts",
+        "line": 55,
+        "exported": true
+      },
+      {
+        "name": "ErrorSeverity",
+        "kind": "enum",
+        "file": "src\\lib\\asaas\\error-handler.ts",
+        "line": 15,
+        "exported": true
+      },
+      {
+        "name": "ErrorType",
+        "kind": "enum",
+        "file": "src\\lib\\errorHandling.ts",
+        "line": 4,
+        "exported": true
+      },
+      {
+        "name": "Permission",
+        "kind": "enum",
+        "file": "src\\lib\\security\\access-control.ts",
+        "line": 18,
+        "exported": true
+      },
+      {
+        "name": "UserRole",
+        "kind": "enum",
+        "file": "src\\lib\\security\\access-control.ts",
+        "line": 9,
+        "exported": true
+      }
+    ]
+  },
+  "publicAPI": [
+    {
+      "name": "AboutContentData",
+      "kind": "interface",
+      "file": "src\\hooks\\useContent.ts",
+      "line": 159,
+      "exported": true
+    },
+    {
+      "name": "AboutContentData",
+      "kind": "type",
+      "file": "src\\lib\\validations\\content.ts",
+      "line": 232,
+      "exported": true
+    },
+    {
+      "name": "AccessContext",
+      "kind": "interface",
+      "file": "src\\lib\\security\\access-control.ts",
+      "line": 82,
+      "exported": true
+    },
+    {
+      "name": "AccessController",
+      "kind": "class",
+      "file": "src\\lib\\security\\access-control.ts",
+      "line": 151,
+      "exported": true
+    },
+    {
+      "name": "AdminFilters",
+      "kind": "interface",
+      "file": "src\\hooks\\useSolicitacoes.ts",
+      "line": 59,
+      "exported": true
+    },
+    {
+      "name": "AdminNotificationsPage",
+      "kind": "function",
+      "file": "src\\pages\\admin\\AdminNotificationsPage.tsx",
+      "line": 3,
+      "exported": true
+    },
+    {
+      "name": "AdminProfile",
+      "kind": "interface",
+      "file": "src\\hooks\\useAdminData.ts",
+      "line": 6,
+      "exported": true
+    },
+    {
+      "name": "AdminRoute",
+      "kind": "function",
+      "file": "src\\components\\auth\\ProtectedRoute.tsx",
+      "line": 92,
+      "exported": true
+    },
+    {
+      "name": "AdminTicket",
+      "kind": "interface",
+      "file": "src\\hooks\\useAdminData.ts",
+      "line": 29,
+      "exported": true
+    },
+    {
+      "name": "AdminUserSubscription",
+      "kind": "type",
+      "file": "src\\hooks\\useUserSubscriptionsAdmin.ts",
+      "line": 40,
+      "exported": true
+    },
+    {
+      "name": "AdvancedFilters",
+      "kind": "interface",
+      "file": "src\\components\\admin\\AdvancedFiltersPanel.tsx",
+      "line": 10,
+      "exported": true
+    },
+    {
+      "name": "Affiliate",
+      "kind": "interface",
+      "file": "src\\hooks\\useAffiliate.ts",
+      "line": 14,
+      "exported": true
+    },
+    {
+      "name": "AffiliateData",
+      "kind": "interface",
+      "file": "src\\hooks\\useAffiliate.ts",
+      "line": 6,
+      "exported": true
+    },
+    {
+      "name": "AffiliateDetail",
+      "kind": "function",
+      "file": "src\\pages\\admin\\components\\AffiliateDetail.tsx",
+      "line": 24,
+      "exported": true
+    },
+    {
+      "name": "AffiliatesList",
+      "kind": "function",
+      "file": "src\\pages\\admin\\components\\AffiliatesList.tsx",
+      "line": 26,
+      "exported": true
+    },
+    {
+      "name": "AffiliatesManagement",
+      "kind": "function",
+      "file": "src\\pages\\admin\\AffiliatesManagement.tsx",
+      "line": 13,
+      "exported": true
+    },
+    {
+      "name": "AffiliatesSettings",
+      "kind": "function",
+      "file": "src\\pages\\admin\\components\\AffiliatesSettings.tsx",
+      "line": 4,
+      "exported": true
+    },
+    {
+      "name": "AlbumData",
+      "kind": "interface",
+      "file": "src\\hooks\\useMultimidia.ts",
+      "line": 23,
+      "exported": true
+    },
+    {
+      "name": "AlbumWithPhotos",
+      "kind": "interface",
+      "file": "src\\hooks\\useMultimidia.ts",
+      "line": 45,
+      "exported": true
+    },
+    {
+      "name": "Alert",
+      "kind": "interface",
+      "file": "src\\lib\\monitoring\\system-monitor.ts",
+      "line": 29,
+      "exported": true
+    },
+    {
+      "name": "analisar_componentes_duplicados",
+      "kind": "function",
+      "file": "AUDITORIA_COMPLETA_DUPLICIDADES.py",
+      "line": 90,
+      "exported": true
+    },
+    {
+      "name": "analisar_edge_functions_duplicadas",
+      "kind": "function",
+      "file": "AUDITORIA_COMPLETA_DUPLICIDADES.py",
+      "line": 145,
+      "exported": true
+    },
+    {
+      "name": "analisar_hooks_duplicados",
+      "kind": "function",
+      "file": "AUDITORIA_COMPLETA_DUPLICIDADES.py",
+      "line": 112,
+      "exported": true
+    },
+    {
+      "name": "analisar_layouts_duplicados",
+      "kind": "function",
+      "file": "AUDITORIA_COMPLETA_DUPLICIDADES.py",
+      "line": 210,
+      "exported": true
+    },
+    {
+      "name": "analisar_paginas_duplicadas",
+      "kind": "function",
+      "file": "AUDITORIA_COMPLETA_DUPLICIDADES.py",
+      "line": 63,
+      "exported": true
+    },
+    {
+      "name": "analisar_rotas_duplicadas",
+      "kind": "function",
+      "file": "AUDITORIA_COMPLETA_DUPLICIDADES.py",
+      "line": 26,
+      "exported": true
+    },
+    {
+      "name": "analisar_tabelas_banco",
+      "kind": "function",
+      "file": "AUDITORIA_COMPLETA_DUPLICIDADES.py",
+      "line": 178,
+      "exported": true
+    },
+    {
+      "name": "analyze_migrations",
+      "kind": "function",
+      "file": "_archive\\analyze_migrations_status.py",
+      "line": 15,
+      "exported": true
+    },
+    {
+      "name": "analyze_table",
+      "kind": "function",
+      "file": "_archive\\auditoria_backend_COMPLETA.py",
+      "line": 21,
+      "exported": true
+    },
+    {
+      "name": "analyze_tables",
+      "kind": "function",
+      "file": "_archive\\analyze_subscriptions_tables.py",
+      "line": 13,
+      "exported": true
+    },
+    {
+      "name": "AppError",
+      "kind": "interface",
+      "file": "src\\lib\\errorHandling.ts",
+      "line": 15,
+      "exported": true
+    },
+    {
+      "name": "AsaasApiClient",
+      "kind": "class",
+      "file": "src\\lib\\asaas\\client.ts",
+      "line": 38,
+      "exported": true
+    },
+    {
+      "name": "AsaasClient",
+      "kind": "class",
+      "file": "supabase\\functions\\shared\\asaas-client.ts",
+      "line": 32,
+      "exported": true
+    },
+    {
+      "name": "AsaasConfig",
+      "kind": "interface",
+      "file": "src\\lib\\asaas\\config.ts",
+      "line": 7,
+      "exported": true
+    },
+    {
+      "name": "AsaasCustomer",
+      "kind": "interface",
+      "file": "supabase\\functions\\shared\\types.ts",
+      "line": 27,
+      "exported": true
+    },
+    {
+      "name": "AsaasCustomer",
+      "kind": "interface",
+      "file": "src\\lib\\asaas\\types.ts",
+      "line": 39,
+      "exported": true
+    },
+    {
+      "name": "AsaasCustomerResponse",
+      "kind": "interface",
+      "file": "src\\hooks\\useAsaasCustomers.ts",
+      "line": 35,
+      "exported": true
+    },
+    {
+      "name": "AsaasError",
+      "kind": "interface",
+      "file": "supabase\\functions\\shared\\types.ts",
+      "line": 18,
+      "exported": true
+    },
+    {
+      "name": "AsaasError",
+      "kind": "interface",
+      "file": "supabase\\functions\\shared\\asaas-client.ts",
+      "line": 24,
+      "exported": true
+    },
+    {
+      "name": "AsaasError",
+      "kind": "class",
+      "file": "src\\lib\\asaas\\types.ts",
+      "line": 24,
+      "exported": true
+    },
+    {
+      "name": "AsaasError",
+      "kind": "interface",
+      "file": "src\\lib\\asaas\\error-handler.ts",
+      "line": 23,
+      "exported": true
+    },
+    {
+      "name": "AsaasError",
+      "kind": "class",
+      "file": "src\\lib\\asaas\\client.ts",
+      "line": 27,
+      "exported": true
+    },
+    {
+      "name": "AsaasErrorData",
+      "kind": "interface",
+      "file": "src\\lib\\asaas\\types.ts",
+      "line": 19,
+      "exported": true
+    },
+    {
+      "name": "AsaasErrorData",
+      "kind": "interface",
+      "file": "src\\lib\\asaas\\client.ts",
+      "line": 21,
+      "exported": true
+    },
+    {
+      "name": "AsaasErrorHandler",
+      "kind": "class",
+      "file": "src\\lib\\asaas\\error-handler.ts",
+      "line": 179,
+      "exported": true
+    },
+    {
+      "name": "AsaasPayment",
+      "kind": "interface",
+      "file": "supabase\\functions\\shared\\types.ts",
+      "line": 98,
+      "exported": true
+    },
+    {
+      "name": "AsaasPayment",
+      "kind": "interface",
+      "file": "src\\lib\\asaas\\types.ts",
+      "line": 122,
+      "exported": true
+    },
+    {
+      "name": "AsaasResponse",
+      "kind": "interface",
+      "file": "supabase\\functions\\shared\\types.ts",
+      "line": 9,
+      "exported": true
+    },
+    {
+      "name": "AsaasResponse",
+      "kind": "interface",
+      "file": "supabase\\functions\\shared\\asaas-client.ts",
+      "line": 15,
+      "exported": true
+    },
+    {
+      "name": "AsaasResponse",
+      "kind": "interface",
+      "file": "src\\lib\\asaas\\types.ts",
+      "line": 9,
+      "exported": true
+    }
+  ],
+  "dependencies": {
+    "mostImported": [
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\supabase\\functions\\shared\\types.ts",
+        "importedBy": 6
+      },
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\supabase\\functions\\shared\\logger.ts",
+        "importedBy": 4
+      },
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\supabase\\functions\\shared\\asaas-client.ts",
+        "importedBy": 4
+      },
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\supabase\\functions\\shared\\split-config.ts",
+        "importedBy": 3
+      },
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\src\\components\\payments\\PaymentStatusMonitor.tsx",
+        "importedBy": 3
+      },
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\src\\hooks\\useAuthState.ts",
+        "importedBy": 2
+      },
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\supabase\\functions\\shared\\validation.ts",
+        "importedBy": 2
+      },
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\src\\lib\\testing\\sandbox-config.ts",
+        "importedBy": 2
+      },
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\src\\lib\\asaas\\config.ts",
+        "importedBy": 2
+      },
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\src\\components\\carteira\\SimpleQRCode.tsx",
+        "importedBy": 2
+      },
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\src\\utils\\diagnostics.ts",
+        "importedBy": 1
+      },
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\src\\utils\\qrCodeUtils.ts",
+        "importedBy": 1
+      },
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\src\\hooks\\useSupport.ts",
+        "importedBy": 1
+      },
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\src\\hooks\\useSplitConfiguration.ts",
+        "importedBy": 1
+      },
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\src\\hooks\\useAsaasCustomers.ts",
+        "importedBy": 1
+      },
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\src\\hooks\\useAsaasCardPayments.ts",
+        "importedBy": 1
+      },
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\src\\hooks\\useMemberTypeWithPlan.ts",
+        "importedBy": 1
+      },
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\src\\hooks\\useFiliacaoFlow.ts",
+        "importedBy": 1
+      },
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\src\\hooks\\useUserRoles.ts",
+        "importedBy": 1
+      },
+      {
+        "file": "E:\\PROJETOS SITE\\repositorios\\comademig\\src\\hooks\\useSupabaseQuery.ts",
+        "importedBy": 1
+      }
+    ]
+  },
+  "stats": {
+    "totalSymbols": 922,
+    "exportedSymbols": 495,
+    "analysisTimeMs": 11722
+  }
+}

@@ -136,11 +136,36 @@ export const useAsaasCustomers = () => {
     } catch (error) {
       console.error('Erro ao criar cliente Asaas:', error);
       
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      let errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      let title = "Erro";
+      
+      // Melhorar mensagens específicas para o usuário
+      if (errorMessage.includes('CPF/CNPJ deve ter formato válido')) {
+        title = "CPF/CNPJ Inválido";
+        errorMessage = "O CPF ou CNPJ informado não é válido. Verifique os números digitados e tente novamente.";
+      } else if (errorMessage.includes('Email deve ter formato válido')) {
+        title = "Email Inválido";
+        errorMessage = "O email informado não é válido. Verifique o endereço digitado.";
+      } else if (errorMessage.includes('Telefone deve ter formato válido')) {
+        title = "Telefone Inválido";
+        errorMessage = "O telefone informado não é válido. Use apenas números (10 ou 11 dígitos).";
+      } else if (errorMessage.includes('CEP deve ter formato válido')) {
+        title = "CEP Inválido";
+        errorMessage = "O CEP informado não é válido. Deve conter 8 dígitos.";
+      } else if (errorMessage.includes('Nome é obrigatório')) {
+        title = "Nome Obrigatório";
+        errorMessage = "O nome completo é obrigatório e deve ter pelo menos 2 caracteres.";
+      } else if (errorMessage.includes('Dados inválidos')) {
+        title = "Dados Inválidos";
+        errorMessage = "Alguns dados informados não são válidos. Verifique os campos e tente novamente.";
+      } else if (errorMessage.includes('chave de API')) {
+        title = "Erro Temporário";
+        errorMessage = "Erro temporário no sistema de pagamentos. Tente novamente em alguns minutos.";
+      }
       
       toast({
-        title: "Erro",
-        description: `Erro ao configurar cliente: ${errorMessage}`,
+        title,
+        description: errorMessage,
         variant: "destructive",
       });
       

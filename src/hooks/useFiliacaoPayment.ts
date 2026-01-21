@@ -8,6 +8,7 @@ import { useAsaasCardPayments } from './useAsaasCardPayments';
 import type { UnifiedMemberType } from './useMemberTypeWithPlan';
 import type { FiliacaoData } from './useFiliacaoFlow';
 import { mapErrorToMessage, formatErrorMessage } from '@/utils/errorMessages';
+import { validateCPF, validatePhone, validateCEP } from '@/utils/validators';
 
 export interface FiliacaoPaymentData extends FiliacaoData {
   // Senha para criar conta (obrigatória se usuário não estiver autenticado)
@@ -99,7 +100,53 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         console.log('ℹ️ Nenhum código de indicação válido');
       }
 
-      // 1. Criar conta se usuário não estiver autenticado
+      // 1. Validar dados ANTES de criar conta
+      console.log('🔍 Validando dados antes de criar conta...');
+      
+      // Validar CPF
+      const cleanCPF = data.cpf.replace(/\D/g, '');
+      if (!validateCPF(cleanCPF)) {
+        throw new Error('CPF inválido. Verifique os números digitados e tente novamente.');
+      }
+      
+      // Validar telefone
+      const cleanPhone = data.telefone.replace(/\D/g, '');
+      if (!validatePhone(cleanPhone)) {
+        throw new Error('Telefone inválido. Use formato (XX) XXXXX-XXXX ou XXXXXXXXXXX.');
+      }
+      
+      // Validar CEP
+      const cleanCEP = data.cep.replace(/\D/g, '');
+      if (!validateCEP(cleanCEP)) {
+        throw new Error('CEP inválido. Use formato XXXXX-XXX ou XXXXXXXX.');
+      }
+      
+      console.log('✅ Dados validados com sucesso');
+
+      // 3. Preparar dados do cliente ANTES de criar conta
+      const customerData = {
+        name: data.nome_completo,
+        email: data.email,
+        phone: data.telefone,
+        cpfCnpj: cleanCPF, // Usar CPF já validado e limpo
+        postalCode: cleanCEP, // Usar CEP já validado e limpo
+        address: data.endereco,
+        addressNumber: data.numero,
+        complement: data.complemento || undefined,
+        province: data.bairro,
+        city: data.cidade,
+        state: data.estado,
+      };
+
+      console.log('📋 Dados do cliente preparados:', {
+        name: customerData.name,
+        email: customerData.email,
+        cpfCnpj: customerData.cpfCnpj,
+        phone: customerData.phone,
+        postalCode: customerData.postalCode
+      });
+
+      // 4. Criar conta se usuário não estiver autenticado
       if (!currentUserId) {
         if (!data.password) {
           throw new Error('Senha é obrigatória para criar nova conta');
@@ -187,51 +234,15 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         }
       }
 
-      if (!selectedMemberType.plan_id) {
-        throw new Error('Tipo de membro selecionado não possui plano associado');
-      }
-
-      const originalPrice = selectedMemberType.plan_value || 0;
-      const finalPrice = originalPrice; // Sem desconto PIX
-
-      // 2. Criar/verificar cliente no Asaas
+      // 5. Criar/verificar cliente no Asaas IMEDIATAMENTE após criar conta
       setPaymentStatus('creating_customer');
       
       console.log('🔍 DEBUG useFiliacaoPayment - Criando cliente Asaas:');
       console.log('  - currentUserId:', currentUserId);
       console.log('  - isNewAccount:', isNewAccount);
       
-      const customerData = {
-        name: data.nome_completo,
-        email: data.email,
-        phone: data.telefone,
-        cpfCnpj: data.cpf,
-        postalCode: data.cep,
-        address: data.endereco,
-        addressNumber: data.numero,
-        complement: data.complemento || undefined,
-        province: data.bairro,
-        city: data.cidade,
-        state: data.estado,
-      };
-
-      // 📤 LOG DETALHADO: Dados enviados ao createCustomer
-      console.log('📤 ========================================');
-      console.log('📤 useFiliacaoPayment - DADOS DO FORMULÁRIO:');
-      console.log('📤 ========================================');
-      console.log('📤 currentUserId:', currentUserId);
-      console.log('📤 customerData preparado:');
-      console.log(JSON.stringify(customerData, null, 2));
-      console.log('📤 ========================================');
-      console.log('📤 VALIDAÇÃO DE CAMPOS OBRIGATÓRIOS:');
-      console.log('📤   name:', customerData.name ? '✅' : '❌', customerData.name);
-      console.log('📤   email:', customerData.email ? '✅' : '❌', customerData.email);
-      console.log('📤   cpfCnpj:', customerData.cpfCnpj ? '✅' : '❌', customerData.cpfCnpj, '(length:', customerData.cpfCnpj?.length, ')');
-      console.log('📤   phone:', customerData.phone ? '✅' : '❌', customerData.phone);
-      console.log('📤 ========================================');
-
+      // ✅ CORREÇÃO: Usar dados já validados e limpos
       // ✅ CORREÇÃO: Passar currentUserId explicitamente
-      // Isso evita dependência do contexto de autenticação que pode não estar atualizado
       const customerResponse = await createCustomer(customerData, currentUserId);
       
       console.log('📥 Resposta createCustomer:', customerResponse);
@@ -239,14 +250,34 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
       if (!customerResponse || !customerResponse.success) {
         const errorMsg = customerResponse?.message || 'Erro ao criar cliente no Asaas';
         console.error('❌ Erro ao criar cliente:', errorMsg);
+        
+        // 🚨 ROLLBACK: Se criou conta mas falhou cliente, deletar conta
+        if (isNewAccount && currentUserId) {
+          console.log('🔄 Fazendo rollback da conta criada...');
+          try {
+            await supabase.auth.admin.deleteUser(currentUserId);
+            console.log('✅ Rollback da conta realizado');
+          } catch (rollbackError) {
+            console.error('⚠️ Erro no rollback da conta:', rollbackError);
+          }
+        }
+        
         throw new Error(errorMsg);
       }
       
       console.log('✅ Cliente Asaas criado:', customerResponse.customer_id);
       const customer = { id: customerResponse.customer_id };
 
+      // 6. Validar plano selecionado
+      if (!selectedMemberType.plan_id) {
+        throw new Error('Tipo de membro selecionado não possui plano associado');
+      }
+
+      const originalPrice = selectedMemberType.plan_value || 0;
+      const finalPrice = originalPrice; // Sem desconto PIX
+
       // ============================================
-      // 3. PROCESSAR PAGAMENTO INICIAL (PRIMEIRA MENSALIDADE)
+      // 7. PROCESSAR PAGAMENTO INICIAL (PRIMEIRA MENSALIDADE)
       // ============================================
       setPaymentStatus('processing_payment');
       
@@ -312,7 +343,7 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
       }
 
       // ============================================
-      // 4. CRIAR ASSINATURA PARA RENOVAÇÃO AUTOMÁTICA
+      // 8. CRIAR ASSINATURA PARA RENOVAÇÃO AUTOMÁTICA
       // ============================================
       setPaymentStatus('creating_subscription');
       
@@ -412,7 +443,7 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         toast.warning('Assinatura criada parcialmente. Entre em contato com o suporte.');
       }
 
-      // 4. Atualizar perfil do usuário
+      // 9. Atualizar perfil do usuário
       setPaymentStatus('updating_profile');
       const profileUpdateData = {
         nome_completo: data.nome_completo,
@@ -447,7 +478,7 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         throw new Error(`Erro ao atualizar perfil: ${profileError.message}`);
       }
 
-      // 5. Buscar registro de assinatura criado pela Edge Function
+      // 10. Buscar registro de assinatura criado pela Edge Function
       const { data: subscription, error: subscriptionError } = await (supabase as any)
         .from('user_subscriptions')
         .select(`
@@ -469,10 +500,10 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
         console.log('⚠️ Assinatura existe mas não foi possível buscar detalhes');
       }
 
-      // 6. Dados ministeriais já foram salvos no perfil (cargo e data_ordenacao)
+      // 11. Dados ministeriais já foram salvos no perfil (cargo e data_ordenacao)
       // Não é mais necessário salvar em tabela separada
 
-      // 7. Indicação já foi registrada após criar conta (linha ~145)
+      // 12. Indicação já foi registrada após criar conta (linha ~145)
       // Não é necessário registrar novamente aqui
       console.log('ℹ️ Indicação de afiliado já foi registrada anteriormente');
 
@@ -491,23 +522,57 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
     onError: (error: Error) => {
       console.error('Erro no processo de filiação com pagamento:', error);
       
-      // Mapear erro para mensagem amigável
-      const errorInfo = mapErrorToMessage(error);
-      const friendlyMessage = formatErrorMessage(error, false);
+      // Mapear erros específicos para mensagens amigáveis
+      let friendlyMessage = 'Erro ao processar filiação';
+      let duration = 5000;
+      
+      const errorMessage = error.message || '';
+      
+      if (errorMessage.includes('CPF inválido')) {
+        friendlyMessage = 'CPF inválido. Verifique os números digitados e tente novamente.';
+        duration = 7000;
+      } else if (errorMessage.includes('Telefone inválido')) {
+        friendlyMessage = 'Telefone inválido. Use o formato (XX) XXXXX-XXXX.';
+        duration = 7000;
+      } else if (errorMessage.includes('CEP inválido')) {
+        friendlyMessage = 'CEP inválido. Use o formato XXXXX-XXX.';
+        duration = 7000;
+      } else if (errorMessage.includes('email_already_exists') || errorMessage.includes('already registered')) {
+        friendlyMessage = 'Este email já está cadastrado. Faça login ou use "Esqueci minha senha".';
+        duration = 8000;
+      } else if (errorMessage.includes('CPF/CNPJ deve ter formato válido')) {
+        friendlyMessage = 'CPF informado não é válido. Verifique os números e tente novamente.';
+        duration = 7000;
+      } else if (errorMessage.includes('card_declined') || errorMessage.includes('cartão recusado')) {
+        friendlyMessage = 'Cartão recusado. Verifique os dados ou tente outro cartão.';
+        duration = 8000;
+      } else if (errorMessage.includes('insufficient_funds')) {
+        friendlyMessage = 'Saldo insuficiente no cartão. Tente outro cartão ou método de pagamento.';
+        duration = 8000;
+      } else if (errorMessage.includes('invalid_card')) {
+        friendlyMessage = 'Dados do cartão inválidos. Verifique número, validade e CVV.';
+        duration = 8000;
+      } else if (errorMessage.includes('Erro ao criar cliente')) {
+        friendlyMessage = 'Erro ao processar seus dados. Verifique as informações e tente novamente.';
+        duration = 7000;
+      } else if (errorMessage.includes('password')) {
+        friendlyMessage = 'Senha inválida. Use pelo menos 6 caracteres, 1 maiúscula e 1 número.';
+        duration = 7000;
+      } else if (errorMessage.includes('email')) {
+        friendlyMessage = 'Email inválido. Verifique o endereço digitado.';
+        duration = 6000;
+      }
       
       // Exibir mensagem amigável
       toast.error(friendlyMessage, {
-        duration: errorInfo.retryable ? 5000 : 7000,
-        description: errorInfo.retryable 
-          ? 'Você pode tentar novamente.' 
-          : 'Entre em contato com o suporte se o problema persistir.'
+        duration,
+        description: 'Se o problema persistir, entre em contato com o suporte.'
       });
       
       // Log detalhado para debug
       console.error('📋 Detalhes do erro:', {
         originalError: error,
-        mappedMessage: errorInfo.message,
-        retryable: errorInfo.retryable,
+        friendlyMessage,
         paymentStatus
       });
       

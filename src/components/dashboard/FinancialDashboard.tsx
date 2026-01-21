@@ -5,9 +5,13 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useFinancialDashboard } from '@/hooks/useFinancialDashboard'
+import { usePaymentHistory } from '@/hooks/usePaymentHistory'
 import { formatCurrency } from '@/lib/utils'
 import SubscriptionStatusAlert from './SubscriptionStatusAlert'
 import SubscriptionNotifications from './SubscriptionNotifications'
+import DashboardReminders from './DashboardReminders'
+import SubscriptionOverview from './SubscriptionOverview'
+import PaymentHistoryFilters from './PaymentHistoryFilters'
 import { 
   DollarSign, 
   TrendingUp, 
@@ -20,7 +24,11 @@ import {
   FileText,
   Calendar,
   AlertCircle,
-  Download
+  Download,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Eye
 } from 'lucide-react'
 import { startOfMonth, endOfMonth, subMonths } from 'date-fns'
 
@@ -48,6 +56,20 @@ export default function FinancialDashboard({ userId }: FinancialDashboardProps) 
     getRecentCommissions,
     getMonthlyRevenue 
   } = useFinancialDashboard(userId)
+
+  // Hook para histórico detalhado de pagamentos
+  const {
+    payments: filteredPayments,
+    pagination,
+    stats: paymentStats,
+    filters,
+    isLoading: isLoadingHistory,
+    updateFilters,
+    resetFilters,
+    goToPage,
+    nextPage,
+    previousPage,
+  } = usePaymentHistory(userId)
 
   const statsQuery = getFinancialStats(startDate, endDate)
   const recentPaymentsQuery = getRecentPayments(10)
@@ -106,8 +128,14 @@ export default function FinancialDashboard({ userId }: FinancialDashboardProps) 
 
   return (
     <div className="space-y-6">
+      {/* Sistema de Lembretes - NOVO */}
+      {userId && <DashboardReminders />}
+      
       {/* Notificações de Assinatura - NOVO */}
       {userId && <SubscriptionNotifications />}
+      
+      {/* Dashboard de Status da Assinatura - NOVO */}
+      {userId && <SubscriptionOverview />}
       
       {/* Alerta de Status da Assinatura */}
       {userId && <SubscriptionStatusAlert />}
@@ -268,6 +296,7 @@ export default function FinancialDashboard({ userId }: FinancialDashboardProps) 
       <Tabs defaultValue="payments" className="space-y-4">
         <TabsList>
           <TabsTrigger value="payments">Pagamentos Recentes</TabsTrigger>
+          <TabsTrigger value="history">Histórico Detalhado</TabsTrigger>
           <TabsTrigger value="pending">Pendentes</TabsTrigger>
           <TabsTrigger value="commissions">Comissões</TabsTrigger>
         </TabsList>
@@ -323,7 +352,183 @@ export default function FinancialDashboard({ userId }: FinancialDashboardProps) 
           </Card>
         </TabsContent>
 
-        <TabsContent value="pending">
+        <TabsContent value="history">
+          <div className="space-y-6">
+            {/* Filtros e Estatísticas */}
+            <PaymentHistoryFilters
+              filters={filters}
+              stats={paymentStats}
+              onFiltersChange={updateFilters}
+              onReset={resetFilters}
+            />
+
+            {/* Lista de Pagamentos Filtrados */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Histórico de Pagamentos</span>
+                  <Badge variant="secondary">
+                    {pagination.totalItems} pagamento{pagination.totalItems !== 1 ? 's' : ''}
+                  </Badge>
+                </CardTitle>
+                <CardDescription>
+                  Histórico completo com filtros avançados e paginação
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingHistory ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">Carregando histórico...</p>
+                  </div>
+                ) : filteredPayments.length > 0 ? (
+                  <div className="space-y-4">
+                    {/* Lista de Pagamentos */}
+                    {filteredPayments.map((payment) => (
+                      <div key={payment.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            {getPaymentMethodIcon(payment.payment_method)}
+                            <div>
+                              <p className="font-medium">{payment.description}</p>
+                              <p className="text-sm text-muted-foreground">ID: {payment.asaas_id}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {getStatusBadge(payment.status)}
+                            <span className="font-bold text-lg">
+                              {formatCurrency(payment.value)}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
+                          <div>
+                            <p className="text-muted-foreground">Cliente</p>
+                            <p className="font-medium">{payment.user_name || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Serviço</p>
+                            <p className="font-medium">{getServiceTypeLabel(payment.service_type)}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Vencimento</p>
+                            <p className="font-medium">
+                              {new Date(payment.due_date).toLocaleDateString('pt-BR')}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Criado em</p>
+                            <p className="font-medium">
+                              {new Date(payment.created_at).toLocaleDateString('pt-BR')}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Ações por Pagamento */}
+                        <div className="flex gap-2 pt-2 border-t">
+                          <Button variant="outline" size="sm">
+                            <Eye className="h-3 w-3 mr-1" />
+                            Ver Detalhes
+                          </Button>
+                          
+                          {['PENDING', 'OVERDUE'].includes(payment.status) && (
+                            <Button variant="default" size="sm">
+                              <CreditCard className="h-3 w-3 mr-1" />
+                              Pagar Agora
+                            </Button>
+                          )}
+                          
+                          {payment.invoice_url && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => window.open(payment.invoice_url, '_blank')}
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              Comprovante
+                            </Button>
+                          )}
+                          
+                          {payment.bank_slip_url && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => window.open(payment.bank_slip_url, '_blank')}
+                            >
+                              <FileText className="h-3 w-3 mr-1" />
+                              Segunda Via
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Paginação */}
+                    {pagination.totalPages > 1 && (
+                      <div className="flex items-center justify-between pt-4 border-t">
+                        <div className="text-sm text-muted-foreground">
+                          Mostrando {((pagination.currentPage - 1) * pagination.itemsPerPage) + 1} a{' '}
+                          {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} de{' '}
+                          {pagination.totalItems} pagamentos
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={previousPage}
+                            disabled={!pagination.hasPreviousPage}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                            Anterior
+                          </Button>
+                          
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                              const page = i + 1;
+                              return (
+                                <Button
+                                  key={page}
+                                  variant={page === pagination.currentPage ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => goToPage(page)}
+                                  className="w-8 h-8 p-0"
+                                >
+                                  {page}
+                                </Button>
+                              );
+                            })}
+                          </div>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={nextPage}
+                            disabled={!pagination.hasNextPage}
+                          >
+                            Próximo
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                    <p className="text-muted-foreground">
+                      Nenhum pagamento encontrado com os filtros aplicados
+                    </p>
+                    <Button variant="outline" onClick={resetFilters} className="mt-2">
+                      Limpar Filtros
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
           <Card>
             <CardHeader>
               <CardTitle>Pagamentos Pendentes</CardTitle>

@@ -51,7 +51,14 @@ async function getExistingCustomer(userId: string): Promise<string | null> {
  * Cria cliente no Asaas via API
  */
 async function createAsaasCustomer(customerData: CreateCustomerData): Promise<AsaasCustomer> {
-  return await asaasClient.post<AsaasCustomer>('/customers', {
+  // LOG: Dados ANTES da formatação
+  console.log('📤 DADOS ANTES DA FORMATAÇÃO:');
+  console.log('  cpfCnpj:', customerData.cpfCnpj, '(length:', customerData.cpfCnpj?.length, ')');
+  console.log('  phone:', customerData.phone);
+  console.log('  postalCode:', customerData.postalCode);
+  
+  // Formatar dados para o Asaas
+  const formattedData = {
     name: customerData.name,
     cpfCnpj: formatCpfCnpj(customerData.cpfCnpj),
     email: customerData.email,
@@ -73,7 +80,17 @@ async function createAsaasCustomer(customerData: CreateCustomerData): Promise<As
     observations: customerData.observations,
     groupName: customerData.groupName,
     company: customerData.company
-  });
+  };
+  
+  // LOG: Dados APÓS a formatação (que serão enviados ao Asaas)
+  console.log('📤 DADOS APÓS FORMATAÇÃO (ENVIADOS AO ASAAS):');
+  console.log('  cpfCnpj:', formattedData.cpfCnpj, '(length:', formattedData.cpfCnpj?.length, ')');
+  console.log('  phone:', formattedData.phone);
+  console.log('  postalCode:', formattedData.postalCode);
+  console.log('📤 PAYLOAD COMPLETO PARA ASAAS:');
+  console.log(JSON.stringify(formattedData, null, 2));
+  
+  return await asaasClient.post<AsaasCustomer>('/customers', formattedData);
 }
 
 /**
