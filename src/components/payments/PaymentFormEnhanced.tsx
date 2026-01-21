@@ -137,13 +137,23 @@ export default function PaymentFormEnhanced({
   onSuccess,
   onCancel
 }: PaymentFormEnhancedProps) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
   const [cpfValidationMessage, setCpfValidationMessage] = useState<string>('');
   const [cepValidationMessage, setCepValidationMessage] = useState<string>('');
   const [phoneValidationMessage, setPhoneValidationMessage] = useState<string>('');
   const [userProfile, setUserProfile] = useState<any>(null);
+  
+  // DEBUG: Log do estado do usuário
+  React.useEffect(() => {
+    console.log('🔍 DEBUG PaymentFormEnhanced:');
+    console.log('  user:', user);
+    console.log('  user?.id:', user?.id);
+    console.log('  user?.email:', user?.email);
+    console.log('  !!user:', !!user);
+    console.log('  loading:', loading);
+  }, [user, loading]);
   
   const { 
     processarFiliacaoComPagamento, 
@@ -196,6 +206,22 @@ export default function PaymentFormEnhanced({
       fetchUserProfile();
     }
   }, [user]);
+
+  // Não renderizar até que o estado de autenticação seja determinado
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+              <p>Carregando...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const {
     register,
@@ -446,6 +472,18 @@ export default function PaymentFormEnhanced({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* DEBUG: Status do usuário */}
+      <Card className="border-red-200 bg-red-50">
+        <CardContent className="pt-6">
+          <p className="text-sm text-red-800">
+            🔍 DEBUG: user = {user ? `LOGADO (${user.email})` : 'NÃO LOGADO'}
+          </p>
+          <p className="text-sm text-red-800">
+            🔍 DEBUG: !!user = {!!user ? 'true' : 'false'}
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Resumo da Filiação */}
       <Card className="border-green-200 bg-green-50">
         <CardHeader>
