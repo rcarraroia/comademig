@@ -62,7 +62,7 @@ async function createAsaasCustomer(customerData: CreateCustomerData): Promise<As
     complement: customerData.complement,
     province: customerData.province,
     postalCode: customerData.postalCode ? formatCEP(customerData.postalCode) : undefined,
-    city: customerData.city,
+    // city: removido temporariamente - API Asaas espera ID numérico, não nome
     state: customerData.state,
     country: customerData.country || 'Brasil',
     externalReference: customerData.externalReference,

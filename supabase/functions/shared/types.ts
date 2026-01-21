@@ -24,6 +24,7 @@ export interface AsaasError {
 // CUSTOMER (CLIENTE)
 // ============================================================================
 
+// Interface AsaasCustomer atualizada com campos completos da API oficial
 export interface AsaasCustomer {
   id: string;
   name: string;
@@ -37,6 +38,7 @@ export interface AsaasCustomer {
   province?: string;
   postalCode?: string;
   city?: string;
+  cityName?: string; // Nome da cidade retornado pela API
   state?: string;
   country?: string;
   externalReference?: string;
@@ -47,6 +49,14 @@ export interface AsaasCustomer {
   observations?: string;
   groupName?: string;
   company?: string;
+  // Campos adicionais retornados pela API Asaas
+  dateCreated?: string;
+  personType?: 'FISICA' | 'JURIDICA';
+  deleted?: boolean;
+  canDelete?: boolean;
+  cannotBeDeletedReason?: string;
+  canEdit?: boolean;
+  cannotEditReason?: string;
 }
 
 export interface CreateCustomerData {
@@ -77,7 +87,7 @@ export interface CreateCustomerData {
 // PAYMENT (COBRANÇA)
 // ============================================================================
 
-export type PaymentStatus = 
+export type PaymentStatus =
   | 'PENDING'
   | 'RECEIVED'
   | 'CONFIRMED'
@@ -93,7 +103,8 @@ export type PaymentStatus =
   | 'DUNNING_RECEIVED'
   | 'AWAITING_RISK_ANALYSIS';
 
-export type BillingType = 'PIX' | 'CREDIT_CARD' | 'BOLETO' | 'DEBIT_CARD' | 'TRANSFER' | 'DEPOSIT';
+// BillingType corrigido conforme documentação oficial Asaas
+export type BillingType = 'PIX' | 'CREDIT_CARD' | 'BOLETO';
 
 export interface AsaasPayment {
   id: string;
@@ -115,7 +126,7 @@ export interface AsaasPayment {
   deleted?: boolean;
   anticipated?: boolean;
   anticipable?: boolean;
-  
+
   // PIX específico
   pixTransaction?: {
     qrCode: {
@@ -124,19 +135,19 @@ export interface AsaasPayment {
     };
     expirationDate: string;
   };
-  
+
   // Boleto específico
   bankSlipUrl?: string;
   identificationField?: string;
   nossoNumero?: string;
-  
+
   // Cartão específico
   creditCard?: {
     creditCardNumber: string;
     creditCardBrand: string;
     creditCardToken: string;
   };
-  
+
   // Dados de cobrança
   postalService?: boolean;
   split?: PaymentSplit[];
@@ -222,6 +233,24 @@ export interface AsaasSplitData {
 }
 
 // ============================================================================
+// SUBSCRIPTION (ASSINATURA)
+// ============================================================================
+
+export interface AsaasSubscription {
+  id: string;
+  customer: string;
+  value: number;
+  nextDueDate: string;
+  cycle: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'SEMIANNUALLY' | 'ANNUALLY';
+  description?: string;
+  billingType: BillingType;
+  status: 'ACTIVE' | 'INACTIVE' | 'EXPIRED' | 'AWAITING_CHARGEBACK_REVERSAL';
+  externalReference?: string;
+  deleted?: boolean;
+  dateCreated: string;
+}
+
+// ============================================================================
 // TIPOS DE SERVIÇO DO SISTEMA
 // ============================================================================
 
@@ -255,7 +284,7 @@ export interface CreatePaymentRequest {
 // WEBHOOK
 // ============================================================================
 
-export type WebhookEvent = 
+export type WebhookEvent =
   // Eventos de Pagamento
   | 'PAYMENT_CREATED'
   | 'PAYMENT_UPDATED'
@@ -282,7 +311,8 @@ export type WebhookEvent =
 
 export interface WebhookPayload {
   event: WebhookEvent;
-  payment: AsaasPayment;
+  payment?: AsaasPayment;
+  subscription?: AsaasSubscription;
   dateCreated: string;
 }
 

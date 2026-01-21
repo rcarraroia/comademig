@@ -117,7 +117,7 @@ export type PaymentStatus =
   | 'DUNNING_RECEIVED'
   | 'AWAITING_RISK_ANALYSIS';
 
-export type BillingType = 'PIX' | 'CREDIT_CARD' | 'BOLETO' | 'DEBIT_CARD' | 'TRANSFER' | 'DEPOSIT';
+export type BillingType = 'PIX' | 'CREDIT_CARD' | 'BOLETO';
 
 export interface AsaasPayment {
   id: string;
