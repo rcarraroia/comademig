@@ -529,6 +529,7 @@ export default function FinancialDashboard({ userId }: FinancialDashboardProps) 
           </div>
         </TabsContent>
 
+        <TabsContent value="pending">
           <Card>
             <CardHeader>
               <CardTitle>Pagamentos Pendentes</CardTitle>
@@ -637,5 +638,5 @@ export default function FinancialDashboard({ userId }: FinancialDashboardProps) 
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

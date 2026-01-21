@@ -44,12 +44,14 @@ const createPaymentFormSchema = (isLoggedIn: boolean) => z.object({
   cpf: isLoggedIn
     ? z.string().optional()
     : z.string()
+        .min(11, 'CPF é obrigatório')
         .transform((val) => val.replace(/\D/g, '')) // Limpar ANTES da validação
         .refine((val) => val.length === 11, 'CPF deve ter 11 dígitos')
         .refine((val) => validateCPF(val), 'CPF inválido - verifique os números digitados'),
   telefone: isLoggedIn
     ? z.string().optional()
     : z.string()
+        .min(10, 'Telefone é obrigatório')
         .transform((val) => val.replace(/\D/g, '')) // Limpar ANTES da validação
         .refine((val) => val.length >= 10 && val.length <= 11, 'Telefone deve ter 10 ou 11 dígitos')
         .refine((val) => validatePhone(val), 'Telefone inválido - use formato (XX) XXXXX-XXXX'),
@@ -61,6 +63,7 @@ const createPaymentFormSchema = (isLoggedIn: boolean) => z.object({
   cep: isLoggedIn
     ? z.string().optional()
     : z.string()
+        .min(8, 'CEP é obrigatório')
         .transform((val) => val.replace(/\D/g, '')) // Limpar ANTES da validação
         .refine((val) => val.length === 8, 'CEP deve ter 8 dígitos')
         .refine((val) => validateCEP(val), 'CEP inválido - use formato XXXXX-XXX'),
@@ -75,11 +78,11 @@ const createPaymentFormSchema = (isLoggedIn: boolean) => z.object({
   payment_method: z.literal('credit_card'),
   
   // Dados do cartão (sempre obrigatórios)
-  card_holder_name: z.string().optional(),
-  card_number: z.string().optional(),
-  card_expiry_month: z.string().optional(),
-  card_expiry_year: z.string().optional(),
-  card_ccv: z.string().optional(),
+  card_holder_name: z.string().min(2, 'Nome no cartão é obrigatório'),
+  card_number: z.string().min(13, 'Número do cartão é obrigatório'),
+  card_expiry_month: z.string().min(1, 'Mês de vencimento é obrigatório'),
+  card_expiry_year: z.string().min(4, 'Ano de vencimento é obrigatório'),
+  card_ccv: z.string().min(3, 'CVV é obrigatório'),
   card_installments: z.string().optional(),
   
   // Senha (apenas para usuários não logados)
@@ -101,11 +104,26 @@ const createPaymentFormSchema = (isLoggedIn: boolean) => z.object({
 }).refine((data) => {
   // Validação condicional para cartão de crédito
   if (data.payment_method === 'credit_card') {
-    return data.card_holder_name && 
-           data.card_number && 
-           data.card_expiry_month && 
-           data.card_expiry_year && 
-           data.card_ccv;
+    const errors = [];
+    if (!data.card_holder_name || data.card_holder_name.trim().length < 2) {
+      errors.push('Nome no cartão é obrigatório');
+    }
+    if (!data.card_number || data.card_number.replace(/\s/g, '').length < 13) {
+      errors.push('Número do cartão é obrigatório');
+    }
+    if (!data.card_expiry_month) {
+      errors.push('Mês de vencimento é obrigatório');
+    }
+    if (!data.card_expiry_year) {
+      errors.push('Ano de vencimento é obrigatório');
+    }
+    if (!data.card_ccv || data.card_ccv.length < 3) {
+      errors.push('CVV é obrigatório');
+    }
+    
+    if (errors.length > 0) {
+      return false;
+    }
   }
   return true;
 }, {
