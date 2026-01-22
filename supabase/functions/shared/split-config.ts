@@ -42,7 +42,7 @@ export interface SplitConfigurationResult {
  */
 export interface GetSplitConfigParams {
   affiliateCode?: string
-  serviceType: 'filiacao' | 'servico'
+  serviceType: 'filiacao' | 'servico' | 'certidao' | 'regularizacao' | 'evento' | 'taxa_anual'
   totalValue: number
 }
 
@@ -70,8 +70,8 @@ export async function getSplitConfiguration(
   let hasAffiliate = false
   let affiliateInfo: SplitConfigurationResult['affiliateInfo'] = undefined
 
-  // 2. Verificar se há código de afiliado (apenas para filiação)
-  if (affiliateCode && serviceType === 'filiacao') {
+  // 2. Verificar se há código de afiliado (para filiação E outros serviços)
+  if (affiliateCode) {
     // Buscar dados do afiliado no banco
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -99,34 +99,65 @@ export async function getSplitConfiguration(
         walletId: affiliate.asaas_wallet_id
       }
 
-      // 3. Calcular percentuais COM afiliado (40% COMADEMIG + 40% RENUM + 20% Afiliado)
-      // COMADEMIG recebe direto (não precisa de split no Asaas)
-      splits.push({
-        walletId: '', // COMADEMIG não tem wallet (será removido no formatSplitsForAsaas)
-        percentualValue: 40.00,
-        recipientType: 'comademig',
-        recipientName: 'COMADEMIG'
-      })
+      // 3. Calcular percentuais COM afiliado baseado no tipo de serviço
+      if (serviceType === 'filiacao') {
+        // Filiação COM afiliado: 40% COMADEMIG + 40% RENUM + 20% Afiliado
+        splits.push({
+          walletId: '', // COMADEMIG não tem wallet (será removido no formatSplitsForAsaas)
+          percentualValue: 40.00,
+          recipientType: 'comademig',
+          recipientName: 'COMADEMIG'
+        })
 
-      splits.push({
-        walletId: RENUM_WALLET_ID,
-        percentualValue: 40.00,
-        recipientType: 'renum',
-        recipientName: 'RENUM'
-      })
+        splits.push({
+          walletId: RENUM_WALLET_ID,
+          percentualValue: 40.00,
+          recipientType: 'renum',
+          recipientName: 'RENUM'
+        })
 
-      splits.push({
-        walletId: affiliate.asaas_wallet_id,
-        percentualValue: 20.00,
-        recipientType: 'affiliate',
-        recipientName: affiliate.display_name || 'Afiliado'
-      })
+        splits.push({
+          walletId: affiliate.asaas_wallet_id,
+          percentualValue: 20.00,
+          recipientType: 'affiliate',
+          recipientName: affiliate.display_name || 'Afiliado'
+        })
 
-      console.log('✅ Split configurado COM afiliado:', {
-        affiliateCode,
-        affiliateName: affiliate.display_name,
-        splits: splits.map(s => `${s.recipientName}: ${s.percentualValue}%`)
-      })
+        console.log('✅ Split configurado COM afiliado (filiação):', {
+          affiliateCode,
+          affiliateName: affiliate.display_name,
+          splits: splits.map(s => `${s.recipientName}: ${s.percentualValue}%`)
+        })
+      } else {
+        // Outros serviços COM afiliado: 40% COMADEMIG + 40% RENUM + 20% Afiliado
+        splits.push({
+          walletId: '',
+          percentualValue: 40.00,
+          recipientType: 'comademig',
+          recipientName: 'COMADEMIG'
+        })
+
+        splits.push({
+          walletId: RENUM_WALLET_ID,
+          percentualValue: 40.00,
+          recipientType: 'renum',
+          recipientName: 'RENUM'
+        })
+
+        splits.push({
+          walletId: affiliate.asaas_wallet_id,
+          percentualValue: 20.00,
+          recipientType: 'affiliate',
+          recipientName: affiliate.display_name || 'Afiliado'
+        })
+
+        console.log('✅ Split configurado COM afiliado (outros serviços):', {
+          affiliateCode,
+          affiliateName: affiliate.display_name,
+          serviceType,
+          splits: splits.map(s => `${s.recipientName}: ${s.percentualValue}%`)
+        })
+      }
     }
   }
 

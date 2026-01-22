@@ -23,7 +23,7 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 /**
- * Busca configuração de split para afiliados
+ * Busca configuração de split para afiliados (método atual - por affiliate_id)
  */
 async function getSplitConfiguration(affiliateId?: string): Promise<AsaasSplitData[]> {
   if (!affiliateId) return [];
@@ -31,23 +31,87 @@ async function getSplitConfiguration(affiliateId?: string): Promise<AsaasSplitDa
   try {
     const { data: affiliate, error } = await supabase
       .from('affiliates')
-      .select('wallet_id, commission_percentage')
+      .select('asaas_wallet_id, display_name, status')
       .eq('id', affiliateId)
+      .eq('status', 'active')
       .single();
 
-    if (error || !affiliate?.wallet_id) {
+    if (error || !affiliate?.asaas_wallet_id) {
       console.warn('Afiliado não encontrado ou sem wallet_id:', error);
       return [];
     }
 
     return [{
-      walletId: affiliate.wallet_id,
-      percentualValue: affiliate.commission_percentage || 10, // 10% padrão
-      description: `Comissão afiliado ${affiliateId}`,
+      walletId: affiliate.asaas_wallet_id,
+      percentualValue: 20, // 20% padrão para afiliados
+      description: `Comissão ${affiliate.display_name || 'Afiliado'}`,
       externalReference: `affiliate_${affiliateId}`
     }];
   } catch (error) {
     console.error('Erro ao buscar configuração de split:', error);
+    return [];
+  }
+}
+
+/**
+ * NOVA: Busca configuração de split por user_id (para comissões vitalícias)
+ * Verifica se o usuário foi indicado por algum afiliado
+ */
+async function getSplitConfigurationByUser(userId: string): Promise<AsaasSplitData[]> {
+  if (!userId) return [];
+
+  try {
+    console.log('🔍 Buscando indicação para user_id:', userId);
+    
+    const { data: referral, error } = await supabase
+      .from('affiliate_referrals')
+      .select(`
+        affiliate_id,
+        referral_code,
+        affiliates(
+          id,
+          asaas_wallet_id,
+          display_name,
+          status
+        )
+      `)
+      .eq('referred_user_id', userId)
+      .eq('status', 'pending') // Status pode ser 'pending' até conversão
+      .single();
+
+    if (error) {
+      console.log('ℹ️ Usuário não foi indicado por afiliado:', error.message);
+      return [];
+    }
+
+    if (!referral?.affiliates?.asaas_wallet_id) {
+      console.warn('⚠️ Afiliado encontrado mas sem wallet_id configurado');
+      return [];
+    }
+
+    if (referral.affiliates.status !== 'active') {
+      console.warn('⚠️ Afiliado encontrado mas está inativo');
+      return [];
+    }
+
+    const affiliate = referral.affiliates;
+    
+    console.log('✅ Afiliado encontrado para comissão vitalícia:', {
+      affiliateId: affiliate.id,
+      affiliateName: affiliate.display_name,
+      referralCode: referral.referral_code,
+      walletId: affiliate.asaas_wallet_id
+    });
+
+    return [{
+      walletId: affiliate.asaas_wallet_id,
+      percentualValue: 20, // 20% comissão vitalícia
+      description: `Comissão vitalícia ${affiliate.display_name || 'Afiliado'}`,
+      externalReference: `affiliate_lifetime_${affiliate.id}`
+    }];
+    
+  } catch (error) {
+    console.error('❌ Erro ao buscar split por user_id:', error);
     return [];
   }
 }
@@ -131,10 +195,54 @@ serve(async (req) => {
       );
     }
 
+    console.log('💰 ========================================');
+    console.log('💰 CONFIGURANDO SPLIT DE PAGAMENTO');
+    console.log('💰 ========================================');
+    console.log('📋 Dados recebidos:', {
+      service_type: requestData.service_type,
+      user_id: requestData.user_id,
+      has_service_data_affiliate_id: !!requestData.service_data?.affiliate_id,
+      service_data_keys: Object.keys(requestData.service_data || {})
+    });
+
     // Configurar split se houver afiliado
     let splitConfig: AsaasSplitData[] = [];
+    
+    // 1. MÉTODO ATUAL: Buscar por service_data.affiliate_id (casos específicos)
     if (requestData.service_data?.affiliate_id) {
+      console.log('🔍 Método 1: Buscando split por service_data.affiliate_id:', requestData.service_data.affiliate_id);
       splitConfig = await getSplitConfiguration(requestData.service_data.affiliate_id);
+      
+      if (splitConfig.length > 0) {
+        console.log('✅ Split encontrado via service_data.affiliate_id');
+      } else {
+        console.log('⚠️ Affiliate_id em service_data não resultou em split válido');
+      }
+    }
+
+    // 2. NOVO MÉTODO: Se não encontrou split, buscar por user_id (comissões vitalícias)
+    if (splitConfig.length === 0 && requestData.user_id) {
+      console.log('🔍 Método 2: Buscando split por user_id (comissões vitalícias):', requestData.user_id);
+      splitConfig = await getSplitConfigurationByUser(requestData.user_id);
+      
+      if (splitConfig.length > 0) {
+        console.log('✅ Split encontrado via user_id - Comissão vitalícia aplicada!');
+      } else {
+        console.log('ℹ️ Usuário não foi indicado por afiliado ativo');
+      }
+    }
+
+    // 3. RESULTADO FINAL
+    if (splitConfig.length > 0) {
+      console.log('🎯 SPLIT FINAL CONFIGURADO:', {
+        splits: splitConfig.map(s => ({
+          walletId: s.walletId,
+          percentage: s.percentualValue,
+          description: s.description
+        }))
+      });
+    } else {
+      console.log('💸 NENHUM SPLIT APLICADO - Pagamento integral para COMADEMIG');
     }
 
     // Preparar dados do pagamento
