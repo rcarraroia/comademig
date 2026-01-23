@@ -15,11 +15,22 @@ import { ptBR } from "date-fns/locale";
 
 const Home = () => {
   const { content, isLoading, error, hasCustomContent } = useHomeContent();
-  const { data: noticiasHome, isLoading: isLoadingNoticias } = useNoticiasHome(3);
-  const { data: noticiasRecentes } = useNoticiasRecentes(25);
+  const { data: noticiasHome, isLoading: isLoadingNoticias, error: errorNoticias } = useNoticiasHome(3);
+  const { data: noticiasRecentes, error: errorNoticiasRecentes } = useNoticiasRecentes(25);
   
   // Prefetch de conteúdo relacionado para melhor performance
   useContentPrefetch('home');
+
+  // Log de erros mas não bloquear a aplicação
+  if (error) {
+    console.error('Erro ao carregar conteúdo da home:', error);
+  }
+  if (errorNoticias) {
+    console.error('Erro ao carregar notícias home:', errorNoticias);
+  }
+  if (errorNoticiasRecentes) {
+    console.error('Erro ao carregar notícias recentes:', errorNoticiasRecentes);
+  }
 
   // Apenas mostrar loading se realmente estiver carregando E não tiver conteúdo
   if (isLoading && !content) {
@@ -30,10 +41,23 @@ const Home = () => {
     );
   }
 
-  // Log de erro mas continua com conteúdo padrão
-  if (error) {
-    console.error('Erro ao carregar conteúdo da home:', error);
-  }
+  // Garantir que sempre temos conteúdo padrão, mesmo com erro
+  const safeContent = content || {
+    banner_principal: {
+      titulo_principal: "COMADEMIG",
+      subtitulo: "Convenção de Ministros das Assembleias de Deus em Minas Gerais",
+      texto_botao: "Saiba Mais",
+      link_botao: "/sobre"
+    },
+    cards_acao: [],
+    destaques_convencao: [],
+    junte_se_missao: {
+      titulo_principal: "Junte-se à Nossa Missão",
+      subtitulo: "Faça parte da COMADEMIG",
+      texto_botao: "Filiar-se",
+      link_botao: "/filiacao"
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -42,14 +66,14 @@ const Home = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <h1 className="font-montserrat font-bold text-4xl md:text-6xl leading-tight">
-              {content.banner_principal?.titulo_principal}
+              {safeContent.banner_principal?.titulo_principal}
             </h1>
             <p className="font-inter text-xl md:text-2xl text-gray-200">
-              {content.banner_principal?.subtitulo}
+              {safeContent.banner_principal?.subtitulo}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8">
               <Button asChild size="lg" className="bg-comademig-gold hover:bg-comademig-gold/90 text-white font-montserrat font-semibold">
-                <Link to={content.banner_principal?.link_botao || '/sobre'}>{content.banner_principal?.texto_botao}</Link>
+                <Link to={safeContent.banner_principal?.link_botao || '/sobre'}>{safeContent.banner_principal?.texto_botao}</Link>
               </Button>
             </div>
           </div>
@@ -60,7 +84,7 @@ const Home = () => {
       <section className="py-16 bg-comademig-light">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {content.cards_acao?.map((card: any, index: number) => {
+            {safeContent.cards_acao?.map((card: any, index: number) => {
               const icons = [Users, Heart, Building, Play];
               const IconComponent = icons[index] || Users;
               
@@ -90,7 +114,7 @@ const Home = () => {
       </section>
 
       {/* Destaques da Convenção */}
-      {content.destaques_convencao && content.destaques_convencao?.length > 0 && (
+      {safeContent.destaques_convencao && safeContent.destaques_convencao?.length > 0 && (
         <section className="py-16 bg-white">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
@@ -102,7 +126,7 @@ const Home = () => {
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {content.destaques_convencao?.map((destaque: any, index: number) => (
+              {safeContent.destaques_convencao?.map((destaque: any, index: number) => (
                 <Card key={index} className="hover:shadow-lg transition-shadow">
                   {destaque.imagem_evento && (
                     <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
@@ -173,14 +197,14 @@ const Home = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <h2 className="font-montserrat font-bold text-3xl md:text-5xl">
-              {content.junte_se_missao?.titulo_principal}
+              {safeContent.junte_se_missao?.titulo_principal}
             </h2>
             <p className="font-inter text-xl md:text-2xl text-gray-200">
-              {content.junte_se_missao?.subtitulo}
+              {safeContent.junte_se_missao?.subtitulo}
             </p>
             <div className="pt-8">
               <Button asChild size="lg" className="bg-comademig-gold hover:bg-comademig-gold/90 text-white font-montserrat font-semibold">
-                <Link to={content.junte_se_missao?.link_botao || '/filiacao'}>{content.junte_se_missao?.texto_botao}</Link>
+                <Link to={safeContent.junte_se_missao?.link_botao || '/filiacao'}>{safeContent.junte_se_missao?.texto_botao}</Link>
               </Button>
             </div>
           </div>
@@ -195,7 +219,7 @@ const Home = () => {
         editorUrl="/admin/content/home-editor"
         publicUrl="/"
         position="bottom-right"
-        contentPreview={content?.banner_principal?.titulo_principal}
+        contentPreview={safeContent?.banner_principal?.titulo_principal}
       />
     </div>
   );

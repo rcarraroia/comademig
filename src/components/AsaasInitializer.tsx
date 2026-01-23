@@ -42,7 +42,27 @@ export const AsaasInitializer: React.FC<AsaasInitializerProps> = ({ children }) 
       }
     };
 
-    validateIntegration();
+    // Usar timeout para evitar que validação trave a aplicação
+    const timeoutId = setTimeout(() => {
+      if (isValidating) {
+        console.warn('⚠️ Timeout na validação Asaas - continuando sem validação');
+        setValidationResult({
+          isValid: false,
+          errors: ['Timeout na validação'],
+          warnings: ['Sistema funcionará em modo simulação'],
+          environment: import.meta.env.DEV ? 'development' : 'production'
+        });
+        setIsValidating(false);
+      }
+    }, 5000); // 5 segundos de timeout
+
+    validateIntegration().finally(() => {
+      clearTimeout(timeoutId);
+    });
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   // Em desenvolvimento, mostra status de validação

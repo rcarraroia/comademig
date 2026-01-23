@@ -53,6 +53,10 @@ export const useAuthState = () => {
         
       if (error && error.code !== 'PGRST116') {
         console.error('Erro ao buscar perfil:', error);
+        // Em caso de erro, definir perfil como null mas não bloquear a aplicação
+        setProfile(null);
+        profileFetchedRef.current = true;
+        lastUserIdRef.current = userId;
         return;
       }
       
@@ -61,12 +65,20 @@ export const useAuthState = () => {
       profileFetchedRef.current = true;
       lastUserIdRef.current = userId;
       
-      // Verificar acesso após buscar perfil
+      // Verificar acesso após buscar perfil - com try-catch
       if (data) {
-        checkUserAccess(data);
+        try {
+          checkUserAccess(data);
+        } catch (accessError) {
+          console.error('Erro na verificação de acesso:', accessError);
+        }
       }
     } catch (error) {
       console.error('Erro ao buscar perfil:', error);
+      // Garantir que a aplicação não trave por erro de perfil
+      setProfile(null);
+      profileFetchedRef.current = true;
+      lastUserIdRef.current = userId;
     }
   };
 
@@ -82,47 +94,56 @@ export const useAuthState = () => {
   const checkUserAccess = (profile: Profile | null) => {
     if (!profile || !user) return;
 
-    // Super admins têm acesso total independente do status
-    if (profile.tipo_membro === 'super_admin' || profile.tipo_membro === 'admin') {
-      return;
-    }
+    try {
+      // Super admins têm acesso total independente do status
+      if (profile.tipo_membro === 'super_admin' || profile.tipo_membro === 'admin') {
+        return;
+      }
 
-    // Páginas que não precisam de verificação de status
-    const allowedPaths = [
-      '/aguardando-confirmacao',
-      '/auth',
-      '/esqueci-senha',
-      '/reset-password',
-      '/filiacao',
-      '/pagamento-sucesso',
-      '/pagamento-pendente'
-    ];
+      // Páginas que não precisam de verificação de status
+      const allowedPaths = [
+        '/aguardando-confirmacao',
+        '/auth',
+        '/esqueci-senha',
+        '/reset-password',
+        '/filiacao',
+        '/pagamento-sucesso',
+        '/pagamento-pendente'
+      ];
 
-    const isAllowedPath = allowedPaths.some(path => 
-      location.pathname.startsWith(path)
-    );
+      const isAllowedPath = allowedPaths.some(path => 
+        location.pathname.startsWith(path)
+      );
 
-    if (isAllowedPath) return;
+      if (isAllowedPath) return;
 
-    // Se status é pendente e não está na página de aguardo, redirecionar
-    if (profile.status === 'pendente' && location.pathname !== '/aguardando-confirmacao') {
-      console.log('Usuário com status pendente, redirecionando para aguardo...');
-      navigate('/aguardando-confirmacao');
-      return;
-    }
+      // Se status é pendente e não está na página de aguardo, redirecionar
+      if (profile.status === 'pendente' && location.pathname !== '/aguardando-confirmacao') {
+        console.log('Usuário com status pendente, redirecionando para aguardo...');
+        navigate('/aguardando-confirmacao');
+        return;
+      }
 
-    // Se status é ativo e está na página de aguardo, redirecionar para dashboard
-    if (profile.status === 'ativo' && location.pathname === '/aguardando-confirmacao') {
-      console.log('Pagamento confirmado, redirecionando para dashboard...');
-      navigate('/dashboard');
-      return;
+      // Se status é ativo e está na página de aguardo, redirecionar para dashboard
+      if (profile.status === 'ativo' && location.pathname === '/aguardando-confirmacao') {
+        console.log('Pagamento confirmado, redirecionando para dashboard...');
+        navigate('/dashboard');
+        return;
+      }
+    } catch (error) {
+      console.error('Erro na verificação de acesso do usuário:', error);
+      // Não bloquear a aplicação por erro de redirecionamento
     }
   };
 
   // Verificar acesso quando profile ou location mudar
   useEffect(() => {
     if (profile && user && !loading) {
-      checkUserAccess(profile);
+      try {
+        checkUserAccess(profile);
+      } catch (error) {
+        console.error('Erro no useEffect de verificação de acesso:', error);
+      }
     }
   }, [profile, location.pathname, user, loading]);
 
