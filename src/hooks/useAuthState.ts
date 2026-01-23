@@ -149,57 +149,83 @@ export const useAuthState = () => {
 
   useEffect(() => {
     let mounted = true;
+    let subscription: any = null;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
-        
-        if (!mounted) return;
+    try {
+      const initAuth = async () => {
+        try {
+          // Configurar listener de auth state
+          const { data } = supabase.auth.onAuthStateChange(
+            async (event, session) => {
+              console.log('Auth state changed:', event, session?.user?.email);
+              
+              if (!mounted) return;
 
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Só buscar perfil se for um usuário diferente ou ainda não foi buscado
-          if (lastUserIdRef.current !== session.user.id) {
-            profileFetchedRef.current = false;
-            lastUserIdRef.current = session.user.id;
-          }
-          
-          if (!profileFetchedRef.current) {
-            // Debounce para evitar múltiplas chamadas
-            setTimeout(() => {
-              if (mounted && !profileFetchedRef.current) {
-                fetchProfile(session.user.id);
+              try {
+                setSession(session);
+                setUser(session?.user ?? null);
+                
+                if (session?.user) {
+                  // Só buscar perfil se for um usuário diferente ou ainda não foi buscado
+                  if (lastUserIdRef.current !== session.user.id) {
+                    profileFetchedRef.current = false;
+                    lastUserIdRef.current = session.user.id;
+                  }
+                  
+                  if (!profileFetchedRef.current) {
+                    // Debounce para evitar múltiplas chamadas
+                    setTimeout(() => {
+                      if (mounted && !profileFetchedRef.current) {
+                        fetchProfile(session.user.id);
+                      }
+                    }, 200);
+                  }
+                } else {
+                  profileFetchedRef.current = false;
+                  lastUserIdRef.current = null;
+                  setProfile(null);
+                }
+                
+                setLoading(false);
+              } catch (error) {
+                console.error('Erro no onAuthStateChange:', error);
+                setLoading(false);
               }
-            }, 200);
-          }
-        } else {
-          profileFetchedRef.current = false;
-          lastUserIdRef.current = null;
-          setProfile(null);
-        }
-        
-        setLoading(false);
-      }
-    );
+            }
+          );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!mounted) return;
-      
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user && !profileFetchedRef.current) {
-        fetchProfile(session.user.id);
-      } else if (!session?.user) {
-        setLoading(false);
-      }
-    });
+          subscription = data.subscription;
+
+          // Obter sessão inicial
+          const { data: sessionData } = await supabase.auth.getSession();
+          
+          if (!mounted) return;
+          
+          setSession(sessionData.session);
+          setUser(sessionData.session?.user ?? null);
+          
+          if (sessionData.session?.user && !profileFetchedRef.current) {
+            await fetchProfile(sessionData.session.user.id);
+          } else if (!sessionData.session?.user) {
+            setLoading(false);
+          }
+        } catch (error) {
+          console.error('Erro na inicialização do auth:', error);
+          setLoading(false);
+        }
+      };
+
+      initAuth();
+    } catch (error) {
+      console.error('Erro crítico no useEffect do auth:', error);
+      setLoading(false);
+    }
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
   }, []);
 
