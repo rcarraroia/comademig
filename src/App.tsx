@@ -106,8 +106,8 @@ function App() {
   return (
     <ErrorBoundary componentName="App">
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <Router>
+        <Router>
+          <AuthProvider>
             <AsaasInitializer>
               <Routes>
                 {/* Public routes */}
@@ -224,8 +224,8 @@ function App() {
               </Routes>
               <Toaster />
             </AsaasInitializer>
-          </Router>
-        </AuthProvider>
+          </AuthProvider>
+        </Router>
       </QueryClientProvider>
     </ErrorBoundary>
   );
