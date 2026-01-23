@@ -24,64 +24,36 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  try {
-    const { session, user, profile, loading, setProfile, refreshProfile } = useAuthState();
-    const { signIn, signUp, signOut, resetPassword, updateProfile: updateProfileImpl } = useAuthActions();
-    const { isAdmin, isSuperAdmin, hasPermission } = useAuthPermissions(profile, user);
+  const { session, user, profile, loading, setProfile, refreshProfile } = useAuthState();
+  const { signIn, signUp, signOut, resetPassword, updateProfile: updateProfileImpl } = useAuthActions();
+  const { isAdmin, isSuperAdmin, hasPermission } = useAuthPermissions(profile, user);
 
-    const updateProfile = (data: Partial<Profile>) => {
-      return updateProfileImpl(user, profile, setProfile, data);
-    };
+  const updateProfile = (data: Partial<Profile>) => {
+    return updateProfileImpl(user, profile, setProfile, data);
+  };
 
-    const handleSignOut = async () => {
-      try {
-        await signOut();
-        setProfile(null);
-      } catch (error) {
-        console.error('Erro no signOut:', error);
-        setProfile(null);
-      }
-    };
+  const handleSignOut = async () => {
+    await signOut();
+    setProfile(null);
+  };
 
-    const value = {
-      session,
-      user,
-      profile,
-      loading,
-      signIn,
-      signUp,
-      signOut: handleSignOut,
-      resetPassword,
-      updateProfile,
-      refreshProfile,
-      isAdmin,
-      isSuperAdmin,
-      hasPermission,
-    };
+  const value = {
+    session,
+    user,
+    profile,
+    loading,
+    signIn,
+    signUp,
+    signOut: handleSignOut,
+    resetPassword,
+    updateProfile,
+    refreshProfile,
+    isAdmin,
+    isSuperAdmin,
+    hasPermission,
+  };
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-  } catch (error) {
-    console.error('Erro crítico no AuthProvider:', error);
-    
-    // Fallback provider em caso de erro crítico
-    const fallbackValue = {
-      session: null,
-      user: null,
-      profile: null,
-      loading: false,
-      signIn: async () => ({ error: new Error('AuthProvider em modo fallback') }),
-      signUp: async () => ({ error: new Error('AuthProvider em modo fallback') }),
-      signOut: async () => {},
-      resetPassword: async () => ({ error: new Error('AuthProvider em modo fallback') }),
-      updateProfile: async () => ({ error: new Error('AuthProvider em modo fallback') }),
-      refreshProfile: async () => {},
-      isAdmin: () => false,
-      isSuperAdmin: () => false,
-      hasPermission: () => false,
-    };
-
-    return <AuthContext.Provider value={fallbackValue}>{children}</AuthContext.Provider>;
-  }
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => {

@@ -98,187 +98,133 @@ import { AuthProvider } from '@/contexts/AuthContext';
 // Components
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { AsaasInitializer } from '@/components/AsaasInitializer';
-import ErrorBoundary from '@/components/ErrorBoundary';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: (failureCount, error) => {
-        // Não fazer retry em erros de RLS ou autenticação
-        if (error?.message?.includes('RLS') || error?.message?.includes('JWT')) {
-          return false;
-        }
-        return failureCount < 2;
-      },
-      staleTime: 5 * 60 * 1000, // 5 minutos
-    },
-  },
-});
-
-// Componente de fallback para erros críticos
-const CriticalErrorFallback = ({ error }: { error: Error }) => (
-  <div className="min-h-screen flex items-center justify-center bg-gray-50">
-    <div className="max-w-md mx-auto text-center p-6">
-      <div className="text-red-600 mb-4">
-        <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
-        </svg>
-      </div>
-      <h1 className="text-xl font-bold text-gray-900 mb-2">Erro Temporário</h1>
-      <p className="text-gray-600 mb-4">
-        Estamos enfrentando um problema técnico. Por favor, recarregue a página.
-      </p>
-      <button 
-        onClick={() => window.location.reload()} 
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-      >
-        Recarregar Página
-      </button>
-      {process.env.NODE_ENV === 'development' && (
-        <details className="mt-4 text-left">
-          <summary className="cursor-pointer text-sm text-gray-500">Detalhes do erro (dev)</summary>
-          <pre className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto">
-            {error.message}
-            {error.stack}
-          </pre>
-        </details>
-      )}
-    </div>
-  </div>
-);
+const queryClient = new QueryClient();
 
 function App() {
   return (
-    <ErrorBoundary fallback={CriticalErrorFallback}>
-      <QueryClientProvider client={queryClient}>
-        <ErrorBoundary fallback={CriticalErrorFallback}>
-          <AuthProvider>
-            <ErrorBoundary fallback={CriticalErrorFallback}>
-              <AsaasInitializer>
-                <ErrorBoundary fallback={CriticalErrorFallback}>
-                  <Router>
-                  <Routes>
-                    {/* Public routes */}
-                    <Route path="/" element={<Layout><Index /></Layout>} />
-                    <Route path="/home" element={<Layout><Home /></Layout>} />
-                    <Route path="/sobre" element={<Layout><Sobre /></Layout>} />
-                    <Route path="/lideranca" element={<Layout><Lideranca /></Layout>} />
-                    <Route path="/noticias" element={<Layout><Noticias /></Layout>} />
-                    <Route path="/noticias/:slug" element={<Layout><NoticiaDetalhes /></Layout>} />
-                    <Route path="/eventos" element={<Layout><Eventos /></Layout>} />
-                    <Route path="/multimidia" element={<Layout><Multimidia /></Layout>} />
-                    <Route path="/multimidia/album/:id" element={<Layout><AlbumDetalhes /></Layout>} />
-                    <Route path="/contato" element={<Layout><Contato /></Layout>} />
-                    <Route path="/filiacao" element={<Filiacao />} />
-                    <Route path="/privacidade" element={<Privacidade />} />
-                    <Route path="/termos" element={<Termos />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/esqueci-senha" element={<EsqueciSenha />} />
-                    <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route path="/checkout/:cobrancaId" element={<Checkout />} />
-                    <Route path="/pagamento-sucesso" element={<PagamentoSucessoFiliacao />} />
-                    <Route path="/pagamento-pendente" element={<PagamentoPendente />} />
-                    <Route path="/aguardando-confirmacao" element={<AguardandoConfirmacao />} />
-                    <Route path="/validar-carteira/:numeroCarteira" element={<ValidarCarteira />} />
-                    <Route path="/validar-certificado/:numeroCertificado" element={<ValidarCertificado />} />
-                    <Route path="/validar-certidao/:numeroProtocolo" element={<ValidarCertidao />} />
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <AsaasInitializer>
+          <Router>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Layout><Index /></Layout>} />
+            <Route path="/home" element={<Layout><Home /></Layout>} />
+            <Route path="/sobre" element={<Layout><Sobre /></Layout>} />
+            <Route path="/lideranca" element={<Layout><Lideranca /></Layout>} />
+            <Route path="/noticias" element={<Layout><Noticias /></Layout>} />
+            <Route path="/noticias/:slug" element={<Layout><NoticiaDetalhes /></Layout>} />
+            <Route path="/eventos" element={<Layout><Eventos /></Layout>} />
+            <Route path="/multimidia" element={<Layout><Multimidia /></Layout>} />
+            <Route path="/multimidia/album/:id" element={<Layout><AlbumDetalhes /></Layout>} />
+            <Route path="/contato" element={<Layout><Contato /></Layout>} />
+            <Route path="/filiacao" element={<Filiacao />} />
+            <Route path="/privacidade" element={<Privacidade />} />
+            <Route path="/termos" element={<Termos />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/checkout/:cobrancaId" element={<Checkout />} />
+            <Route path="/pagamento-sucesso" element={<PagamentoSucessoFiliacao />} />
+            <Route path="/pagamento-pendente" element={<PagamentoPendente />} />
+            <Route path="/aguardando-confirmacao" element={<AguardandoConfirmacao />} />
+            <Route path="/validar-carteira/:numeroCarteira" element={<ValidarCarteira />} />
+            <Route path="/validar-certificado/:numeroCertificado" element={<ValidarCertificado />} />
+            <Route path="/validar-certidao/:numeroProtocolo" element={<ValidarCertidao />} />
 
-                    {/* Public profile route */}
-                    <Route path="/perfil-publico/:userId" element={<PerfilPublico />} />
+            {/* Public profile route */}
+            <Route path="/perfil-publico/:userId" element={<PerfilPublico />} />
 
-                    {/* Protected routes - APENAS USUÁRIO */}
-                    <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/dashboard/meus-dados" element={<MeusDados />} />
-                      <Route path="/dashboard/carteira-digital" element={<CarteiraDigital />} />
-                      <Route path="/dashboard/comunicacao" element={<Comunicacao />} />
-                      <Route path="/dashboard/comunicacao-dashboard" element={<ComunicacaoDashboard />} />
-                      <Route path="/dashboard/eventos" element={<EventosDashboard />} />
-                      <Route path="/dashboard/solicitacao-servicos" element={<SolicitacaoServicos />} />
-                      <Route path="/dashboard/checkout-servico" element={<CheckoutServico />} />
-                      <Route path="/dashboard/pagamento-sucesso" element={<PagamentoSucessoServico />} />
-                      <Route path="/dashboard/financeiro" element={<Financeiro />} />
-                      <Route path="/dashboard/suporte" element={<Suporte />} />
-                      <Route path="/dashboard/afiliados" element={<Afiliados />} />
-                      <Route path="/dashboard/notifications" element={<Notifications />} />
-                      <Route path="/dashboard/perfil-completo" element={<PerfilCompleto />} />
-                      {/* Minhas Notícias */}
-                      <Route path="/dashboard/minhas-noticias" element={<MinhasNoticias />} />
-                      <Route path="/dashboard/minhas-noticias/nova" element={<NoticiaForm />} />
-                      <Route path="/dashboard/minhas-noticias/editar/:id" element={<NoticiaForm />} />
-                      {/* Redirecionamentos das URLs antigas */}
-                      <Route path="/dashboard/certidoes" element={<Navigate to="/dashboard/solicitacao-servicos?tab=certidao" replace />} />
-                      <Route path="/dashboard/regularizacao" element={<Navigate to="/dashboard/solicitacao-servicos?tab=regularizacao" replace />} />
-                      <Route path="/dashboard/checkout-regularizacao" element={<Navigate to="/dashboard/solicitacao-servicos" replace />} />
-                    </Route>
+            {/* Protected routes - APENAS USUÁRIO */}
+            <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/dashboard/meus-dados" element={<MeusDados />} />
+              <Route path="/dashboard/carteira-digital" element={<CarteiraDigital />} />
+              <Route path="/dashboard/comunicacao" element={<Comunicacao />} />
+              <Route path="/dashboard/comunicacao-dashboard" element={<ComunicacaoDashboard />} />
+              <Route path="/dashboard/eventos" element={<EventosDashboard />} />
+              <Route path="/dashboard/solicitacao-servicos" element={<SolicitacaoServicos />} />
+              <Route path="/dashboard/checkout-servico" element={<CheckoutServico />} />
+              <Route path="/dashboard/pagamento-sucesso" element={<PagamentoSucessoServico />} />
+              <Route path="/dashboard/financeiro" element={<Financeiro />} />
+              <Route path="/dashboard/suporte" element={<Suporte />} />
+              <Route path="/dashboard/afiliados" element={<Afiliados />} />
+              <Route path="/dashboard/notifications" element={<Notifications />} />
+              <Route path="/dashboard/perfil-completo" element={<PerfilCompleto />} />
+              {/* Minhas Notícias */}
+              <Route path="/dashboard/minhas-noticias" element={<MinhasNoticias />} />
+              <Route path="/dashboard/minhas-noticias/nova" element={<NoticiaForm />} />
+              <Route path="/dashboard/minhas-noticias/editar/:id" element={<NoticiaForm />} />
+              {/* Redirecionamentos das URLs antigas */}
+              <Route path="/dashboard/certidoes" element={<Navigate to="/dashboard/solicitacao-servicos?tab=certidao" replace />} />
+              <Route path="/dashboard/regularizacao" element={<Navigate to="/dashboard/solicitacao-servicos?tab=regularizacao" replace />} />
+              <Route path="/dashboard/checkout-regularizacao" element={<Navigate to="/dashboard/solicitacao-servicos" replace />} />
+            </Route>
 
-                    {/* Test Pages - FORA de AdminLayout */}
-                    <Route path="/test-pix" element={<TestPix />} />
+            {/* Test Pages - FORA de AdminLayout */}
+            <Route path="/test-pix" element={<TestPix />} />
 
-                    {/* Admin routes - FORA de ProtectedRoute */}
-                    <Route path="/admin" element={<AdminLayout />}>
-                      <Route index element={<Navigate to="/admin/users" replace />} />
-                      <Route path="users" element={<UsersAdmin />} />
-                      <Route path="financial" element={<FinancialAdmin />} />
-                      <Route path="audit-logs" element={<AuditLogs />} />
-                      <Route path="support" element={<SupportManagement />} />
-                      <Route path="affiliates" element={<AffiliatesManagement />} />
-                      <Route path="split-management" element={<SplitManagement />} />
-                      <Route path="member-management" element={<MemberTypeManagement />} />
-                      <Route path="notifications" element={<AdminNotificationsPage />} />
-                      <Route path="diagnostics" element={<SystemDiagnosticsPage />} />
-                      <Route path="content" element={<ContentManagement />} />
-                      <Route path="notification-management" element={<NotificationManagementPage />} />
-                      <Route path="servicos" element={<ServicosAdmin />} />
-                      <Route path="servico-categorias" element={<ServicoCategorias />} />
-                      <Route path="solicitacoes" element={<SolicitacoesAdmin />} />
-                      <Route path="webhook-errors" element={<WebhookErrors />} />
-                      {/* Rotas de edição de conteúdo */}
-                      <Route path="content/:pageName/edit" element={<ContentEdit />} />
-                      <Route path="content/home-editor" element={<HomeContentEdit />} />
-                      <Route path="content/sobre-editor" element={<AboutContentEdit />} />
-                      <Route path="content/lideranca-editor" element={<LeadershipContentEdit />} />
-                      <Route path="content/eventos-editor" element={<EventosContentEdit />} />
-                      <Route path="content/multimidia-editor" element={<MultimidiaContentEdit />} />
-                      <Route path="content/album/:id/fotos" element={<AlbumFotosEdit />} />
-                      <Route path="content/contato-editor" element={<ContatoContentEdit />} />
-                      <Route path="content/noticias-editor" element={<NoticiasContentEdit />} />
-                      <Route path="content/privacidade-editor" element={<PrivacidadeContentEdit />} />
-                      <Route path="content/termos-editor" element={<TermosContentEdit />} />
-                    </Route>
+            {/* Admin routes - FORA de ProtectedRoute */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<Navigate to="/admin/users" replace />} />
+              <Route path="users" element={<UsersAdmin />} />
+              <Route path="financial" element={<FinancialAdmin />} />
+              <Route path="audit-logs" element={<AuditLogs />} />
+              <Route path="support" element={<SupportManagement />} />
+              <Route path="affiliates" element={<AffiliatesManagement />} />
+              <Route path="split-management" element={<SplitManagement />} />
+              <Route path="member-management" element={<MemberTypeManagement />} />
+              <Route path="notifications" element={<AdminNotificationsPage />} />
+              <Route path="diagnostics" element={<SystemDiagnosticsPage />} />
+              <Route path="content" element={<ContentManagement />} />
+              <Route path="notification-management" element={<NotificationManagementPage />} />
+              <Route path="servicos" element={<ServicosAdmin />} />
+              <Route path="servico-categorias" element={<ServicoCategorias />} />
+              <Route path="solicitacoes" element={<SolicitacoesAdmin />} />
+              <Route path="webhook-errors" element={<WebhookErrors />} />
+              {/* Rotas de edição de conteúdo */}
+              <Route path="content/:pageName/edit" element={<ContentEdit />} />
+              <Route path="content/home-editor" element={<HomeContentEdit />} />
+              <Route path="content/sobre-editor" element={<AboutContentEdit />} />
+              <Route path="content/lideranca-editor" element={<LeadershipContentEdit />} />
+              <Route path="content/eventos-editor" element={<EventosContentEdit />} />
+              <Route path="content/multimidia-editor" element={<MultimidiaContentEdit />} />
+              <Route path="content/album/:id/fotos" element={<AlbumFotosEdit />} />
+              <Route path="content/contato-editor" element={<ContatoContentEdit />} />
+              <Route path="content/noticias-editor" element={<NoticiasContentEdit />} />
+              <Route path="content/privacidade-editor" element={<PrivacidadeContentEdit />} />
+              <Route path="content/termos-editor" element={<TermosContentEdit />} />
+            </Route>
 
-                    {/* Redirects de URLs antigas /dashboard/admin/* para /admin/* */}
-                    <Route path="/dashboard/admin" element={<Navigate to="/admin" replace />} />
-                    <Route path="/dashboard/admin/usuarios" element={<Navigate to="/admin/users" replace />} />
-                    <Route path="/dashboard/admin/member-management" element={<Navigate to="/admin/member-management" replace />} />
-                    <Route path="/dashboard/admin/financial" element={<Navigate to="/admin/financial" replace />} />
-                    <Route path="/dashboard/admin/notifications" element={<Navigate to="/admin/notifications" replace />} />
-                    <Route path="/dashboard/admin/diagnostics" element={<Navigate to="/admin/diagnostics" replace />} />
-                    <Route path="/dashboard/admin/suporte" element={<Navigate to="/admin/support" replace />} />
-                    <Route path="/dashboard/admin/content" element={<Navigate to="/admin/content" replace />} />
-                    <Route path="/dashboard/admin/content/:pageName/edit" element={<Navigate to="/admin/content/:pageName/edit" replace />} />
-                    <Route path="/dashboard/admin/content/home-editor" element={<Navigate to="/admin/content/home-editor" replace />} />
-                    <Route path="/dashboard/admin/content/sobre-editor" element={<Navigate to="/admin/content/sobre-editor" replace />} />
-                    <Route path="/dashboard/admin/content/lideranca-editor" element={<Navigate to="/admin/content/lideranca-editor" replace />} />
-                    <Route path="/dashboard/admin/content/eventos-editor" element={<Navigate to="/admin/content/eventos-editor" replace />} />
-                    <Route path="/dashboard/admin/content/multimidia-editor" element={<Navigate to="/admin/content/multimidia-editor" replace />} />
-                    <Route path="/dashboard/admin/content/album/:id/fotos" element={<Navigate to="/admin/content/album/:id/fotos" replace />} />
-                    <Route path="/dashboard/admin/content/contato-editor" element={<Navigate to="/admin/content/contato-editor" replace />} />
-                    <Route path="/dashboard/admin/content/noticias-editor" element={<Navigate to="/admin/content/noticias-editor" replace />} />
-                    <Route path="/dashboard/admin/content/privacidade-editor" element={<Navigate to="/admin/content/privacidade-editor" replace />} />
-                    <Route path="/dashboard/admin/content/termos-editor" element={<Navigate to="/admin/content/termos-editor" replace />} />
+            {/* Redirects de URLs antigas /dashboard/admin/* para /admin/* */}
+            <Route path="/dashboard/admin" element={<Navigate to="/admin" replace />} />
+            <Route path="/dashboard/admin/usuarios" element={<Navigate to="/admin/users" replace />} />
+            <Route path="/dashboard/admin/member-management" element={<Navigate to="/admin/member-management" replace />} />
+            <Route path="/dashboard/admin/financial" element={<Navigate to="/admin/financial" replace />} />
+            <Route path="/dashboard/admin/notifications" element={<Navigate to="/admin/notifications" replace />} />
+            <Route path="/dashboard/admin/diagnostics" element={<Navigate to="/admin/diagnostics" replace />} />
+            <Route path="/dashboard/admin/suporte" element={<Navigate to="/admin/support" replace />} />
+            <Route path="/dashboard/admin/content" element={<Navigate to="/admin/content" replace />} />
+            <Route path="/dashboard/admin/content/:pageName/edit" element={<Navigate to="/admin/content/:pageName/edit" replace />} />
+            <Route path="/dashboard/admin/content/home-editor" element={<Navigate to="/admin/content/home-editor" replace />} />
+            <Route path="/dashboard/admin/content/sobre-editor" element={<Navigate to="/admin/content/sobre-editor" replace />} />
+            <Route path="/dashboard/admin/content/lideranca-editor" element={<Navigate to="/admin/content/lideranca-editor" replace />} />
+            <Route path="/dashboard/admin/content/eventos-editor" element={<Navigate to="/admin/content/eventos-editor" replace />} />
+            <Route path="/dashboard/admin/content/multimidia-editor" element={<Navigate to="/admin/content/multimidia-editor" replace />} />
+            <Route path="/dashboard/admin/content/album/:id/fotos" element={<Navigate to="/admin/content/album/:id/fotos" replace />} />
+            <Route path="/dashboard/admin/content/contato-editor" element={<Navigate to="/admin/content/contato-editor" replace />} />
+            <Route path="/dashboard/admin/content/noticias-editor" element={<Navigate to="/admin/content/noticias-editor" replace />} />
+            <Route path="/dashboard/admin/content/privacidade-editor" element={<Navigate to="/admin/content/privacidade-editor" replace />} />
+            <Route path="/dashboard/admin/content/termos-editor" element={<Navigate to="/admin/content/termos-editor" replace />} />
 
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                  </Router>
-                </ErrorBoundary>
-                <Toaster />
-              </AsaasInitializer>
-            </ErrorBoundary>
-          </AuthProvider>
-        </ErrorBoundary>
-      </QueryClientProvider>
-    </ErrorBoundary>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          </Router>
+          <Toaster />
+        </AsaasInitializer>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

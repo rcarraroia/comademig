@@ -53,10 +53,6 @@ export const useAuthState = () => {
         
       if (error && error.code !== 'PGRST116') {
         console.error('Erro ao buscar perfil:', error);
-        // Em caso de erro, definir perfil como null mas não bloquear a aplicação
-        setProfile(null);
-        profileFetchedRef.current = true;
-        lastUserIdRef.current = userId;
         return;
       }
       
@@ -65,20 +61,12 @@ export const useAuthState = () => {
       profileFetchedRef.current = true;
       lastUserIdRef.current = userId;
       
-      // Verificar acesso após buscar perfil - com try-catch
+      // Verificar acesso após buscar perfil
       if (data) {
-        try {
-          checkUserAccess(data);
-        } catch (accessError) {
-          console.error('Erro na verificação de acesso:', accessError);
-        }
+        checkUserAccess(data);
       }
     } catch (error) {
       console.error('Erro ao buscar perfil:', error);
-      // Garantir que a aplicação não trave por erro de perfil
-      setProfile(null);
-      profileFetchedRef.current = true;
-      lastUserIdRef.current = userId;
     }
   };
 
@@ -94,138 +82,103 @@ export const useAuthState = () => {
   const checkUserAccess = (profile: Profile | null) => {
     if (!profile || !user) return;
 
-    try {
-      // Super admins têm acesso total independente do status
-      if (profile.tipo_membro === 'super_admin' || profile.tipo_membro === 'admin') {
-        return;
-      }
+    // Super admins têm acesso total independente do status
+    if (profile.tipo_membro === 'super_admin' || profile.tipo_membro === 'admin') {
+      return;
+    }
 
-      // Páginas que não precisam de verificação de status
-      const allowedPaths = [
-        '/aguardando-confirmacao',
-        '/auth',
-        '/esqueci-senha',
-        '/reset-password',
-        '/filiacao',
-        '/pagamento-sucesso',
-        '/pagamento-pendente'
-      ];
+    // Páginas que não precisam de verificação de status
+    const allowedPaths = [
+      '/aguardando-confirmacao',
+      '/auth',
+      '/esqueci-senha',
+      '/reset-password',
+      '/filiacao',
+      '/pagamento-sucesso',
+      '/pagamento-pendente'
+    ];
 
-      const isAllowedPath = allowedPaths.some(path => 
-        location.pathname.startsWith(path)
-      );
+    const isAllowedPath = allowedPaths.some(path => 
+      location.pathname.startsWith(path)
+    );
 
-      if (isAllowedPath) return;
+    if (isAllowedPath) return;
 
-      // Se status é pendente e não está na página de aguardo, redirecionar
-      if (profile.status === 'pendente' && location.pathname !== '/aguardando-confirmacao') {
-        console.log('Usuário com status pendente, redirecionando para aguardo...');
-        navigate('/aguardando-confirmacao');
-        return;
-      }
+    // Se status é pendente e não está na página de aguardo, redirecionar
+    if (profile.status === 'pendente' && location.pathname !== '/aguardando-confirmacao') {
+      console.log('Usuário com status pendente, redirecionando para aguardo...');
+      navigate('/aguardando-confirmacao');
+      return;
+    }
 
-      // Se status é ativo e está na página de aguardo, redirecionar para dashboard
-      if (profile.status === 'ativo' && location.pathname === '/aguardando-confirmacao') {
-        console.log('Pagamento confirmado, redirecionando para dashboard...');
-        navigate('/dashboard');
-        return;
-      }
-    } catch (error) {
-      console.error('Erro na verificação de acesso do usuário:', error);
-      // Não bloquear a aplicação por erro de redirecionamento
+    // Se status é ativo e está na página de aguardo, redirecionar para dashboard
+    if (profile.status === 'ativo' && location.pathname === '/aguardando-confirmacao') {
+      console.log('Pagamento confirmado, redirecionando para dashboard...');
+      navigate('/dashboard');
+      return;
     }
   };
 
   // Verificar acesso quando profile ou location mudar
   useEffect(() => {
     if (profile && user && !loading) {
-      try {
-        checkUserAccess(profile);
-      } catch (error) {
-        console.error('Erro no useEffect de verificação de acesso:', error);
-      }
+      checkUserAccess(profile);
     }
   }, [profile, location.pathname, user, loading]);
 
   useEffect(() => {
     let mounted = true;
-    let subscription: any = null;
 
-    try {
-      const initAuth = async () => {
-        try {
-          // Configurar listener de auth state
-          const { data } = supabase.auth.onAuthStateChange(
-            async (event, session) => {
-              console.log('Auth state changed:', event, session?.user?.email);
-              
-              if (!mounted) return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        
+        if (!mounted) return;
 
-              try {
-                setSession(session);
-                setUser(session?.user ?? null);
-                
-                if (session?.user) {
-                  // Só buscar perfil se for um usuário diferente ou ainda não foi buscado
-                  if (lastUserIdRef.current !== session.user.id) {
-                    profileFetchedRef.current = false;
-                    lastUserIdRef.current = session.user.id;
-                  }
-                  
-                  if (!profileFetchedRef.current) {
-                    // Debounce para evitar múltiplas chamadas
-                    setTimeout(() => {
-                      if (mounted && !profileFetchedRef.current) {
-                        fetchProfile(session.user.id);
-                      }
-                    }, 200);
-                  }
-                } else {
-                  profileFetchedRef.current = false;
-                  lastUserIdRef.current = null;
-                  setProfile(null);
-                }
-                
-                setLoading(false);
-              } catch (error) {
-                console.error('Erro no onAuthStateChange:', error);
-                setLoading(false);
-              }
-            }
-          );
-
-          subscription = data.subscription;
-
-          // Obter sessão inicial
-          const { data: sessionData } = await supabase.auth.getSession();
-          
-          if (!mounted) return;
-          
-          setSession(sessionData.session);
-          setUser(sessionData.session?.user ?? null);
-          
-          if (sessionData.session?.user && !profileFetchedRef.current) {
-            await fetchProfile(sessionData.session.user.id);
-          } else if (!sessionData.session?.user) {
-            setLoading(false);
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Só buscar perfil se for um usuário diferente ou ainda não foi buscado
+          if (lastUserIdRef.current !== session.user.id) {
+            profileFetchedRef.current = false;
+            lastUserIdRef.current = session.user.id;
           }
-        } catch (error) {
-          console.error('Erro na inicialização do auth:', error);
-          setLoading(false);
+          
+          if (!profileFetchedRef.current) {
+            // Debounce para evitar múltiplas chamadas
+            setTimeout(() => {
+              if (mounted && !profileFetchedRef.current) {
+                fetchProfile(session.user.id);
+              }
+            }, 200);
+          }
+        } else {
+          profileFetchedRef.current = false;
+          lastUserIdRef.current = null;
+          setProfile(null);
         }
-      };
+        
+        setLoading(false);
+      }
+    );
 
-      initAuth();
-    } catch (error) {
-      console.error('Erro crítico no useEffect do auth:', error);
-      setLoading(false);
-    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user && !profileFetchedRef.current) {
+        fetchProfile(session.user.id);
+      } else if (!session?.user) {
+        setLoading(false);
+      }
+    });
 
     return () => {
       mounted = false;
-      if (subscription) {
-        subscription.unsubscribe();
-      }
+      subscription.unsubscribe();
     };
   }, []);
 
