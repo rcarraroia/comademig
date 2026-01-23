@@ -98,15 +98,17 @@ import { AuthProvider } from '@/contexts/AuthContext';
 // Components
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { AsaasInitializer } from '@/components/AsaasInitializer';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 const queryClient = new QueryClient();
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AsaasInitializer>
-          <Router>
+    <ErrorBoundary componentName="App">
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <AsaasInitializer>
+            <Router>
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Layout><Index /></Layout>} />
@@ -225,6 +227,7 @@ function App() {
         </AsaasInitializer>
       </AuthProvider>
     </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -29,6 +29,7 @@ export const useAuthState = () => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -44,15 +45,17 @@ export const useAuthState = () => {
     
     try {
       console.log('Fetching profile for user:', userId);
+      setError(null); // Limpar erro anterior
       
-      const { data, error } = await supabase
+      const { data, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
         
-      if (error && error.code !== 'PGRST116') {
-        console.error('Erro ao buscar perfil:', error);
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Erro ao buscar perfil:', profileError);
+        setError(new Error(`Erro ao buscar perfil: ${profileError.message}`));
         return;
       }
       
@@ -67,6 +70,7 @@ export const useAuthState = () => {
       }
     } catch (error) {
       console.error('Erro ao buscar perfil:', error);
+      setError(error instanceof Error ? error : new Error('Erro desconhecido ao buscar perfil'));
     }
   };
 
@@ -74,6 +78,7 @@ export const useAuthState = () => {
     if (user) {
       // Forçar refresh resetando o flag
       profileFetchedRef.current = false;
+      setError(null); // Limpar erro anterior
       await fetchProfile(user.id);
     }
   };
@@ -187,7 +192,9 @@ export const useAuthState = () => {
     user,
     profile,
     loading,
+    error,
     setProfile,
     refreshProfile,
+    clearError: () => setError(null),
   };
 };

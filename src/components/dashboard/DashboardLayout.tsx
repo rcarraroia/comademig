@@ -1,7 +1,7 @@
 
-import { ReactNode, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { ReactNode, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRedirect } from '@/hooks/useRedirect';
 import DashboardSidebar from "./DashboardSidebar";
 import DashboardHeader from "./DashboardHeader";
 
@@ -12,22 +12,10 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { profile, loading } = useAuth();
-  const navigate = useNavigate();
-
-  // Redirecionar admin para painel administrativo
-  useEffect(() => {
-    console.log('🏠 DashboardLayout - Verificando tipo de usuário:', {
-      hasProfile: !!profile,
-      loading,
-      tipoMembro: profile?.tipo_membro,
-      nome: profile?.nome_completo
-    });
-
-    if (!loading && profile && (profile.tipo_membro === 'admin' || profile.tipo_membro === 'super_admin')) {
-      console.log('🔐 Admin/Super Admin detectado no DashboardLayout! Redirecionando para /admin/users');
-      navigate('/admin/users', { replace: true });
-    }
-  }, [profile, loading, navigate]);
+  
+  // O useRedirect hook gerencia automaticamente os redirecionamentos
+  // Não precisamos mais de lógica manual aqui
+  useRedirect();
 
   return (
     <div className="min-h-screen bg-comademig-gray flex">

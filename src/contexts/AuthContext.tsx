@@ -10,12 +10,14 @@ interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
+  error: Error | null;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, userData: any) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
   updateProfile: (data: Partial<Profile>) => Promise<{ error: any }>;
   refreshProfile: () => Promise<void>;
+  clearError: () => void;
   isAdmin: () => boolean;
   isSuperAdmin: () => boolean;
   hasPermission: (permission: string) => boolean;
@@ -24,7 +26,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { session, user, profile, loading, setProfile, refreshProfile } = useAuthState();
+  const { session, user, profile, loading, error, setProfile, refreshProfile, clearError } = useAuthState();
   const { signIn, signUp, signOut, resetPassword, updateProfile: updateProfileImpl } = useAuthActions();
   const { isAdmin, isSuperAdmin, hasPermission } = useAuthPermissions(profile, user);
 
@@ -42,12 +44,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     profile,
     loading,
+    error,
     signIn,
     signUp,
     signOut: handleSignOut,
     resetPassword,
     updateProfile,
     refreshProfile,
+    clearError,
     isAdmin,
     isSuperAdmin,
     hasPermission,

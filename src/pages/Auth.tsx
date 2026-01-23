@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthActions } from "@/hooks/useAuthActions";
+import { useLoginRedirect } from '@/hooks/useRedirect';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,7 @@ const Auth = () => {
   
   const { user, profile, loading: authLoading } = useAuth();
   const { signIn } = useAuthActions();
+  const { redirectAfterLogin } = useLoginRedirect();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -47,14 +49,8 @@ const Auth = () => {
         cargo: profile.cargo
       });
       
-      // Redirecionar baseado no tipo de usuário
-      if (profile.tipo_membro === 'admin' || profile.tipo_membro === 'super_admin') {
-        console.log('🔐 ADMIN/SUPER_ADMIN DETECTADO! Redirecionando para /admin/users');
-        navigate("/admin/users");
-      } else {
-        console.log('👤 Usuário comum (tipo: ' + profile.tipo_membro + '). Redirecionando para /dashboard');
-        navigate("/dashboard");
-      }
+      // Usar serviço centralizado de redirecionamento
+      redirectAfterLogin();
     } else {
       console.log('⏳ Aguardando condições:', {
         needUser: !user,
@@ -62,7 +58,7 @@ const Auth = () => {
         needLoadingComplete: authLoading
       });
     }
-  }, [user, profile, authLoading, navigate]);
+  }, [user, profile, authLoading, redirectAfterLogin]);
 
   const handleSignIn = async (email: string, password: string) => {
     setLoading(true);

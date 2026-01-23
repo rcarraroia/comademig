@@ -24,6 +24,6 @@ export default defineConfig({
       },
     },
     assetsDir: "assets",
-    sourcemap: false,
+    sourcemap: true,
   },
 });
