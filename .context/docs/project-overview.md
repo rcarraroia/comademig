@@ -1,64 +1,79 @@
----
-type: doc
-name: project-overview
-description: High-level overview of the project, its purpose, and key components
-category: overview
-generated: 2026-01-20
-status: unfilled
-scaffoldVersion: "2.0.0"
----
-## Project Overview
+# Visão Geral do Projeto COMADEMIG
 
-O projeto Comademig é uma plataforma completa para gestão de convenções e serviços eclesiásticos. Ele resolve o problema da desburocratização de solicitações de certificados, regularizações e pagamentos para membros e administradores da convenção.
+## Sobre o Projeto
+O COMADEMIG é um portal web para o Conselho de Medicina Veterinária de Minas Gerais, oferecendo serviços digitais para médicos veterinários e zootecnistas.
 
-## Codebase Reference
+## Stack Tecnológico
 
-> **Detailed Analysis**: Para contagens completas de símbolos, camadas de arquitetura e gráficos de dependência, consulte [`codebase-map.json`](./codebase-map.json).
+### Frontend
+- **Framework**: React 18 com TypeScript
+- **Build Tool**: Vite 5
+- **Roteamento**: React Router DOM v6
+- **Estado**: TanStack Query (React Query) v5
+- **UI Framework**: shadcn/ui + Radix UI
+- **Styling**: Tailwind CSS com tema customizado
+- **Formulários**: React Hook Form + Zod para validação
 
-## Quick Facts
+### Backend & Infraestrutura
+- **BaaS**: Supabase (PostgreSQL + Auth + Storage + Edge Functions)
+- **Pagamentos**: Integração com gateway Asaas
+- **Hospedagem**: Lovable (deploy automático)
 
-- Root: `e:/PROJETOS SITE/repositorios/comademig`
-- Languages: TypeScript, React, SQL
-- Full analysis: [`codebase-map.json`](./codebase-map.json)
+### Bibliotecas Principais
+- **PDF**: jsPDF + html2canvas para geração de documentos
+- **QR Code**: biblioteca qrcode para carteiras digitais
+- **Datas**: date-fns para manipulação de datas
+- **Charts**: Recharts para gráficos no dashboard
+- **Notificações**: Sonner para toasts
 
-## Entry Points
+## Funcionalidades Principais
+- **Filiação Digital**: Sistema completo de cadastro e filiação de profissionais
+- **Carteira Digital**: Emissão e validação de carteiras profissionais digitais
+- **Sistema de Pagamentos**: Integração com gateway Asaas para cobranças e split de pagamentos
+- **Programa de Afiliados**: Sistema de indicações com comissões automáticas
+- **Gestão de Eventos**: Cadastro, inscrições e certificados de eventos
+- **Certidões**: Emissão de certidões profissionais em PDF
+- **Comunicação**: Sistema de mensagens e notificações
+- **Suporte**: Sistema de tickets para atendimento
+- **Área Administrativa**: Gestão de usuários, conteúdo e configurações
 
-- `npm run dev` — Servidor de desenvolvimento Vite.
-- `src/main.tsx` — Ponto de entrada do React.
+## Público-Alvo
+- Médicos veterinários
+- Zootecnistas
+- Administradores do conselho
+- Afiliados/parceiros
 
-## File Structure & Code Organization
+## Modelo de Negócio
+- Taxas de filiação e anuidades
+- Comissões por indicações (programa de afiliados)
+- Taxas de eventos e certificações
 
-- `src/` — Código fonte TypeScript/React.
-- `supabase/` — Migrações e configurações do banco de dados.
-- `public/` — Ativos estáticos.
+## Configurações Importantes
+- **Alias de Importação**: `@/` aponta para `./src/`
+- **Porta de Desenvolvimento**: 8080
+- **TypeScript**: Configurado com strict mode desabilitado para flexibilidade
+- **Tema**: Cores customizadas do COMADEMIG (azul #24324F, dourado #C5A349)
 
-## Technology Stack Summary
+## Comandos Essenciais
 
-O projeto utiliza uma stack moderna focada em performance e escalabilidade:
-- **Frontend**: Vite, React, TanStack Query, shadcn-ui, Tailwind CSS.
-- **Backend/DB**: Supabase (Postgres, Auth, Storage).
-- **Pagamentos**: Integração com Asaas (PIX e Cartão).
+### Desenvolvimento
+```bash
+npm run dev          # Inicia servidor de desenvolvimento (porta 8080)
+npm run build        # Build para produção
+npm run build:dev    # Build para desenvolvimento
+npm run lint         # Executa ESLint
+npm run preview      # Preview do build
+```
 
-## Core Framework Stack
+### Supabase Local
+```bash
+supabase start       # Inicia ambiente local
+supabase stop        # Para ambiente local
+supabase status      # Status dos serviços
+supabase db reset    # Reset do banco local
+```
 
-- **React + Vite**: Build rápido e interface reativa.
-- **Supabase**: Backend-as-a-Service para Auth e Persistência.
-- **TanStack Query**: Gerenciamento de estado asíncrono e cache.
-
-## UI & Interaction Libraries
-
-- **shadcn-ui + Tailwind**: Design system premium e responsivo.
-- **Lucide React**: Biblioteca de ícones.
-
-## Getting Started Checklist
-
-1. Instalar dependências com `npm install`.
-2. Configurar variáveis de ambiente no `.env`.
-3. Iniciar o projeto com `npm run dev`.
-
-## Related Resources
-
-- [architecture.md](./architecture.md)
-- [development-workflow.md](./development-workflow.md)
-- [tooling.md](./tooling.md)
-- [codebase-map.json](./codebase-map.json)
+## Estrutura de Deploy
+- Deploy automático via Lovable
+- Integração contínua com GitHub
+- Variáveis de ambiente gerenciadas pelo Supabase

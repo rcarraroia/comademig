@@ -124,14 +124,33 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
       console.log('✅ Dados validados com sucesso');
 
       // 3. Preparar dados do cliente ANTES de criar conta
+      // ✅ CORREÇÃO: Extrair número do endereço se campo numero estiver vazio
+      let cleanAddress = data.endereco || '';
+      let addressNumber = data.numero || '';
+      
+      // Se numero está vazio mas endereço tem número no final, extrair
+      if (!addressNumber && cleanAddress) {
+        const addressMatch = cleanAddress.match(/^(.+?),?\s*(\d+)\s*$/);
+        if (addressMatch) {
+          cleanAddress = addressMatch[1].trim(); // Rua sem número
+          addressNumber = addressMatch[2]; // Número extraído
+          console.log('🔧 Número extraído do endereço:', addressNumber);
+        }
+      }
+      
+      // Fallback final se ainda estiver vazio
+      if (!addressNumber) {
+        addressNumber = 'S/N';
+      }
+      
       const customerData = {
         name: data.nome_completo || '',
         email: data.email || '',
         phone: (data.telefone || '').replace(/\D/g, ''), // Garantir que não seja null
         cpfCnpj: cleanCPF, // Usar CPF já validado e limpo
         postalCode: cleanCEP, // Usar CEP já validado e limpo
-        address: data.endereco || '',
-        addressNumber: data.numero || 'S/N', // ✅ CORREÇÃO: Usar 'S/N' se vazio
+        address: cleanAddress,
+        addressNumber: addressNumber,
         complement: data.complemento || undefined,
         province: data.bairro || '',
         city: data.cidade || '',
@@ -312,10 +331,11 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
           email: data.email || '',
           cpfCnpj: (data.cpf || '').replace(/\D/g, ''),
           postalCode: (data.cep || '').replace(/\D/g, ''),
-          addressNumber: data.numero || 'S/N', // ✅ CORREÇÃO: Usar 'S/N' se vazio
+          addressNumber: addressNumber, // ✅ USAR número já processado
           phone: (data.telefone || '').replace(/\D/g, ''),
         },
-        saveCard: true // IMPORTANTE: Salvar cartão para renovações futuras
+        saveCard: true, // IMPORTANTE: Salvar cartão para renovações futuras
+        affiliate_code: validatedAffiliateInfo?.referralCode // ✅ NOVO: Passar código do afiliado
       };
 
       console.log('💳 Processando pagamento inicial...');

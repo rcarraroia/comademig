@@ -41,6 +41,7 @@ export interface CreateCardPaymentData {
   creditCard: CreditCardData;
   creditCardHolderInfo: CreditCardHolderInfo;
   saveCard?: boolean;
+  affiliate_code?: string; // ✅ NOVO: Código do afiliado para split
 }
 
 export interface CardPaymentResult {
@@ -130,7 +131,8 @@ export const useAsaasCardPayments = () => {
         },
         credit_card: paymentData.creditCard,
         credit_card_holder_info: paymentData.creditCardHolderInfo,
-        save_card: paymentData.saveCard
+        save_card: paymentData.saveCard,
+        affiliate_code: paymentData.affiliate_code // ✅ NOVO: Passar código do afiliado
       };
 
       console.log('📤 Body enviado para Edge Function:', JSON.stringify(requestBody, null, 2));

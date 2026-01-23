@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Profile {
@@ -28,6 +29,8 @@ export const useAuthState = () => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
   
   // Usar useRef para persistir estado entre re-renderizações
   const profileFetchedRef = useRef(false);
@@ -57,6 +60,11 @@ export const useAuthState = () => {
       setProfile(data);
       profileFetchedRef.current = true;
       lastUserIdRef.current = userId;
+      
+      // Verificar acesso após buscar perfil
+      if (data) {
+        checkUserAccess(data);
+      }
     } catch (error) {
       console.error('Erro ao buscar perfil:', error);
     }
@@ -69,6 +77,54 @@ export const useAuthState = () => {
       await fetchProfile(user.id);
     }
   };
+
+  // Verificar se usuário deve ser redirecionado baseado no status
+  const checkUserAccess = (profile: Profile | null) => {
+    if (!profile || !user) return;
+
+    // Super admins têm acesso total independente do status
+    if (profile.tipo_membro === 'super_admin' || profile.tipo_membro === 'admin') {
+      return;
+    }
+
+    // Páginas que não precisam de verificação de status
+    const allowedPaths = [
+      '/aguardando-confirmacao',
+      '/auth',
+      '/esqueci-senha',
+      '/reset-password',
+      '/filiacao',
+      '/pagamento-sucesso',
+      '/pagamento-pendente'
+    ];
+
+    const isAllowedPath = allowedPaths.some(path => 
+      location.pathname.startsWith(path)
+    );
+
+    if (isAllowedPath) return;
+
+    // Se status é pendente e não está na página de aguardo, redirecionar
+    if (profile.status === 'pendente' && location.pathname !== '/aguardando-confirmacao') {
+      console.log('Usuário com status pendente, redirecionando para aguardo...');
+      navigate('/aguardando-confirmacao');
+      return;
+    }
+
+    // Se status é ativo e está na página de aguardo, redirecionar para dashboard
+    if (profile.status === 'ativo' && location.pathname === '/aguardando-confirmacao') {
+      console.log('Pagamento confirmado, redirecionando para dashboard...');
+      navigate('/dashboard');
+      return;
+    }
+  };
+
+  // Verificar acesso quando profile ou location mudar
+  useEffect(() => {
+    if (profile && user && !loading) {
+      checkUserAccess(profile);
+    }
+  }, [profile, location.pathname, user, loading]);
 
   useEffect(() => {
     let mounted = true;

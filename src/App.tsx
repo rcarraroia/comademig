@@ -22,6 +22,7 @@ import ResetPassword from '@/pages/ResetPassword';
 import Checkout from '@/pages/Checkout';
 import PagamentoSucessoFiliacao from '@/pages/PagamentoSucesso';
 import PagamentoPendente from '@/pages/PagamentoPendente';
+import AguardandoConfirmacao from '@/pages/AguardandoConfirmacao';
 import ValidarCarteira from '@/pages/ValidarCarteira';
 import ValidarCertificado from '@/pages/ValidarCertificado';
 import ValidarCertidao from '@/pages/ValidarCertidao';
@@ -127,6 +128,7 @@ function App() {
             <Route path="/checkout/:cobrancaId" element={<Checkout />} />
             <Route path="/pagamento-sucesso" element={<PagamentoSucessoFiliacao />} />
             <Route path="/pagamento-pendente" element={<PagamentoPendente />} />
+            <Route path="/aguardando-confirmacao" element={<AguardandoConfirmacao />} />
             <Route path="/validar-carteira/:numeroCarteira" element={<ValidarCarteira />} />
             <Route path="/validar-certificado/:numeroCertificado" element={<ValidarCertificado />} />
             <Route path="/validar-certidao/:numeroProtocolo" element={<ValidarCertidao />} />
@@ -196,6 +198,7 @@ function App() {
             </Route>
 
             {/* Redirects de URLs antigas /dashboard/admin/* para /admin/* */}
+            <Route path="/dashboard/admin" element={<Navigate to="/admin" replace />} />
             <Route path="/dashboard/admin/usuarios" element={<Navigate to="/admin/users" replace />} />
             <Route path="/dashboard/admin/member-management" element={<Navigate to="/admin/member-management" replace />} />
             <Route path="/dashboard/admin/financial" element={<Navigate to="/admin/financial" replace />} />
