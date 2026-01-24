@@ -9,7 +9,6 @@
 -- Remover políticas antigas de UPDATE e DELETE
 DROP POLICY IF EXISTS "noticias_update_policy" ON noticias;
 DROP POLICY IF EXISTS "noticias_delete_policy" ON noticias;
-
 -- ============================================
 -- POLÍTICA ATUALIZADA: UPDATE
 -- ============================================
@@ -48,7 +47,6 @@ CREATE POLICY "noticias_update_policy" ON noticias
       -- (o Supabase não permite verificar OLD values aqui, então confiamos no frontend)
     )
   );
-
 -- ============================================
 -- POLÍTICA ATUALIZADA: DELETE
 -- ============================================
@@ -69,12 +67,10 @@ CREATE POLICY "noticias_delete_policy" ON noticias
       )
     )
   );
-
 -- ============================================
 -- COMENTÁRIOS
 -- ============================================
 COMMENT ON POLICY "noticias_update_policy" ON noticias IS 
 'Permite que usuários editem suas próprias notícias (qualquer status) e admins editem qualquer notícia';
-
 COMMENT ON POLICY "noticias_delete_policy" ON noticias IS 
 'Permite que usuários excluam suas próprias notícias (qualquer status) e admins excluam qualquer notícia';

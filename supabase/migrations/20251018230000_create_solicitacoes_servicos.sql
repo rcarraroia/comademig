@@ -23,14 +23,12 @@ CREATE TABLE IF NOT EXISTS solicitacoes_servicos (
   data_analise TIMESTAMPTZ,
   data_conclusao TIMESTAMPTZ
 );
-
 -- Criar índices para performance
 CREATE INDEX IF NOT EXISTS idx_solicitacoes_user_id ON solicitacoes_servicos(user_id);
 CREATE INDEX IF NOT EXISTS idx_solicitacoes_servico_id ON solicitacoes_servicos(servico_id);
 CREATE INDEX IF NOT EXISTS idx_solicitacoes_status ON solicitacoes_servicos(status);
 CREATE INDEX IF NOT EXISTS idx_solicitacoes_payment_ref ON solicitacoes_servicos(payment_reference);
 CREATE INDEX IF NOT EXISTS idx_solicitacoes_created_at ON solicitacoes_servicos(created_at DESC);
-
 -- Trigger para atualizar updated_at
 CREATE OR REPLACE FUNCTION update_solicitacoes_updated_at()
 RETURNS TRIGGER AS $$
@@ -39,12 +37,10 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 DROP TRIGGER IF EXISTS trigger_update_solicitacoes_updated_at ON solicitacoes_servicos;
 CREATE TRIGGER trigger_update_solicitacoes_updated_at
   BEFORE UPDATE ON solicitacoes_servicos
   FOR EACH ROW
   EXECUTE FUNCTION update_solicitacoes_updated_at();
-
 -- Comentário
 COMMENT ON TABLE solicitacoes_servicos IS 'Solicitações de serviços dos usuários';

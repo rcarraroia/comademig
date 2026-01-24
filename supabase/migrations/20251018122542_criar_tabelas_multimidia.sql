@@ -23,20 +23,17 @@ CREATE TABLE IF NOT EXISTS videos (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
 -- Índices para videos
 CREATE INDEX IF NOT EXISTS idx_videos_data_publicacao ON videos(data_publicacao DESC);
 CREATE INDEX IF NOT EXISTS idx_videos_categoria ON videos(categoria);
 CREATE INDEX IF NOT EXISTS idx_videos_destaque ON videos(destaque) WHERE destaque = TRUE;
 CREATE INDEX IF NOT EXISTS idx_videos_ativo ON videos(ativo) WHERE ativo = TRUE;
 CREATE INDEX IF NOT EXISTS idx_videos_autor_id ON videos(autor_id);
-
 -- Comentários
 COMMENT ON TABLE videos IS 'Armazena vídeos do YouTube da COMADEMIG';
 COMMENT ON COLUMN videos.url_youtube IS 'URL completa ou ID do vídeo do YouTube';
 COMMENT ON COLUMN videos.duracao IS 'Duração do vídeo no formato MM:SS ou HH:MM:SS';
 COMMENT ON COLUMN videos.categoria IS 'Categoria do vídeo: culto, evento, pregacao, testemunho, etc';
-
 -- ============================================
 -- TABELA: albuns_fotos
 -- ============================================
@@ -52,18 +49,15 @@ CREATE TABLE IF NOT EXISTS albuns_fotos (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
 -- Índices para albuns_fotos
 CREATE INDEX IF NOT EXISTS idx_albuns_data_evento ON albuns_fotos(data_evento DESC);
 CREATE INDEX IF NOT EXISTS idx_albuns_categoria ON albuns_fotos(categoria);
 CREATE INDEX IF NOT EXISTS idx_albuns_ativo ON albuns_fotos(ativo) WHERE ativo = TRUE;
 CREATE INDEX IF NOT EXISTS idx_albuns_autor_id ON albuns_fotos(autor_id);
-
 -- Comentários
 COMMENT ON TABLE albuns_fotos IS 'Armazena álbuns de fotos de eventos da COMADEMIG';
 COMMENT ON COLUMN albuns_fotos.categoria IS 'Categoria do álbum: eventos, cultos, encontros, etc';
 COMMENT ON COLUMN albuns_fotos.capa_url IS 'URL da foto de capa do álbum';
-
 -- ============================================
 -- TABELA: fotos
 -- ============================================
@@ -75,16 +69,13 @@ CREATE TABLE IF NOT EXISTS fotos (
   ordem INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
 -- Índices para fotos
 CREATE INDEX IF NOT EXISTS idx_fotos_album_id ON fotos(album_id);
 CREATE INDEX IF NOT EXISTS idx_fotos_ordem ON fotos(album_id, ordem);
-
 -- Comentários
 COMMENT ON TABLE fotos IS 'Armazena fotos individuais de cada álbum';
 COMMENT ON COLUMN fotos.album_id IS 'Referência ao álbum que contém esta foto';
 COMMENT ON COLUMN fotos.ordem IS 'Ordem de exibição da foto no álbum';
-
 -- ============================================
 -- POLÍTICAS RLS (Row Level Security)
 -- ============================================
@@ -93,7 +84,6 @@ COMMENT ON COLUMN fotos.ordem IS 'Ordem de exibição da foto no álbum';
 ALTER TABLE videos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE albuns_fotos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE fotos ENABLE ROW LEVEL SECURITY;
-
 -- ============================================
 -- POLÍTICAS: videos
 -- ============================================
@@ -102,7 +92,6 @@ ALTER TABLE fotos ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "videos_select_public" ON videos
   FOR SELECT
   USING (ativo = TRUE);
-
 -- SELECT: Admins veem todos os vídeos
 CREATE POLICY "videos_select_admin" ON videos
   FOR SELECT
@@ -113,7 +102,6 @@ CREATE POLICY "videos_select_admin" ON videos
       AND profiles.tipo_membro IN ('admin', 'super_admin')
     )
   );
-
 -- INSERT: Apenas admins podem criar vídeos
 CREATE POLICY "videos_insert_admin" ON videos
   FOR INSERT
@@ -124,7 +112,6 @@ CREATE POLICY "videos_insert_admin" ON videos
       AND profiles.tipo_membro IN ('admin', 'super_admin')
     )
   );
-
 -- UPDATE: Apenas admins podem atualizar vídeos
 CREATE POLICY "videos_update_admin" ON videos
   FOR UPDATE
@@ -135,7 +122,6 @@ CREATE POLICY "videos_update_admin" ON videos
       AND profiles.tipo_membro IN ('admin', 'super_admin')
     )
   );
-
 -- DELETE: Apenas admins podem deletar vídeos
 CREATE POLICY "videos_delete_admin" ON videos
   FOR DELETE
@@ -146,7 +132,6 @@ CREATE POLICY "videos_delete_admin" ON videos
       AND profiles.tipo_membro IN ('admin', 'super_admin')
     )
   );
-
 -- ============================================
 -- POLÍTICAS: albuns_fotos
 -- ============================================
@@ -155,7 +140,6 @@ CREATE POLICY "videos_delete_admin" ON videos
 CREATE POLICY "albuns_select_public" ON albuns_fotos
   FOR SELECT
   USING (ativo = TRUE);
-
 -- SELECT: Admins veem todos os álbuns
 CREATE POLICY "albuns_select_admin" ON albuns_fotos
   FOR SELECT
@@ -166,7 +150,6 @@ CREATE POLICY "albuns_select_admin" ON albuns_fotos
       AND profiles.tipo_membro IN ('admin', 'super_admin')
     )
   );
-
 -- INSERT: Apenas admins podem criar álbuns
 CREATE POLICY "albuns_insert_admin" ON albuns_fotos
   FOR INSERT
@@ -177,7 +160,6 @@ CREATE POLICY "albuns_insert_admin" ON albuns_fotos
       AND profiles.tipo_membro IN ('admin', 'super_admin')
     )
   );
-
 -- UPDATE: Apenas admins podem atualizar álbuns
 CREATE POLICY "albuns_update_admin" ON albuns_fotos
   FOR UPDATE
@@ -188,7 +170,6 @@ CREATE POLICY "albuns_update_admin" ON albuns_fotos
       AND profiles.tipo_membro IN ('admin', 'super_admin')
     )
   );
-
 -- DELETE: Apenas admins podem deletar álbuns
 CREATE POLICY "albuns_delete_admin" ON albuns_fotos
   FOR DELETE
@@ -199,7 +180,6 @@ CREATE POLICY "albuns_delete_admin" ON albuns_fotos
       AND profiles.tipo_membro IN ('admin', 'super_admin')
     )
   );
-
 -- ============================================
 -- POLÍTICAS: fotos
 -- ============================================
@@ -214,7 +194,6 @@ CREATE POLICY "fotos_select_public" ON fotos
       AND albuns_fotos.ativo = TRUE
     )
   );
-
 -- SELECT: Admins veem todas as fotos
 CREATE POLICY "fotos_select_admin" ON fotos
   FOR SELECT
@@ -225,7 +204,6 @@ CREATE POLICY "fotos_select_admin" ON fotos
       AND profiles.tipo_membro IN ('admin', 'super_admin')
     )
   );
-
 -- INSERT: Apenas admins podem adicionar fotos
 CREATE POLICY "fotos_insert_admin" ON fotos
   FOR INSERT
@@ -236,7 +214,6 @@ CREATE POLICY "fotos_insert_admin" ON fotos
       AND profiles.tipo_membro IN ('admin', 'super_admin')
     )
   );
-
 -- UPDATE: Apenas admins podem atualizar fotos
 CREATE POLICY "fotos_update_admin" ON fotos
   FOR UPDATE
@@ -247,7 +224,6 @@ CREATE POLICY "fotos_update_admin" ON fotos
       AND profiles.tipo_membro IN ('admin', 'super_admin')
     )
   );
-
 -- DELETE: Apenas admins podem deletar fotos
 CREATE POLICY "fotos_delete_admin" ON fotos
   FOR DELETE
@@ -258,7 +234,6 @@ CREATE POLICY "fotos_delete_admin" ON fotos
       AND profiles.tipo_membro IN ('admin', 'super_admin')
     )
   );
-
 -- ============================================
 -- TRIGGERS: updated_at
 -- ============================================
@@ -271,12 +246,10 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE TRIGGER videos_updated_at
   BEFORE UPDATE ON videos
   FOR EACH ROW
   EXECUTE FUNCTION update_videos_updated_at();
-
 -- Trigger para atualizar updated_at em albuns_fotos
 CREATE OR REPLACE FUNCTION update_albuns_updated_at()
 RETURNS TRIGGER AS $$
@@ -285,12 +258,10 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 CREATE TRIGGER albuns_updated_at
   BEFORE UPDATE ON albuns_fotos
   FOR EACH ROW
   EXECUTE FUNCTION update_albuns_updated_at();
-
 -- ============================================
 -- DADOS DE EXEMPLO (OPCIONAL - COMENTADO)
 -- ============================================
@@ -320,4 +291,4 @@ VALUES (
 
 -- ============================================
 -- FIM DA MIGRAÇÃO
--- ============================================
+-- ============================================;

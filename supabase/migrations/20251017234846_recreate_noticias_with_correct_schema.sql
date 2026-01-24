@@ -8,7 +8,6 @@
 
 -- Dropar tabela antiga (está vazia, verificado)
 DROP TABLE IF EXISTS noticias CASCADE;
-
 -- Recriar tabela com estrutura correta
 CREATE TABLE noticias (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -27,14 +26,12 @@ CREATE TABLE noticias (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     last_updated_by UUID REFERENCES auth.users(id)
 );
-
 -- Criar índices
 CREATE INDEX idx_noticias_data_publicacao ON noticias(data_publicacao DESC);
 CREATE INDEX idx_noticias_categoria ON noticias(categoria);
 CREATE INDEX idx_noticias_slug ON noticias(slug);
 CREATE INDEX idx_noticias_destaque ON noticias(destaque) WHERE destaque = TRUE;
 CREATE INDEX idx_noticias_ativo ON noticias(ativo) WHERE ativo = TRUE;
-
 -- Função para atualizar updated_at
 CREATE OR REPLACE FUNCTION update_noticias_updated_at()
 RETURNS TRIGGER AS $$
@@ -43,21 +40,17 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 -- Trigger para updated_at
 CREATE TRIGGER trigger_update_noticias_updated_at
     BEFORE UPDATE ON noticias
     FOR EACH ROW
     EXECUTE FUNCTION update_noticias_updated_at();
-
 -- Habilitar RLS
 ALTER TABLE noticias ENABLE ROW LEVEL SECURITY;
-
 -- Políticas RLS
 CREATE POLICY "Notícias ativas são visíveis publicamente"
     ON noticias FOR SELECT
     USING (ativo = TRUE);
-
 CREATE POLICY "Admins podem ver todas as notícias"
     ON noticias FOR SELECT
     TO authenticated
@@ -68,7 +61,6 @@ CREATE POLICY "Admins podem ver todas as notícias"
             AND user_roles.role = 'admin'
         )
     );
-
 CREATE POLICY "Apenas admins podem criar notícias"
     ON noticias FOR INSERT
     TO authenticated
@@ -79,7 +71,6 @@ CREATE POLICY "Apenas admins podem criar notícias"
             AND user_roles.role = 'admin'
         )
     );
-
 CREATE POLICY "Apenas admins podem atualizar notícias"
     ON noticias FOR UPDATE
     TO authenticated
@@ -97,7 +88,6 @@ CREATE POLICY "Apenas admins podem atualizar notícias"
             AND user_roles.role = 'admin'
         )
     );
-
 CREATE POLICY "Apenas admins podem deletar notícias"
     ON noticias FOR DELETE
     TO authenticated
@@ -108,7 +98,6 @@ CREATE POLICY "Apenas admins podem deletar notícias"
             AND user_roles.role = 'admin'
         )
     );
-
 -- Comentários
 COMMENT ON TABLE noticias IS 'Tabela de notícias do site COMADEMIG';
 COMMENT ON COLUMN noticias.slug IS 'Slug único para URL amigável';

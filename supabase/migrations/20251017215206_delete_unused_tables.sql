@@ -18,7 +18,6 @@
 DROP TABLE IF EXISTS noticias CASCADE;
 DROP TABLE IF EXISTS multimidia CASCADE;
 DROP TABLE IF EXISTS eventos CASCADE;
-
 -- ============================================
 -- VERIFICAÇÃO
 -- ============================================
@@ -28,4 +27,4 @@ DROP TABLE IF EXISTS eventos CASCADE;
 -- - videos (novo)
 -- - albuns_fotos (novo)
 -- - fotos (novo)
--- ============================================
+-- ============================================;

@@ -8,10 +8,8 @@
 -- Remover coluna wallet_id (se existir)
 ALTER TABLE affiliates 
 DROP COLUMN IF EXISTS wallet_id;
-
 -- Remover coluna wallet_validated (se existir)
 ALTER TABLE affiliates 
 DROP COLUMN IF EXISTS wallet_validated;
-
 -- Comentário explicativo
 COMMENT ON TABLE affiliates IS 'Tabela de afiliados - usar asaas_wallet_id para carteira Asaas';

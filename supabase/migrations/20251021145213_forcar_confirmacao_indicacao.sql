@@ -11,7 +11,6 @@ UPDATE affiliate_referrals
 SET status = 'confirmed'
 WHERE referral_code = '2AE24DCA'
   AND status = 'pending';
-
 -- Atualizar TODAS as indicações pendentes que têm pagamento confirmado
 -- (para garantir que não fique nenhuma pendente)
 UPDATE affiliate_referrals ar

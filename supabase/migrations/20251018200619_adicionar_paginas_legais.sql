@@ -85,7 +85,6 @@ ON CONFLICT (page_name)
 DO UPDATE SET
   content_json = EXCLUDED.content_json,
   last_updated_at = NOW();
-
 -- Inserir Termos de Uso
 INSERT INTO content_management (page_name, content_json, last_updated_at)
 VALUES (
@@ -167,6 +166,5 @@ ON CONFLICT (page_name)
 DO UPDATE SET
   content_json = EXCLUDED.content_json,
   last_updated_at = NOW();
-
 -- Comentário final
 COMMENT ON TABLE content_management IS 'Gerencia conteúdo dinâmico das páginas do site, incluindo páginas legais (LGPD)';

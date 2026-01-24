@@ -9,12 +9,10 @@
 -- Primeiro, remover o constraint que está bloqueando
 ALTER TABLE affiliate_referrals 
 DROP CONSTRAINT IF EXISTS affiliate_referrals_status_check;
-
 -- Adicionar constraint com valores corretos
 ALTER TABLE affiliate_referrals
 ADD CONSTRAINT affiliate_referrals_status_check 
 CHECK (status IN ('pending', 'confirmed', 'cancelled'));
-
 -- Atualizar indicações pendentes que têm pagamento confirmado
 UPDATE affiliate_referrals ar
 SET 

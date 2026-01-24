@@ -9,37 +9,29 @@
 -- 1. Adicionar coluna autor_id (UUID) para relacionamento com auth.users
 ALTER TABLE noticias 
 ADD COLUMN IF NOT EXISTS autor_id UUID REFERENCES auth.users(id);
-
 -- 2. Adicionar coluna para exibir na Home
 ALTER TABLE noticias 
 ADD COLUMN IF NOT EXISTS exibir_na_home BOOLEAN DEFAULT false;
-
 -- 3. Adicionar campos de moderação
 ALTER TABLE noticias 
 ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pendente' CHECK (status IN ('pendente', 'aprovado', 'rejeitado'));
-
 ALTER TABLE noticias 
 ADD COLUMN IF NOT EXISTS moderado_por UUID REFERENCES auth.users(id);
-
 ALTER TABLE noticias 
 ADD COLUMN IF NOT EXISTS moderado_em TIMESTAMP WITH TIME ZONE;
-
 ALTER TABLE noticias 
 ADD COLUMN IF NOT EXISTS motivo_rejeicao TEXT;
-
 -- 4. Criar índices para performance
 CREATE INDEX IF NOT EXISTS idx_noticias_status ON noticias(status);
 CREATE INDEX IF NOT EXISTS idx_noticias_exibir_na_home ON noticias(exibir_na_home);
 CREATE INDEX IF NOT EXISTS idx_noticias_autor_id ON noticias(autor_id);
 CREATE INDEX IF NOT EXISTS idx_noticias_status_data ON noticias(status, data_publicacao DESC);
-
 -- 5. Atualizar notícias existentes para status 'aprovado'
 -- (Assumindo que notícias já existentes foram criadas por admins e estão aprovadas)
 UPDATE noticias 
 SET status = 'aprovado', 
     moderado_em = NOW()
 WHERE status = 'pendente';
-
 -- 6. Comentários nas colunas
 COMMENT ON COLUMN noticias.autor_id IS 'ID do usuário autor da notícia (relacionamento com auth.users)';
 COMMENT ON COLUMN noticias.exibir_na_home IS 'Define se a notícia aparece na seção de notícias da Home';
@@ -47,7 +39,6 @@ COMMENT ON COLUMN noticias.status IS 'Status de moderação: pendente (aguardand
 COMMENT ON COLUMN noticias.moderado_por IS 'ID do admin que moderou a notícia';
 COMMENT ON COLUMN noticias.moderado_em IS 'Data e hora da moderação';
 COMMENT ON COLUMN noticias.motivo_rejeicao IS 'Motivo da rejeição (preenchido apenas se status = rejeitado)';
-
 -- ============================================
 -- POLÍTICAS RLS ATUALIZADAS
 -- ============================================
@@ -55,7 +46,6 @@ COMMENT ON COLUMN noticias.motivo_rejeicao IS 'Motivo da rejeição (preenchido 
 -- Remover políticas antigas se existirem
 DROP POLICY IF EXISTS "Notícias públicas são visíveis para todos" ON noticias;
 DROP POLICY IF EXISTS "Admins podem gerenciar todas as notícias" ON noticias;
-
 -- POLÍTICA 1: Leitura Pública (SELECT)
 -- Usuários não autenticados: apenas notícias aprovadas e ativas
 -- Usuários autenticados: suas próprias notícias + notícias aprovadas e ativas
@@ -77,7 +67,6 @@ CREATE POLICY "noticias_select_policy" ON noticias
       )
     )
   );
-
 -- POLÍTICA 2: Criação (INSERT)
 -- Usuários autenticados podem criar notícias (sempre com status pendente)
 -- Admins podem criar notícias já aprovadas
@@ -105,7 +94,6 @@ CREATE POLICY "noticias_insert_policy" ON noticias
       )
     )
   );
-
 -- POLÍTICA 3: Atualização (UPDATE)
 -- Usuários podem editar apenas suas notícias pendentes
 -- Admins podem editar qualquer notícia
@@ -141,7 +129,6 @@ CREATE POLICY "noticias_update_policy" ON noticias
       AND destaque = false
     )
   );
-
 -- POLÍTICA 4: Exclusão (DELETE)
 -- Usuários podem excluir apenas suas notícias pendentes
 -- Admins podem excluir qualquer notícia
@@ -160,7 +147,6 @@ CREATE POLICY "noticias_delete_policy" ON noticias
       )
     )
   );
-
 -- ============================================
 -- FUNCTION: Aprovar Notícia (Admin)
 -- ============================================
@@ -202,7 +188,6 @@ BEGIN
   RETURN FOUND;
 END;
 $$;
-
 -- ============================================
 -- FUNCTION: Rejeitar Notícia (Admin)
 -- ============================================
@@ -247,7 +232,6 @@ BEGIN
   RETURN FOUND;
 END;
 $$;
-
 -- ============================================
 -- COMENTÁRIOS FINAIS
 -- ============================================

@@ -7,6 +7,5 @@
 
 ALTER TABLE solicitacoes_servicos 
 ALTER COLUMN payment_reference TYPE VARCHAR(100);
-
 -- Comentário
 COMMENT ON COLUMN solicitacoes_servicos.payment_reference IS 'Referência do pagamento no Asaas (até 100 caracteres)';

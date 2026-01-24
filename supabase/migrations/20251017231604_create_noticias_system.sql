@@ -24,14 +24,12 @@ CREATE TABLE IF NOT EXISTS noticias (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     last_updated_by UUID REFERENCES auth.users(id)
 );
-
 -- Criar índices para melhor performance
 CREATE INDEX IF NOT EXISTS idx_noticias_data_publicacao ON noticias(data_publicacao DESC);
 CREATE INDEX IF NOT EXISTS idx_noticias_categoria ON noticias(categoria);
 CREATE INDEX IF NOT EXISTS idx_noticias_slug ON noticias(slug);
 CREATE INDEX IF NOT EXISTS idx_noticias_destaque ON noticias(destaque) WHERE destaque = TRUE;
 CREATE INDEX IF NOT EXISTS idx_noticias_ativo ON noticias(ativo) WHERE ativo = TRUE;
-
 -- Criar função para atualizar updated_at automaticamente
 CREATE OR REPLACE FUNCTION update_noticias_updated_at()
 RETURNS TRIGGER AS $$
@@ -40,27 +38,23 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
 -- Criar trigger para atualizar updated_at
 DROP TRIGGER IF EXISTS trigger_update_noticias_updated_at ON noticias;
 CREATE TRIGGER trigger_update_noticias_updated_at
     BEFORE UPDATE ON noticias
     FOR EACH ROW
     EXECUTE FUNCTION update_noticias_updated_at();
-
 -- ============================================
 -- POLÍTICAS RLS (Row Level Security)
 -- ============================================
 
 -- Habilitar RLS
 ALTER TABLE noticias ENABLE ROW LEVEL SECURITY;
-
 -- Política: Leitura pública de notícias ativas
 CREATE POLICY "Notícias ativas são visíveis publicamente"
     ON noticias
     FOR SELECT
     USING (ativo = TRUE);
-
 -- Política: Admins podem ver todas as notícias
 CREATE POLICY "Admins podem ver todas as notícias"
     ON noticias
@@ -73,7 +67,6 @@ CREATE POLICY "Admins podem ver todas as notícias"
             AND user_roles.role = 'admin'
         )
     );
-
 -- Política: Apenas admins podem inserir notícias
 CREATE POLICY "Apenas admins podem criar notícias"
     ON noticias
@@ -86,7 +79,6 @@ CREATE POLICY "Apenas admins podem criar notícias"
             AND user_roles.role = 'admin'
         )
     );
-
 -- Política: Apenas admins podem atualizar notícias
 CREATE POLICY "Apenas admins podem atualizar notícias"
     ON noticias
@@ -106,7 +98,6 @@ CREATE POLICY "Apenas admins podem atualizar notícias"
             AND user_roles.role = 'admin'
         )
     );
-
 -- Política: Apenas admins podem deletar notícias
 CREATE POLICY "Apenas admins podem deletar notícias"
     ON noticias
@@ -119,7 +110,6 @@ CREATE POLICY "Apenas admins podem deletar notícias"
             AND user_roles.role = 'admin'
         )
     );
-
 -- ============================================
 -- COMENTÁRIOS
 -- ============================================
@@ -138,7 +128,6 @@ COMMENT ON COLUMN noticias.visualizacoes IS 'Contador de visualizações';
 COMMENT ON COLUMN noticias.destaque IS 'Se a notícia deve aparecer em destaque';
 COMMENT ON COLUMN noticias.ativo IS 'Se a notícia está ativa/publicada';
 COMMENT ON COLUMN noticias.last_updated_by IS 'ID do usuário que fez a última atualização';
-
 -- ============================================
 -- VERIFICAÇÃO
 -- ============================================
@@ -146,4 +135,4 @@ COMMENT ON COLUMN noticias.last_updated_by IS 'ID do usuário que fez a última 
 -- Índices criados: 5
 -- Políticas RLS criadas: 5
 -- Trigger criado: 1
--- ============================================
+-- ============================================;
