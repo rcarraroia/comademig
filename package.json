@@ -15,7 +15,11 @@
     "smoke-tests": "node scripts/smoke-tests.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:preventive": "vitest run src/__tests__/structural-tests.test.ts src/__tests__/functional-preventive-tests.test.tsx"
+    "test:preventive": "vitest run src/__tests__/structural-tests.test.ts src/__tests__/functional-preventive-tests.test.tsx",
+    "test:integration": "vitest run src/__tests__/integration/",
+    "test:integration:watch": "vitest src/__tests__/integration/",
+    "test:coverage": "vitest run --coverage",
+    "test:payment-first-flow": "node scripts/run-integration-tests.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",
@@ -74,6 +78,7 @@
     "@eslint/js": "^9.9.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20.8.10",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^18.2.37",

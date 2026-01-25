@@ -16,7 +16,8 @@ import {
   ChevronDown,
   ChevronRight,
   Award,
-  Split
+  Split,
+  TrendingUp
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
@@ -187,6 +188,20 @@ export default function AdminSidebar() {
           href: '/admin/diagnostics',
           icon: Settings,
           description: 'Status e diagnóstico do sistema'
+        },
+        {
+          title: 'Configurações do Sistema',
+          href: '/admin/system-settings',
+          icon: Settings,
+          description: 'Feature flags e configurações avançadas',
+          badge: 'Novo'
+        },
+        {
+          title: 'Ativação Gradual',
+          href: '/admin/gradual-activation',
+          icon: TrendingUp,
+          description: 'Monitorar ativação gradual do Payment First Flow',
+          badge: 'Beta'
         }
       ]
     }

@@ -32,128 +32,95 @@ import { useFiliacaoPayment, type FiliacaoPaymentData } from '@/hooks/useFiliaca
 import { formatCurrency } from '@/hooks/useFiliacaoFlow';
 import { toast } from 'sonner';
 import type { UnifiedMemberType } from '@/hooks/useMemberTypeWithPlan';
-import { validateCPF, validatePhone, validateCEP } from '@/utils/validators';
+import { 
+  createFiliacaoSchema, 
+  fieldValidations,
+  type FiliacaoFormData 
+} from '@/lib/validations/filiacaoValidation';
 import { supabase } from '@/integrations/supabase/client';
 
-// Schema de validação para o formulário
-const createPaymentFormSchema = (isLoggedIn: boolean) => z.object({
-  // Dados pessoais - CONDICIONAIS para usuários logados
-  nome_completo: isLoggedIn 
-    ? z.string().optional() 
-    : z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  cpf: isLoggedIn
-    ? z.string().optional()
-    : z.string()
-        .min(11, 'CPF é obrigatório')
-        .transform((val) => val.replace(/\D/g, '')) // Limpar ANTES da validação
-        .refine((val) => val.length === 11, 'CPF deve ter 11 dígitos')
-        .refine((val) => validateCPF(val), 'CPF inválido - verifique os números digitados'),
-  telefone: isLoggedIn
-    ? z.string().optional()
-    : z.string()
-        .min(10, 'Telefone é obrigatório')
-        .transform((val) => val.replace(/\D/g, '')) // Limpar ANTES da validação
-        .refine((val) => val.length >= 10 && val.length <= 11, 'Telefone deve ter 10 ou 11 dígitos')
-        .refine((val) => validatePhone(val), 'Telefone inválido - use formato (XX) XXXXX-XXXX'),
-  email: isLoggedIn 
-    ? z.string().optional()
-    : z.string().email('Email inválido'),
+// Usar schema unificado de validação
+const createPaymentFormSchema = (isLoggedIn: boolean) => {
+  // Estender o schema base com campos específicos do formulário de pagamento
+  const baseSchema = createFiliacaoSchema(isLoggedIn);
   
-  // Endereço - CONDICIONAIS para usuários logados
-  cep: isLoggedIn
-    ? z.string().optional()
-    : z.string()
-        .min(8, 'CEP é obrigatório')
-        .transform((val) => val.replace(/\D/g, '')) // Limpar ANTES da validação
-        .refine((val) => val.length === 8, 'CEP deve ter 8 dígitos')
-        .refine((val) => validateCEP(val), 'CEP inválido - use formato XXXXX-XXX'),
-  endereco: isLoggedIn ? z.string().optional() : z.string().min(5, 'Endereço deve ter pelo menos 5 caracteres'),
-  numero: isLoggedIn ? z.string().optional() : z.string().min(1, 'Número é obrigatório'),
-  complemento: z.string().optional(),
-  bairro: isLoggedIn ? z.string().optional() : z.string().min(2, 'Bairro deve ter pelo menos 2 caracteres'),
-  cidade: isLoggedIn ? z.string().optional() : z.string().min(2, 'Cidade deve ter pelo menos 2 caracteres'),
-  estado: isLoggedIn ? z.string().optional() : z.string().length(2, 'Estado deve ter 2 caracteres'),
-  
-  // Método de pagamento (sempre obrigatório)
-  payment_method: z.literal('credit_card'),
-  
-  // Dados do cartão (sempre obrigatórios)
-  card_holder_name: z.string().min(2, 'Nome no cartão é obrigatório'),
-  card_number: z.string().min(13, 'Número do cartão é obrigatório'),
-  card_expiry_month: z.string().min(1, 'Mês de vencimento é obrigatório'),
-  card_expiry_year: z.string().min(4, 'Ano de vencimento é obrigatório'),
-  card_ccv: z.string().min(3, 'CVV é obrigatório'),
-  card_installments: z.string().optional(),
-  
-  // Senha (apenas para usuários não logados)
-  password: isLoggedIn 
-    ? z.string().optional()
-    : z.string()
-        .min(6, 'Senha deve ter pelo menos 6 caracteres')
-        .regex(/[A-Z]/, 'Senha deve conter pelo menos uma letra maiúscula')
-        .regex(/[0-9]/, 'Senha deve conter pelo menos um número'),
-  password_confirmation: isLoggedIn ? z.string().optional() : z.string(),
-  
-  // Termos (sempre obrigatórios)
-  accept_terms: z.boolean().refine(val => val === true, {
-    message: 'Você deve aceitar os termos e condições'
-  }),
-  accept_privacy: z.boolean().refine(val => val === true, {
-    message: 'Você deve aceitar a política de privacidade'
-  }),
-}).refine((data) => {
-  // Validação condicional para cartão de crédito
-  if (data.payment_method === 'credit_card') {
-    const errors = [];
-    if (!data.card_holder_name || data.card_holder_name.trim().length < 2) {
-      errors.push('Nome no cartão é obrigatório');
-    }
-    if (!data.card_number || data.card_number.replace(/\s/g, '').length < 13) {
-      errors.push('Número do cartão é obrigatório');
-    }
-    if (!data.card_expiry_month) {
-      errors.push('Mês de vencimento é obrigatório');
-    }
-    if (!data.card_expiry_year) {
-      errors.push('Ano de vencimento é obrigatório');
-    }
-    if (!data.card_ccv || data.card_ccv.length < 3) {
-      errors.push('CVV é obrigatório');
-    }
+  return baseSchema.extend({
+    // Campos específicos do formulário de pagamento
+    card_holder_name: z.string().min(2, 'Nome no cartão é obrigatório'),
+    card_number: z.string().min(13, 'Número do cartão é obrigatório'),
+    card_expiry_month: z.string().min(1, 'Mês de vencimento é obrigatório'),
+    card_expiry_year: z.string().min(4, 'Ano de vencimento é obrigatório'),
+    card_ccv: z.string().min(3, 'CVV é obrigatório'),
+    card_installments: z.string().optional(),
     
-    if (errors.length > 0) {
-      return false;
+    // Confirmação de senha (apenas para usuários não logados)
+    password_confirmation: isLoggedIn ? z.string().optional() : z.string(),
+    
+    // Termos (sempre obrigatórios)
+    accept_terms: z.boolean().refine(val => val === true, {
+      message: 'Você deve aceitar os termos e condições'
+    }),
+    accept_privacy: z.boolean().refine(val => val === true, {
+      message: 'Você deve aceitar a política de privacidade'
+    }),
+  }).refine((data) => {
+    // Validação condicional para cartão de crédito
+    if (data.payment_method === 'credit_card') {
+      const errors = [];
+      if (!data.card_holder_name || data.card_holder_name.trim().length < 2) {
+        errors.push('Nome no cartão é obrigatório');
+      }
+      if (!data.card_number || data.card_number.replace(/\s/g, '').length < 13) {
+        errors.push('Número do cartão é obrigatório');
+      }
+      if (!data.card_expiry_month) {
+        errors.push('Mês de vencimento é obrigatório');
+      }
+      if (!data.card_expiry_year) {
+        errors.push('Ano de vencimento é obrigatório');
+      }
+      if (!data.card_ccv || data.card_ccv.length < 3) {
+        errors.push('CVV é obrigatório');
+      }
+      
+      if (errors.length > 0) {
+        return false;
+      }
     }
-  }
-  return true;
-}, {
-  message: 'Todos os dados do cartão são obrigatórios',
-  path: ['card_number']
-}).refine((data) => {
-  // Validação condicional para senhas (apenas se não estiver logado)
-  if (!isLoggedIn) {
-    return data.password === data.password_confirmation;
-  }
-  return true;
-}, {
-  message: 'As senhas não conferem',
-  path: ['password_confirmation']
-});
+    return true;
+  }, {
+    message: 'Todos os dados do cartão são obrigatórios',
+    path: ['card_number']
+  }).refine((data) => {
+    // Validação condicional para senhas (apenas se não estiver logado)
+    if (!isLoggedIn) {
+      return data.password === data.password_confirmation;
+    }
+    return true;
+  }, {
+    message: 'As senhas não conferem',
+    path: ['password_confirmation']
+  });
+};
 
 type PaymentFormData = z.infer<ReturnType<typeof createPaymentFormSchema>>;
 
 interface PaymentFormEnhancedProps {
   selectedMemberType: UnifiedMemberType;
   affiliateInfo?: any;
-  onSuccess: () => void;
+  onSuccess: (result?: { paymentId?: string; userId?: string }) => void;
+  onError: (error: any) => void;
   onCancel: () => void;
+  usePaymentFirstFlow?: boolean;
 }
 
 export default function PaymentFormEnhanced({
   selectedMemberType,
   affiliateInfo,
   onSuccess,
-  onCancel
+  onError,
+  onCancel,
+  usePaymentFirstFlow = false
 }: PaymentFormEnhancedProps) {
   const { user, loading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
@@ -161,6 +128,8 @@ export default function PaymentFormEnhanced({
   const [cpfValidationMessage, setCpfValidationMessage] = useState<string>('');
   const [cepValidationMessage, setCepValidationMessage] = useState<string>('');
   const [phoneValidationMessage, setPhoneValidationMessage] = useState<string>('');
+  const [cardValidationMessage, setCardValidationMessage] = useState<string>('');
+  const [expiryValidationMessage, setExpiryValidationMessage] = useState<string>('');
   const [userProfile, setUserProfile] = useState<any>(null);
   
 
@@ -172,7 +141,8 @@ export default function PaymentFormEnhanced({
     error 
   } = useFiliacaoPayment({
     selectedMemberType,
-    affiliateInfo
+    affiliateInfo,
+    usePaymentFirstFlow
   });
 
   // Buscar dados do perfil se usuário estiver logado
@@ -261,76 +231,38 @@ export default function PaymentFormEnhanced({
   const cpfValue = watch('cpf');
   const cepValue = watch('cep');
   const phoneValue = watch('telefone');
+  const cardNumberValue = watch('card_number');
+  const cardExpiryMonth = watch('card_expiry_month');
+  const cardExpiryYear = watch('card_expiry_year');
 
   // Validação em tempo real do CPF
   const validateCPFRealTime = (cpf: string) => {
-    if (!cpf) {
-      setCpfValidationMessage('');
-      return;
-    }
-    
-    const cleanCPF = cpf.replace(/\D/g, '');
-    
-    if (cleanCPF.length < 11) {
-      setCpfValidationMessage(`CPF deve ter 11 dígitos (${cleanCPF.length}/11)`);
-      return;
-    }
-    
-    if (cleanCPF.length === 11) {
-      if (validateCPF(cleanCPF)) {
-        setCpfValidationMessage('✅ CPF válido');
-      } else {
-        setCpfValidationMessage('❌ CPF inválido - verifique os números');
-      }
-    }
+    const validation = fieldValidations.validateCPFField(cpf);
+    setCpfValidationMessage(validation.message);
   };
 
   // Validação em tempo real do CEP
   const validateCEPRealTime = (cep: string) => {
-    if (!cep) {
-      setCepValidationMessage('');
-      return;
-    }
-    
-    const cleanCEP = cep.replace(/\D/g, '');
-    
-    if (cleanCEP.length < 8) {
-      setCepValidationMessage(`CEP deve ter 8 dígitos (${cleanCEP.length}/8)`);
-      return;
-    }
-    
-    if (cleanCEP.length === 8) {
-      if (validateCEP(cleanCEP)) {
-        setCepValidationMessage('✅ CEP válido');
-      } else {
-        setCepValidationMessage('❌ CEP inválido');
-      }
-    }
+    const validation = fieldValidations.validateCEPField(cep);
+    setCepValidationMessage(validation.message);
   };
 
   // Validação em tempo real do telefone
   const validatePhoneRealTime = (phone: string) => {
-    if (!phone) {
-      setPhoneValidationMessage('');
-      return;
-    }
-    
-    const cleanPhone = phone.replace(/\D/g, '');
-    
-    if (cleanPhone.length < 10) {
-      setPhoneValidationMessage(`Telefone deve ter pelo menos 10 dígitos (${cleanPhone.length}/10)`);
-      return;
-    }
-    
-    if (cleanPhone.length >= 10 && cleanPhone.length <= 11) {
-      if (validatePhone(cleanPhone)) {
-        setPhoneValidationMessage('✅ Telefone válido');
-      } else {
-        setPhoneValidationMessage('❌ Telefone inválido');
-      }
-    } else {
-      setPhoneValidationMessage('❌ Telefone deve ter 10 ou 11 dígitos');
-    }
+    const validation = fieldValidations.validatePhoneField(phone);
+    setPhoneValidationMessage(validation.message);
+  };
+
+  // Validação em tempo real do cartão
+  const validateCardRealTime = (cardNumber: string) => {
+    const validation = fieldValidations.validateCardNumber(cardNumber);
+    setCardValidationMessage(validation.message);
+  };
+
+  // Validação em tempo real da data de expiração
+  const validateExpiryRealTime = (month: string, year: string) => {
+    const validation = fieldValidations.validateExpiryDate(month, year);
+    setExpiryValidationMessage(validation.message);
   };
 
   // Executar validações em tempo real
@@ -345,6 +277,14 @@ export default function PaymentFormEnhanced({
   React.useEffect(() => {
     validatePhoneRealTime(phoneValue || '');
   }, [phoneValue]);
+
+  React.useEffect(() => {
+    validateCardRealTime(cardNumberValue || '');
+  }, [cardNumberValue]);
+
+  React.useEffect(() => {
+    validateExpiryRealTime(cardExpiryMonth || '', cardExpiryYear || '');
+  }, [cardExpiryMonth, cardExpiryYear]);
 
   // Debug: Log do estado dos termos
   React.useEffect(() => {
@@ -465,30 +405,40 @@ export default function PaymentFormEnhanced({
         } else {
           toast.success('Filiação processada com sucesso!');
         }
-        onSuccess();
+        
+        // Chamar callback de sucesso com dados do resultado
+        onSuccess({
+          paymentId: result.paymentId,
+          userId: result.userId
+        });
       }
     } catch (error: any) {
       // Erro já tratado no hook
       console.error('Erro no formulário de filiação:', error);
       
-      // Mostrar mensagem de erro específica ao usuário
-      const errorMessage = error?.message || 'Erro ao processar filiação';
+      // Chamar callback de erro
+      onError(error);
       
-      if (errorMessage.includes('email_already_exists') || errorMessage.includes('já está cadastrado')) {
-        toast.error('Este email já está cadastrado. Faça login ou use "Esqueci minha senha".');
-      } else if (errorMessage.includes('CPF inválido')) {
-        toast.error('CPF inválido. Verifique os números digitados e tente novamente.');
-      } else if (errorMessage.includes('Telefone inválido')) {
-        toast.error('Telefone inválido. Use o formato (XX) XXXXX-XXXX.');
-      } else if (errorMessage.includes('CEP inválido')) {
-        toast.error('CEP inválido. Use o formato XXXXX-XXX.');
-      } else if (errorMessage.includes('cartão recusado') || errorMessage.includes('card_declined')) {
-        toast.error('Cartão recusado. Verifique os dados ou tente outro cartão.');
-      } else if (errorMessage.includes('dados inválidos')) {
-        toast.error('Alguns dados informados são inválidos. Verifique os campos e tente novamente.');
-      } else {
-        // Mensagem genérica para outros erros
-        toast.error('Erro ao processar filiação. Tente novamente ou entre em contato com o suporte.');
+      // Mostrar mensagem de erro específica ao usuário (apenas se não for novo fluxo)
+      if (!usePaymentFirstFlow) {
+        const errorMessage = error?.message || 'Erro ao processar filiação';
+        
+        if (errorMessage.includes('email_already_exists') || errorMessage.includes('já está cadastrado')) {
+          toast.error('Este email já está cadastrado. Faça login ou use "Esqueci minha senha".');
+        } else if (errorMessage.includes('CPF inválido')) {
+          toast.error('CPF inválido. Verifique os números digitados e tente novamente.');
+        } else if (errorMessage.includes('Telefone inválido')) {
+          toast.error('Telefone inválido. Use o formato (XX) XXXXX-XXXX.');
+        } else if (errorMessage.includes('CEP inválido')) {
+          toast.error('CEP inválido. Use o formato XXXXX-XXX.');
+        } else if (errorMessage.includes('cartão recusado') || errorMessage.includes('card_declined')) {
+          toast.error('Cartão recusado. Verifique os dados ou tente outro cartão.');
+        } else if (errorMessage.includes('dados inválidos')) {
+          toast.error('Alguns dados informados são inválidos. Verifique os campos e tente novamente.');
+        } else {
+          // Mensagem genérica para outros erros
+          toast.error('Erro ao processar filiação. Tente novamente ou entre em contato com o suporte.');
+        }
       }
     }
   };
@@ -1107,6 +1057,11 @@ export default function PaymentFormEnhanced({
                   {errors.card_number && (
                     <p className="text-sm text-destructive">{errors.card_number.message}</p>
                   )}
+                  {cardValidationMessage && !errors.card_number && (
+                    <p className={`text-sm ${cardValidationMessage.includes('✅') ? 'text-green-600' : 'text-orange-500'}`}>
+                      {cardValidationMessage}
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
@@ -1164,6 +1119,13 @@ export default function PaymentFormEnhanced({
                     )}
                   </div>
                 </div>
+
+                {/* Mensagem de validação da data de expiração */}
+                {expiryValidationMessage && !errors.card_expiry_month && !errors.card_expiry_year && (
+                  <p className={`text-sm ${expiryValidationMessage.includes('✅') ? 'text-green-600' : 'text-orange-500'}`}>
+                    {expiryValidationMessage}
+                  </p>
+                )}
 
                 <div>
                   <Label htmlFor="card_installments">Parcelas</Label>

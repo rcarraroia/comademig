@@ -9,6 +9,9 @@ import type { UnifiedMemberType } from './useMemberTypeWithPlan';
 import type { FiliacaoData } from './useFiliacaoFlow';
 import { mapErrorToMessage, formatErrorMessage } from '@/utils/errorMessages';
 import { validateCPF, validatePhone, validateCEP } from '@/utils/validators';
+import { paymentFirstFlowService } from '@/lib/services/PaymentFirstFlowService';
+import { FiliacaoToPaymentFirstFlow, type AdapterContext } from '@/lib/adapters/FiliacaoToPaymentFirstFlow';
+import { usePaymentFirstFlowFeature } from './usePaymentFirstFlowFeature';
 
 export interface FiliacaoPaymentData extends FiliacaoData {
   // Senha para criar conta (obrigatória se usuário não estiver autenticado)
@@ -29,14 +32,23 @@ export interface FiliacaoPaymentData extends FiliacaoData {
 interface UseFiliacaoPaymentProps {
   selectedMemberType: UnifiedMemberType;
   affiliateInfo?: any;
+  usePaymentFirstFlow?: boolean; // Override manual da feature flag (opcional)
 }
 
-export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFiliacaoPaymentProps) {
+export function useFiliacaoPayment({ selectedMemberType, affiliateInfo, usePaymentFirstFlow }: UseFiliacaoPaymentProps) {
   const { user, signUp } = useAuth();
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'creating_account' | 'creating_customer' | 'processing_payment' | 'creating_subscription' | 'updating_profile' | 'completed'>('idle');
   
   const { createCustomer } = useAsaasCustomers();
   const { processCardPayment } = useAsaasCardPayments();
+  
+  // Feature flag para Payment First Flow
+  const { shouldUsePaymentFirstFlow } = usePaymentFirstFlowFeature();
+  
+  // Determinar se deve usar o novo fluxo
+  const useNewFlow = usePaymentFirstFlow !== undefined 
+    ? usePaymentFirstFlow // Override manual
+    : shouldUsePaymentFirstFlow(user?.email); // Feature flag automática
 
   // Função auxiliar para calcular próximo vencimento com validação anti-duplicação
   const calculateNextDueDate = (days: number = 30): string => {
@@ -81,6 +93,103 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
 
   const processFiliacaoPaymentMutation = useMutation({
     mutationFn: async (data: FiliacaoPaymentData) => {
+      // ============================================
+      // NOVO FLUXO: Payment First Flow
+      // ============================================
+      if (useNewFlow) {
+        console.log('🚀 Usando Payment First Flow...');
+        
+        try {
+          // 1. Preparar contexto do adapter
+          const adapterContext: AdapterContext = {
+            selectedMemberType,
+            affiliateInfo: affiliateInfo?.referralCode && affiliateInfo?.affiliateInfo?.id ? {
+              referralCode: affiliateInfo.referralCode,
+              affiliateInfo: { id: affiliateInfo.affiliateInfo.id }
+            } : undefined,
+            isUserLoggedIn: !!user
+          };
+
+          // 2. Adaptar dados do formulário para PaymentFirstFlow
+          const adapterResult = FiliacaoToPaymentFirstFlow.adapt(data, adapterContext);
+          
+          if (!adapterResult.success) {
+            throw new Error(`Dados inválidos: ${adapterResult.errors?.join(', ')}`);
+          }
+
+          // 3. Processar via PaymentFirstFlowService
+          setPaymentStatus('processing_payment');
+          const result = await paymentFirstFlowService.processRegistration(adapterResult.data!);
+
+          if (!result.success) {
+            // Se houve fallback, informar ao usuário
+            if (result.fallback_stored) {
+              toast.warning(
+                'Pagamento processado, mas houve um problema técnico. ' +
+                'Sua conta será ativada automaticamente em alguns minutos.',
+                { duration: 10000 }
+              );
+            }
+            
+            throw new Error(result.error || 'Erro no processamento');
+          }
+
+          setPaymentStatus('completed');
+
+          // 4. Retornar resultado compatível com interface atual
+          return {
+            profile: {
+              nome_completo: adapterResult.data!.nome,
+              email: adapterResult.data!.email,
+              cpf: adapterResult.data!.cpf,
+              telefone: adapterResult.data!.telefone,
+              endereco: adapterResult.data!.endereco.logradouro,
+              numero: adapterResult.data!.endereco.numero,
+              complemento: adapterResult.data!.endereco.complemento,
+              bairro: adapterResult.data!.endereco.bairro,
+              cidade: adapterResult.data!.endereco.cidade,
+              estado: adapterResult.data!.endereco.estado,
+              cep: adapterResult.data!.endereco.cep,
+              member_type_id: selectedMemberType.id,
+              tipo_membro: adapterResult.data!.tipo_membro,
+              status: 'ativo',
+              asaas_customer_id: result.asaas_customer_id,
+              asaas_subscription_id: result.asaas_subscription_id,
+              updated_at: new Date().toISOString()
+            },
+            subscription: {
+              id: 'created_by_payment_first_flow',
+              user_id: result.user_id,
+              plan_id: adapterResult.data!.plan_id,
+              status: 'active',
+              asaas_payment_id: result.payment_id,
+              asaas_subscription_id: result.asaas_subscription_id
+            },
+            asaasSubscription: {
+              id: result.asaas_subscription_id,
+              status: 'ACTIVE'
+            },
+            customer: {
+              id: result.asaas_customer_id
+            },
+            memberType: selectedMemberType,
+            paymentMethod: data.payment_method,
+            userId: result.user_id,
+            paymentFirstFlow: true // Flag para identificar novo fluxo
+          };
+
+        } catch (error) {
+          console.error('Erro no Payment First Flow:', error);
+          setPaymentStatus('idle');
+          throw error;
+        }
+      }
+
+      // ============================================
+      // FLUXO ANTIGO: Manter compatibilidade
+      // ============================================
+      console.log('📝 Usando fluxo tradicional...');
+      
       let currentUserId = user?.id;
       let isNewAccount = false;
       
@@ -548,7 +657,28 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
       
       const errorMessage = error.message || '';
       
-      if (errorMessage.includes('CPF inválido')) {
+      // Erros específicos do Payment First Flow
+      if (errorMessage.includes('Dados inválidos:')) {
+        friendlyMessage = errorMessage;
+        duration = 8000;
+      } else if (errorMessage.includes('Timeout na confirmação')) {
+        friendlyMessage = 'Pagamento está sendo processado. Você receberá um email quando sua conta estiver ativa.';
+        duration = 10000;
+      } else if (errorMessage.includes('Erro ao criar cliente Asaas')) {
+        friendlyMessage = 'Erro ao processar seus dados no sistema de pagamento. Tente novamente.';
+        duration = 8000;
+      } else if (errorMessage.includes('Erro ao processar pagamento')) {
+        friendlyMessage = 'Erro no processamento do pagamento. Verifique os dados do cartão.';
+        duration = 8000;
+      } else if (errorMessage.includes('Erro ao criar conta')) {
+        friendlyMessage = 'Pagamento aprovado, mas houve erro ao criar sua conta. Entre em contato com o suporte.';
+        duration = 10000;
+      } else if (errorMessage.includes('Erro ao criar perfil')) {
+        friendlyMessage = 'Conta criada, mas houve erro ao finalizar seu perfil. Entre em contato com o suporte.';
+        duration = 10000;
+      }
+      // Erros do fluxo antigo (manter compatibilidade)
+      else if (errorMessage.includes('CPF inválido')) {
         friendlyMessage = 'CPF inválido. Verifique os números digitados e tente novamente.';
         duration = 7000;
       } else if (errorMessage.includes('Telefone inválido')) {
@@ -593,7 +723,8 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
       console.error('📋 Detalhes do erro:', {
         originalError: error,
         friendlyMessage,
-        paymentStatus
+        paymentStatus,
+        useNewFlow
       });
       
       setPaymentStatus('idle');
@@ -616,5 +747,6 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo }: UseFil
     error: processFiliacaoPaymentMutation.error,
     isSuccess: processFiliacaoPaymentMutation.isSuccess,
     data: processFiliacaoPaymentMutation.data,
+    useNewFlow, // Informar qual fluxo está sendo usado
   };
 }

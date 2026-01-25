@@ -63,8 +63,10 @@ import MemberTypeManagement from '@/pages/admin/MemberTypeManagement';
 import AdminNotificationsPage from '@/pages/admin/AdminNotificationsPage';
 import ContentManagement from '@/pages/admin/ContentManagement';
 import SystemDiagnosticsPage from '@/pages/admin/SystemDiagnosticsPage';
+import SystemSettings from '@/pages/admin/SystemSettings';
 import ContentEdit from '@/pages/admin/ContentEdit';
 import UserManagement from '@/pages/admin/UserManagement';
+import GradualActivationDashboard from '@/pages/admin/GradualActivationDashboard';
 import HomeContentEdit from '@/pages/admin/content/HomeContentEdit';
 import AboutContentEdit from '@/pages/admin/content/AboutContentEdit';
 import LeadershipContentEdit from '@/pages/admin/content/LeadershipContentEdit';
@@ -179,6 +181,8 @@ function App() {
                   <Route path="member-management" element={<MemberTypeManagement />} />
                   <Route path="notifications" element={<AdminNotificationsPage />} />
                   <Route path="diagnostics" element={<SystemDiagnosticsPage />} />
+                  <Route path="system-settings" element={<SystemSettings />} />
+                  <Route path="gradual-activation" element={<GradualActivationDashboard />} />
                   <Route path="content" element={<ContentManagement />} />
                   <Route path="notification-management" element={<NotificationManagementPage />} />
                   <Route path="servicos" element={<ServicosAdmin />} />

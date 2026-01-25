@@ -33,6 +33,10 @@ import {
   type MemberTypeWithPlans,
   type SubscriptionPlan
 } from '@/hooks/useMemberTypes';
+import { 
+  useMemberTypesCompatibility,
+  useValidateMemberTypeCreation 
+} from '@/hooks/useAdminMemberTypeCompatibility';
 
 // Interfaces movidas para o hook useMemberTypes
 
@@ -92,6 +96,14 @@ const MemberTypeManagement: React.FC = () => {
     includePlans: true,
   });
 
+  // Hook para validação de compatibilidade
+  const { validateMemberType } = useValidateMemberTypeCreation();
+  
+  // Análise de compatibilidade dos tipos existentes
+  const { compatible, incompatible, compatibilityMap } = useMemberTypesCompatibility(
+    memberTypesWithPlans || []
+  );
+
   // Mutations usando os hooks corrigidos
   const createUnifiedMutation = useCreateMemberTypeWithPlans();
   const updateMutation = useUpdateMemberType();
@@ -143,6 +155,26 @@ const MemberTypeManagement: React.FC = () => {
       };
     }).filter(plan => plan.price >= 0);
 
+    // Validar compatibilidade com PaymentFirstFlow
+    const compatibilityValidation = validateMemberType({
+      name: formData.memberType.name,
+      description: formData.memberType.description,
+      plans: plansToCreate
+    });
+
+    // Mostrar avisos de compatibilidade (não bloquear criação)
+    if (compatibilityValidation.warnings.length > 0) {
+      compatibilityValidation.warnings.forEach(warning => {
+        toast.warning(warning, { duration: 8000 });
+      });
+    }
+
+    if (compatibilityValidation.suggestions.length > 0) {
+      compatibilityValidation.suggestions.forEach(suggestion => {
+        toast.info(suggestion, { duration: 6000 });
+      });
+    }
+
     createUnifiedMutation.mutate({
       memberType: formData.memberType,
       plans: plansToCreate,
@@ -150,6 +182,12 @@ const MemberTypeManagement: React.FC = () => {
       onSuccess: () => {
         setShowCreateForm(false);
         resetForm();
+        
+        if (compatibilityValidation.isValid) {
+          toast.success('Tipo de membro criado com sucesso e compatível com sistema de pagamentos!');
+        } else {
+          toast.success('Tipo de membro criado com sucesso!');
+        }
       }
     });
   };
@@ -710,12 +748,43 @@ const MemberTypeManagement: React.FC = () => {
 
       {/* Lista de Tipos Existentes */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold">Tipos de Membro Existentes</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold">Tipos de Membro Existentes</h2>
+          
+          {/* Resumo de compatibilidade */}
+          {memberTypesWithPlans && memberTypesWithPlans.length > 0 && (
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span>{compatible.length} compatíveis</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                <span>{incompatible.length} limitados</span>
+              </div>
+              <div className="text-gray-500">
+                Total: {memberTypesWithPlans.length}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Alerta sobre compatibilidade se houver tipos incompatíveis */}
+        {incompatible.length > 0 && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>{incompatible.length} tipo(s) com limitações:</strong> Alguns tipos podem não funcionar 
+              completamente com o sistema de pagamentos automático. Verifique os indicadores abaixo.
+            </AlertDescription>
+          </Alert>
+        )}
         
         {memberTypesWithPlans && memberTypesWithPlans.length > 0 ? (
           <div className="grid gap-4">
             {(memberTypesWithPlans as MemberTypeWithPlans[]).map((memberType) => {
               const associatedPlans = memberType.subscription_plans || [];
+              const compatibilityInfo = compatibilityMap.get(memberType.id);
               
               return (
                 <Card key={memberType.id} className="hover:shadow-md transition-shadow">
@@ -736,9 +805,32 @@ const MemberTypeManagement: React.FC = () => {
                           <Badge variant="outline">
                             Ordem: {memberType.sort_order}
                           </Badge>
+                          {/* Indicador de compatibilidade */}
+                          {compatibilityInfo && (
+                            <Badge 
+                              variant={compatibilityInfo.isCompatible ? "default" : "destructive"}
+                              className={compatibilityInfo.isCompatible 
+                                ? "bg-blue-100 text-blue-800" 
+                                : "bg-orange-100 text-orange-800"
+                              }
+                            >
+                              {compatibilityInfo.isCompatible ? '✅ Compatível' : '⚠️ Limitado'}
+                            </Badge>
+                          )}
                         </CardTitle>
                         <CardDescription>
                           {memberType.description || 'Sem descrição'}
+                          {/* Informações de mapeamento */}
+                          {compatibilityInfo && (
+                            <div className="mt-1 text-xs">
+                              Mapeado como: <strong>{compatibilityInfo.mappedType}</strong>
+                              {compatibilityInfo.warnings.length > 0 && (
+                                <div className="text-orange-600 mt-1">
+                                  ⚠️ {compatibilityInfo.warnings[0]}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </CardDescription>
                       </div>
                       <div className="flex gap-2">

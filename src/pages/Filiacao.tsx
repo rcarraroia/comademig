@@ -11,18 +11,34 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import MemberTypeSelector from '@/components/public/MemberTypeSelector';
 import PaymentFormEnhanced from '@/components/payments/PaymentFormEnhanced';
+import PaymentProcessingStatus from '@/components/payments/PaymentProcessingStatus';
+import PaymentErrorHandler, { type PaymentError } from '@/components/payments/PaymentErrorHandler';
 import type { UnifiedMemberType } from '@/hooks/useMemberTypeWithPlan';
 import { useReferralCode } from '@/hooks/useReferralCode';
+import { usePaymentFirstFlowFeature } from '@/hooks/usePaymentFirstFlowFeature';
 
 export default function Filiacao() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [selectedMemberType, setSelectedMemberType] = useState<UnifiedMemberType | null>(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'form' | 'processing' | 'error' | 'success'>('form');
+  const [paymentId, setPaymentId] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<PaymentError | null>(null);
   
   // Captura automática e silenciosa do código de referral da URL
   const referralHook = useReferralCode();
   const { referralCode, affiliateInfo } = referralHook;
+
+  // Feature flag para Payment First Flow
+  const { shouldUsePaymentFirstFlow } = usePaymentFirstFlowFeature();
+  const useNewFlow = shouldUsePaymentFirstFlow(user?.email);
+
+  console.log('🔄 Filiacao - Feature Flag Status:', {
+    userEmail: user?.email,
+    useNewFlow,
+    paymentStatus
+  });
 
   const handleMemberTypeSelect = (memberType: UnifiedMemberType | null) => {
     setSelectedMemberType(memberType);
@@ -39,18 +55,125 @@ export default function Filiacao() {
     setShowPaymentForm(true);
   };
 
+  const handlePaymentSuccess = (result?: { paymentId?: string; userId?: string }) => {
+    console.log('✅ Pagamento bem-sucedido:', result);
+    
+    if (useNewFlow && result?.paymentId) {
+      // Novo fluxo: mostrar tela de processamento
+      setPaymentId(result.paymentId);
+      setPaymentStatus('processing');
+    } else {
+      // Fluxo antigo: redirecionar diretamente
+      toast.success('Filiação realizada com sucesso!');
+      navigate('/dashboard');
+    }
+  };
+
+  const handlePaymentError = (error: any) => {
+    console.error('❌ Erro no pagamento:', error);
+    
+    if (useNewFlow) {
+      // Novo fluxo: mostrar tela de erro específica
+      setPaymentError(error);
+      setPaymentStatus('error');
+    } else {
+      // Fluxo antigo: toast de erro
+      toast.error('Erro ao processar pagamento. Tente novamente.');
+    }
+  };
+
+  const handleProcessingComplete = (result: { success: boolean; userId?: string }) => {
+    console.log('🎯 Processamento concluído:', result);
+    
+    if (result.success) {
+      setPaymentStatus('success');
+      toast.success('Filiação concluída com sucesso!');
+      
+      // Redirecionar após um breve delay
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 2000);
+    } else {
+      setPaymentStatus('error');
+      toast.error('Erro na finalização da filiação');
+    }
+  };
+
+  const handleRetryPayment = () => {
+    setPaymentStatus('form');
+    setPaymentError(null);
+    setPaymentId(null);
+  };
+
+  const handleChangePaymentMethod = () => {
+    setPaymentStatus('form');
+    setPaymentError(null);
+    setPaymentId(null);
+    // Manter formulário aberto para alterar dados
+  };
+
+  const handleContactSupport = () => {
+    navigate('/suporte');
+  };
+
 
 
   return (
     <Layout>
       <div className="container mx-auto py-8 px-4">
         <div className="max-w-4xl mx-auto space-y-8">
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold">Sistema de Registro</h1>
-            <p className="text-xl text-muted-foreground">
-              Venha fazer parte da Comademig
-            </p>
-          </div>
+          {/* Tela de processamento de pagamento */}
+          {paymentStatus === 'processing' && paymentId && (
+            <PaymentProcessingStatus
+              paymentId={paymentId}
+              onComplete={handleProcessingComplete}
+              onError={handlePaymentError}
+              allowCancel={false} // Não permitir cancelamento após pagamento processado
+            />
+          )}
+
+          {/* Tela de erro de pagamento */}
+          {paymentStatus === 'error' && paymentError && (
+            <PaymentErrorHandler
+              error={paymentError}
+              onRetry={handleRetryPayment}
+              onChangePaymentMethod={handleChangePaymentMethod}
+              onContactSupport={handleContactSupport}
+            />
+          )}
+
+          {/* Tela de sucesso */}
+          {paymentStatus === 'success' && (
+            <Card className="max-w-2xl mx-auto text-center">
+              <CardContent className="pt-6">
+                <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
+                <h2 className="text-2xl font-bold text-green-800 mb-2">
+                  Filiação Concluída!
+                </h2>
+                <p className="text-green-600 mb-4">
+                  Sua conta foi criada e a filiação foi processada com sucesso.
+                  Você será redirecionado em instantes.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Formulário principal (apenas se não estiver processando/erro/sucesso) */}
+          {paymentStatus === 'form' && (
+            <>
+              <div className="text-center space-y-4">
+                <h1 className="text-4xl font-bold">Sistema de Registro</h1>
+                <p className="text-xl text-muted-foreground">
+                  Venha fazer parte da Comademig
+                </p>
+                
+                {/* Debug info para desenvolvimento */}
+                {import.meta.env.DEV && (
+                  <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded">
+                    🔧 DEV: Usando {useNewFlow ? 'NOVO' : 'ANTIGO'} fluxo de pagamento
+                  </div>
+                )}
+              </div>
 
           {/* Benefícios da Filiação */}
           <Card className="mb-8">
@@ -188,11 +311,10 @@ export default function Filiacao() {
               <PaymentFormEnhanced 
                 selectedMemberType={selectedMemberType}
                 affiliateInfo={referralHook}
-                onSuccess={() => {
-                  toast.success('Filiação realizada com sucesso!');
-                  navigate('/dashboard');
-                }}
+                onSuccess={handlePaymentSuccess}
+                onError={handlePaymentError}
                 onCancel={() => setShowPaymentForm(false)}
+                usePaymentFirstFlow={useNewFlow}
               />
             </>
           )}
