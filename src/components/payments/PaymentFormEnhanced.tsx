@@ -296,6 +296,13 @@ export default function PaymentFormEnhanced({
     });
   }, [acceptTerms, acceptPrivacy, isProcessing]);
 
+  // Debug: Log dos erros de validação
+  React.useEffect(() => {
+    if (Object.keys(errors).length > 0) {
+      console.log('❌ Erros de validação:', errors);
+    }
+  }, [errors]);
+
   // Valor do plano (sem desconto PIX)
   const originalPrice = selectedMemberType.plan_value || 0;
   const finalPrice = originalPrice;
@@ -500,7 +507,17 @@ export default function PaymentFormEnhanced({
         </CardContent>
       </Card>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form 
+        onSubmit={(e) => {
+          console.log('📝 Form submit event disparado');
+          try {
+            handleSubmit(onSubmit)(e);
+          } catch (error) {
+            console.error('❌ Erro no handleSubmit:', error);
+          }
+        }} 
+        className="space-y-6"
+      >
         {/* Dados Pessoais - APENAS para usuários NÃO logados */}
         {!user && (
           <Card>
