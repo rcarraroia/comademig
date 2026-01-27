@@ -301,6 +301,13 @@ export default function PaymentFormEnhanced({
   const finalPrice = originalPrice;
 
   const onSubmit = async (data: PaymentFormData) => {
+    console.log('🚀 onSubmit chamado com dados:', data);
+    console.log('🔍 Estado dos termos no submit:', {
+      acceptTerms: data.accept_terms,
+      acceptPrivacy: data.accept_privacy,
+      isProcessing
+    });
+
     if (!selectedMemberType.plan_id) {
       toast.error('Tipo de membro selecionado não possui plano associado');
       return;
@@ -1242,6 +1249,14 @@ export default function PaymentFormEnhanced({
             type="submit"
             disabled={isProcessing || !acceptTerms || !acceptPrivacy}
             className="bg-comademig-blue hover:bg-comademig-blue/90"
+            onClick={() => {
+              console.log('🖱️ Botão clicado! Estado:', {
+                isProcessing,
+                acceptTerms,
+                acceptPrivacy,
+                disabled: isProcessing || !acceptTerms || !acceptPrivacy
+              });
+            }}
           >
             {isProcessing ? (
               <>
