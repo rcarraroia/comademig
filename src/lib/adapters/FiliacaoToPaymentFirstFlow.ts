@@ -89,26 +89,26 @@ export class FiliacaoToPaymentFirstFlow {
       }
 
       // Validar dados do cartão (obrigatório para Payment First Flow)
-      if (!filiacaoData.cardData) {
+      if (!filiacaoData.creditCard) {
         errors.push('Dados do cartão são obrigatórios');
       } else {
-        if (!filiacaoData.cardData.holderName?.trim()) {
+        if (!filiacaoData.creditCard.holderName?.trim()) {
           errors.push('Nome do portador do cartão é obrigatório');
         }
 
-        if (!filiacaoData.cardData.number?.trim()) {
+        if (!filiacaoData.creditCard.number?.trim()) {
           errors.push('Número do cartão é obrigatório');
         }
 
-        if (!filiacaoData.cardData.expiryMonth?.trim()) {
+        if (!filiacaoData.creditCard.expiryMonth?.trim()) {
           errors.push('Mês de expiração é obrigatório');
         }
 
-        if (!filiacaoData.cardData.expiryYear?.trim()) {
+        if (!filiacaoData.creditCard.expiryYear?.trim()) {
           errors.push('Ano de expiração é obrigatório');
         }
 
-        if (!filiacaoData.cardData.ccv?.trim()) {
+        if (!filiacaoData.creditCard.ccv?.trim()) {
           errors.push('CCV é obrigatório');
         }
       }
@@ -156,12 +156,12 @@ export class FiliacaoToPaymentFirstFlow {
         // Dados de pagamento
         plan_id: context.selectedMemberType.plan_id!,
         payment_method: 'CREDIT_CARD', // Payment First Flow só suporta cartão
-        card_data: filiacaoData.cardData ? {
-          holderName: filiacaoData.cardData.holderName.trim(),
-          number: filiacaoData.cardData.number.replace(/\D/g, ''),
-          expiryMonth: filiacaoData.cardData.expiryMonth.padStart(2, '0'),
-          expiryYear: filiacaoData.cardData.expiryYear,
-          ccv: filiacaoData.cardData.ccv
+        card_data: filiacaoData.creditCard ? {
+          holderName: filiacaoData.creditCard.holderName.trim(),
+          number: filiacaoData.creditCard.number.replace(/\D/g, ''),
+          expiryMonth: filiacaoData.creditCard.expiryMonth.padStart(2, '0'),
+          expiryYear: filiacaoData.creditCard.expiryYear,
+          ccv: filiacaoData.creditCard.ccv
         } : undefined,
         
         // Dados de afiliado (opcional)
@@ -353,12 +353,20 @@ const filiacaoData: FiliacaoPaymentData = {
   cidade: 'São Paulo',
   estado: 'SP',
   payment_method: 'credit_card',
-  cardData: {
+  creditCard: {
     holderName: 'João Silva',
     number: '4111111111111111',
     expiryMonth: '12',
     expiryYear: '2025',
     ccv: '123'
+  },
+  creditCardHolderInfo: {
+    name: 'João Silva',
+    email: 'joao@email.com',
+    cpfCnpj: '12345678900',
+    postalCode: '01234567',
+    addressNumber: '123',
+    phone: '11999999999'
   }
 };
 
