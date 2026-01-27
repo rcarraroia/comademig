@@ -228,8 +228,6 @@ export default function Filiacao() {
                   </p>
                 </div>
               </div>
-
-
             </CardContent>
           </Card>
 

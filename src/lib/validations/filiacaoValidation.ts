@@ -84,9 +84,9 @@ const enderecoSchema = {
 };
 
 /**
- * Schema para dados do cartão de crédito
+ * Schema para dados do cartão de crédito (conforme API Asaas)
  */
-const cartaoSchema = {
+const creditCardSchema = {
   holderName: z
     .string({ required_error: 'Nome do portador é obrigatório' })
     .min(2, 'Nome do portador deve ter pelo menos 2 caracteres')
@@ -121,6 +121,60 @@ const cartaoSchema = {
 };
 
 /**
+ * Schema para dados do portador do cartão (conforme API Asaas)
+ */
+const creditCardHolderInfoSchema = {
+  name: z
+    .string({ required_error: 'Nome do portador é obrigatório' })
+    .min(2, 'Nome do portador deve ter pelo menos 2 caracteres')
+    .max(100, 'Nome do portador muito longo')
+    .transform((val) => val.trim()),
+
+  email: z
+    .string({ required_error: 'Email do portador é obrigatório' })
+    .email('Email inválido')
+    .max(100, 'Email muito longo')
+    .transform((val) => val.trim().toLowerCase()),
+
+  cpfCnpj: z
+    .string({ required_error: 'CPF do portador é obrigatório' })
+    .transform((val) => val.replace(/\D/g, '')) // Limpar caracteres não numéricos
+    .refine((val) => val.length === 11, 'CPF deve ter 11 dígitos')
+    .refine((val) => validateCPF(val), 'CPF inválido'),
+
+  postalCode: z
+    .string({ required_error: 'CEP é obrigatório' })
+    .transform((val) => val.replace(/\D/g, '')) // Limpar caracteres não numéricos
+    .refine((val) => val.length === 8, 'CEP deve ter 8 dígitos')
+    .refine((val) => validateCEP(val), 'CEP inválido'),
+
+  addressNumber: z
+    .string({ required_error: 'Número é obrigatório' })
+    .min(1, 'Número é obrigatório')
+    .max(20, 'Número muito longo')
+    .transform((val) => val.trim()),
+
+  addressComplement: z
+    .string()
+    .max(100, 'Complemento muito longo')
+    .optional()
+    .transform((val) => val?.trim() || undefined),
+
+  phone: z
+    .string({ required_error: 'Telefone é obrigatório' })
+    .transform((val) => val.replace(/\D/g, '')) // Limpar caracteres não numéricos
+    .refine((val) => val.length >= 10 && val.length <= 11, 'Telefone deve ter 10 ou 11 dígitos')
+    .refine((val) => validatePhone(val), 'Telefone inválido'),
+
+  mobilePhone: z
+    .string()
+    .transform((val) => val?.replace(/\D/g, '') || '') // Limpar caracteres não numéricos
+    .optional()
+    .refine((val) => !val || (val.length >= 10 && val.length <= 11), 'Celular deve ter 10 ou 11 dígitos')
+    .refine((val) => !val || validatePhone(val), 'Celular inválido'),
+};
+
+/**
  * Schema para senha (apenas quando usuário não está logado)
  */
 const senhaSchema = z
@@ -148,8 +202,11 @@ export const filiacaoLoggedUserSchema = z.object({
     required_error: 'Método de pagamento é obrigatório'
   }),
 
-  // Dados do cartão
-  cardData: z.object(cartaoSchema),
+  // Dados do cartão (conforme API Asaas)
+  creditCard: z.object(creditCardSchema),
+  
+  // Dados do portador do cartão (conforme API Asaas)
+  creditCardHolderInfo: z.object(creditCardHolderInfoSchema),
 });
 
 /**
@@ -167,8 +224,11 @@ export const filiacaoNewUserSchema = z.object({
     required_error: 'Método de pagamento é obrigatório'
   }),
 
-  // Dados do cartão
-  cardData: z.object(cartaoSchema),
+  // Dados do cartão (conforme API Asaas)
+  creditCard: z.object(creditCardSchema),
+  
+  // Dados do portador do cartão (conforme API Asaas)
+  creditCardHolderInfo: z.object(creditCardHolderInfoSchema),
 });
 
 /**
@@ -198,11 +258,17 @@ export const paymentFirstFlowSchema = z.object({
   // Método de pagamento (apenas cartão no Payment First Flow)
   payment_method: z.literal('CREDIT_CARD'),
   
-  // Dados do cartão obrigatórios
-  cardData: z.object(cartaoSchema),
+  // Dados do cartão obrigatórios (conforme API Asaas)
+  creditCard: z.object(creditCardSchema),
+  
+  // Dados do portador do cartão obrigatórios (conforme API Asaas)
+  creditCardHolderInfo: z.object(creditCardHolderInfoSchema),
   
   // Dados de afiliado (opcional)
   affiliate_id: z.string().uuid().optional(),
+  
+  // IP remoto (obrigatório para API Asaas)
+  remoteIp: z.string().ip('IP inválido').optional(), // Será preenchido automaticamente
 }).refine(
   (data) => {
     // Se não há password, assumimos que usuário está logado
@@ -406,6 +472,49 @@ export const syncValidations = {
       paymentFirst: paymentFirstResult,
       isValidForBoth: traditionalResult.success && paymentFirstResult.success
     };
+  },
+
+  /**
+   * Converte dados do formulário para formato da API Asaas
+   */
+  adaptToAsaasAPI: (formData: FiliacaoFormData) => {
+    // Extrair dados do cartão e portador
+    const { creditCard, creditCardHolderInfo, ...otherData } = formData as any;
+    
+    return {
+      // Dados básicos do pagamento
+      billingType: 'CREDIT_CARD',
+      value: 0, // Será preenchido com o valor do plano
+      dueDate: new Date().toISOString().split('T')[0], // Data atual
+      description: 'Filiação COMADEMIG',
+      
+      // Dados do cartão
+      creditCard: {
+        holderName: creditCard.holderName,
+        number: creditCard.number,
+        expiryMonth: creditCard.expiryMonth,
+        expiryYear: creditCard.expiryYear,
+        ccv: creditCard.ccv,
+      },
+      
+      // Dados do portador
+      creditCardHolderInfo: {
+        name: creditCardHolderInfo.name,
+        email: creditCardHolderInfo.email,
+        cpfCnpj: creditCardHolderInfo.cpfCnpj,
+        postalCode: creditCardHolderInfo.postalCode,
+        addressNumber: creditCardHolderInfo.addressNumber,
+        addressComplement: creditCardHolderInfo.addressComplement,
+        phone: creditCardHolderInfo.phone,
+        mobilePhone: creditCardHolderInfo.mobilePhone,
+      },
+      
+      // IP remoto (será preenchido automaticamente)
+      remoteIp: '', // Será obtido no frontend
+      
+      // Dados adicionais
+      externalReference: `filiacao_${Date.now()}`,
+    };
   }
 };
 
@@ -413,7 +522,7 @@ export const syncValidations = {
 EXEMPLO DE USO:
 
 // Em um componente de formulário
-import { createFiliacaoSchema, fieldValidations } from '@/lib/validations/filiacaoValidation';
+import { createFiliacaoSchema, fieldValidations, syncValidations } from '@/lib/validations/filiacaoValidation';
 
 const { user } = useAuth();
 const schema = createFiliacaoSchema(!!user);
@@ -423,6 +532,21 @@ const form = useForm({
   defaultValues: {
     nome_completo: '',
     email: '',
+    creditCard: {
+      holderName: '',
+      number: '',
+      expiryMonth: '',
+      expiryYear: '',
+      ccv: '',
+    },
+    creditCardHolderInfo: {
+      name: '',
+      email: '',
+      cpfCnpj: '',
+      postalCode: '',
+      addressNumber: '',
+      phone: '',
+    },
     // ... outros campos
   }
 });
@@ -436,4 +560,7 @@ const handleCPFChange = (cpf: string) => {
 
 // Para Payment First Flow
 const paymentFirstData = syncValidations.adaptToPaymentFirstFlow(formData);
+
+// Para API Asaas
+const asaasData = syncValidations.adaptToAsaasAPI(formData);
 */

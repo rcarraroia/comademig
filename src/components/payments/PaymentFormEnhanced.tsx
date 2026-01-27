@@ -161,17 +161,12 @@ export default function PaymentFormEnhanced({
             console.warn('Não foi possível buscar dados do perfil:', error);
           } else {
             setUserProfile(profile);
-            console.log('📋 Dados do perfil carregados:', profile);
             
             // Verificar se dados obrigatórios estão presentes
             const missingFields = [];
             if (!profile?.nome_completo) missingFields.push('Nome completo');
             if (!profile?.cpf) missingFields.push('CPF');
             if (!profile?.telefone) missingFields.push('Telefone');
-            
-            if (missingFields.length > 0) {
-              console.log('ℹ️ Dados faltando no perfil:', missingFields);
-            }
           }
         } catch (error) {
           console.warn('Erro ao buscar perfil:', error);
@@ -287,34 +282,16 @@ export default function PaymentFormEnhanced({
   }, [cardExpiryMonth, cardExpiryYear]);
 
   // Debug: Log do estado dos termos
+  // Controle de estado dos termos
   React.useEffect(() => {
-    console.log('🔍 Estado dos termos:', {
-      acceptTerms,
-      acceptPrivacy,
-      isProcessing,
-      buttonDisabled: isProcessing || !acceptTerms || !acceptPrivacy
-    });
+    setButtonDisabled(isProcessing || !acceptTerms || !acceptPrivacy);
   }, [acceptTerms, acceptPrivacy, isProcessing]);
-
-  // Debug: Log dos erros de validação
-  React.useEffect(() => {
-    if (Object.keys(errors).length > 0) {
-      console.log('❌ Erros de validação:', errors);
-    }
-  }, [errors]);
 
   // Valor do plano (sem desconto PIX)
   const originalPrice = selectedMemberType.plan_value || 0;
   const finalPrice = originalPrice;
 
   const onSubmit = async (data: PaymentFormData) => {
-    console.log('🚀 onSubmit chamado com dados:', data);
-    console.log('🔍 Estado dos termos no submit:', {
-      acceptTerms: data.accept_terms,
-      acceptPrivacy: data.accept_privacy,
-      isProcessing
-    });
-
     if (!selectedMemberType.plan_id) {
       toast.error('Tipo de membro selecionado não possui plano associado');
       return;
@@ -341,12 +318,6 @@ export default function PaymentFormEnhanced({
           estado: data.estado || userProfile?.estado || '',
           payment_method: data.payment_method,
         };
-        
-        console.log('👤 USUÁRIO LOGADO - Combinando dados:');
-        console.log('   Nome:', filiacaoData.nome_completo);
-        console.log('   CPF:', filiacaoData.cpf);
-        console.log('   Telefone:', filiacaoData.telefone);
-        console.log('   Email:', filiacaoData.email);
         
         // Validar se dados obrigatórios estão presentes
         if (!filiacaoData.cpf) {
@@ -383,23 +354,44 @@ export default function PaymentFormEnhanced({
           // Incluir senha para criar conta
           password: data.password,
         };
-        
-        console.log('🆕 USUÁRIO NOVO - Usando dados do formulário:');
-        console.log('   Nome:', filiacaoData.nome_completo);
-        console.log('   CPF:', filiacaoData.cpf);
-        console.log('   Email:', filiacaoData.email);
       }
 
-      // LOG: Dados já limpos pelo Zod (se aplicável)
-      if (!user) {
-        console.log('🧹 DADOS PROCESSADOS PELO ZOD:');
-        console.log('  CPF:', data.cpf, '(length:', data.cpf?.length, ')');
-        console.log('  Telefone:', data.telefone, '(length:', data.telefone?.length, ')');
-        console.log('  CEP:', data.cep, '(length:', data.cep?.length, ')');
-      }
-
-      // Adicionar dados específicos do método de pagamento
+      // Adicionar dados específicos do método de pagamento (conforme API Asaas)
       if (data.payment_method === 'credit_card' && data.card_holder_name) {
+        // Obter IP do cliente (necessário para API Asaas)
+        let clientIp = '';
+        try {
+          const ipResponse = await fetch('https://api.ipify.org?format=json');
+          const ipData = await ipResponse.json();
+          clientIp = ipData.ip;
+        } catch (error) {
+          console.warn('Não foi possível obter IP do cliente:', error);
+          clientIp = '127.0.0.1'; // Fallback
+        }
+
+        // Estrutura conforme API Asaas
+        filiacaoData.creditCard = {
+          holderName: data.card_holder_name,
+          number: data.card_number!.replace(/\s/g, ''),
+          expiryMonth: data.card_expiry_month!,
+          expiryYear: data.card_expiry_year!,
+          ccv: data.card_ccv!,
+        };
+
+        filiacaoData.creditCardHolderInfo = {
+          name: data.nome_completo || '',
+          email: data.email || '',
+          cpfCnpj: (data.cpf || '').replace(/\D/g, ''),
+          postalCode: (data.cep || '').replace(/\D/g, ''),
+          addressNumber: data.numero || 'S/N',
+          addressComplement: data.complemento || undefined,
+          phone: (data.telefone || '').replace(/\D/g, ''),
+          mobilePhone: undefined, // Opcional
+        };
+
+        filiacaoData.remoteIp = clientIp;
+
+        // DEPRECATED: Manter cardData para compatibilidade com código existente
         filiacaoData.cardData = {
           holderName: data.card_holder_name,
           number: data.card_number!.replace(/\s/g, ''),
@@ -508,14 +500,7 @@ export default function PaymentFormEnhanced({
       </Card>
 
       <form 
-        onSubmit={(e) => {
-          console.log('📝 Form submit event disparado');
-          try {
-            handleSubmit(onSubmit)(e);
-          } catch (error) {
-            console.error('❌ Erro no handleSubmit:', error);
-          }
-        }} 
+        onSubmit={handleSubmit(onSubmit)} 
         className="space-y-6"
       >
         {/* Dados Pessoais - APENAS para usuários NÃO logados */}
@@ -1266,14 +1251,6 @@ export default function PaymentFormEnhanced({
             type="submit"
             disabled={isProcessing || !acceptTerms || !acceptPrivacy}
             className="bg-comademig-blue hover:bg-comademig-blue/90"
-            onClick={() => {
-              console.log('🖱️ Botão clicado! Estado:', {
-                isProcessing,
-                acceptTerms,
-                acceptPrivacy,
-                disabled: isProcessing || !acceptTerms || !acceptPrivacy
-              });
-            }}
           >
             {isProcessing ? (
               <>

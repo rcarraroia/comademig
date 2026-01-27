@@ -16,7 +16,35 @@ import { usePaymentFirstFlowFeature } from './usePaymentFirstFlowFeature';
 export interface FiliacaoPaymentData extends FiliacaoData {
   // Senha para criar conta (obrigatória se usuário não estiver autenticado)
   password?: string;
-  // Dados específicos do cartão (se aplicável)
+  
+  // Dados do cartão de crédito (conforme API Asaas)
+  creditCard?: {
+    holderName: string;
+    number: string;
+    expiryMonth: string;
+    expiryYear: string;
+    ccv: string;
+  };
+  
+  // Dados do portador do cartão (conforme API Asaas)
+  creditCardHolderInfo?: {
+    name: string;
+    email: string;
+    cpfCnpj: string;
+    postalCode: string;
+    addressNumber: string;
+    addressComplement?: string;
+    phone: string;
+    mobilePhone?: string;
+  };
+  
+  // IP remoto (obrigatório para API Asaas)
+  remoteIp?: string;
+  
+  // Data de vencimento para boleto (se aplicável)
+  dueDate?: string;
+  
+  // DEPRECATED: Manter para compatibilidade com código existente
   cardData?: {
     holderName: string;
     number: string;
@@ -25,8 +53,6 @@ export interface FiliacaoPaymentData extends FiliacaoData {
     ccv: string;
     installmentCount?: number;
   };
-  // Data de vencimento para boleto (se aplicável)
-  dueDate?: string;
 }
 
 interface UseFiliacaoPaymentProps {
