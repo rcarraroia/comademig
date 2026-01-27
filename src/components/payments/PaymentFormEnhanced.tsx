@@ -273,8 +273,6 @@ export default function PaymentFormEnhanced({
   const finalPrice = originalPrice;
 
   const onSubmit = async (data: PaymentFormData) => {
-    console.log('📝 Form submit event disparado');
-    
     if (!selectedMemberType.plan_id) {
       toast.error('Tipo de membro selecionado não possui plano associado');
       return;
@@ -431,18 +429,6 @@ export default function PaymentFormEnhanced({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* DEBUG: Status do usuário */}
-      <Card className="border-red-200 bg-red-50">
-        <CardContent className="pt-6">
-          <p className="text-sm text-red-800">
-            🔍 DEBUG: user = {user ? `LOGADO (${user.email})` : 'NÃO LOGADO'}
-          </p>
-          <p className="text-sm text-red-800">
-            🔍 DEBUG: !!user = {!!user ? 'true' : 'false'}
-          </p>
-        </CardContent>
-      </Card>
-
       {/* Resumo da Filiação */}
       <Card className="border-green-200 bg-green-50">
         <CardHeader>
@@ -1214,20 +1200,6 @@ export default function PaymentFormEnhanced({
           </Card>
         )}
 
-        {/* DEBUG: Estado dos termos */}
-        <Card className="border-orange-200 bg-orange-50">
-          <CardContent className="pt-6">
-            <p className="text-sm text-orange-800">
-              🔍 Estado dos termos: {JSON.stringify({
-                acceptTerms,
-                acceptPrivacy,
-                isProcessing,
-                buttonDisabled: isProcessing || !acceptTerms || !acceptPrivacy
-              })}
-            </p>
-          </CardContent>
-        </Card>
-
         {/* Botões de Ação */}
         <div className="flex flex-col sm:flex-row gap-4 justify-end">
           <Button
@@ -1243,14 +1215,6 @@ export default function PaymentFormEnhanced({
             type="submit"
             disabled={isProcessing || !acceptTerms || !acceptPrivacy}
             className="bg-comademig-blue hover:bg-comademig-blue/90"
-            onClick={(e) => {
-              console.log('🖱️ Botão clicado! Estado:', {
-                isProcessing,
-                acceptTerms,
-                acceptPrivacy,
-                disabled: isProcessing || !acceptTerms || !acceptPrivacy
-              });
-            }}
           >
             {isProcessing ? (
               <>
