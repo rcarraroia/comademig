@@ -33,19 +33,33 @@ import { formatCurrency } from '@/hooks/useFiliacaoFlow';
 import { toast } from 'sonner';
 import type { UnifiedMemberType } from '@/hooks/useMemberTypeWithPlan';
 import { 
-  createFiliacaoSchema, 
   fieldValidations,
   type FiliacaoFormData 
 } from '@/lib/validations/filiacaoValidation';
 import { supabase } from '@/integrations/supabase/client';
 
-// Usar schema unificado de validação
+// Schema de validação compatível com API Asaas
 const createPaymentFormSchema = (isLoggedIn: boolean) => {
-  // Estender o schema base com campos específicos do formulário de pagamento
-  const baseSchema = createFiliacaoSchema(isLoggedIn);
-  
-  return baseSchema.extend({
-    // Campos específicos do formulário de pagamento
+  return z.object({
+    // Dados pessoais básicos
+    nome_completo: isLoggedIn ? z.string().optional() : z.string().min(2, 'Nome completo é obrigatório'),
+    email: isLoggedIn ? z.string().optional() : z.string().email('Email inválido'),
+    cpf: z.string().min(11, 'CPF é obrigatório').optional(),
+    telefone: z.string().min(10, 'Telefone é obrigatório').optional(),
+    
+    // Endereço
+    cep: z.string().min(8, 'CEP é obrigatório').optional(),
+    endereco: z.string().min(5, 'Endereço é obrigatório').optional(),
+    numero: z.string().min(1, 'Número é obrigatório').optional(),
+    complemento: z.string().optional(),
+    bairro: z.string().min(2, 'Bairro é obrigatório').optional(),
+    cidade: z.string().min(2, 'Cidade é obrigatória').optional(),
+    estado: z.string().length(2, 'Estado deve ter 2 caracteres').optional(),
+    
+    // Método de pagamento
+    payment_method: z.literal('credit_card'),
+    
+    // Dados do cartão (conforme API Asaas)
     card_holder_name: z.string().min(2, 'Nome no cartão é obrigatório'),
     card_number: z.string().min(13, 'Número do cartão é obrigatório'),
     card_expiry_month: z.string().min(1, 'Mês de vencimento é obrigatório'),
@@ -53,10 +67,11 @@ const createPaymentFormSchema = (isLoggedIn: boolean) => {
     card_ccv: z.string().min(3, 'CVV é obrigatório'),
     card_installments: z.string().optional(),
     
-    // Confirmação de senha (apenas para usuários não logados)
+    // Senha (apenas para usuários não logados)
+    password: isLoggedIn ? z.string().optional() : z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
     password_confirmation: isLoggedIn ? z.string().optional() : z.string(),
     
-    // Termos (sempre obrigatórios)
+    // Termos obrigatórios
     accept_terms: z.boolean().refine(val => val === true, {
       message: 'Você deve aceitar os termos e condições'
     }),
@@ -64,37 +79,9 @@ const createPaymentFormSchema = (isLoggedIn: boolean) => {
       message: 'Você deve aceitar a política de privacidade'
     }),
   }).refine((data) => {
-    // Validação condicional para cartão de crédito
-    if (data.payment_method === 'credit_card') {
-      const errors = [];
-      if (!data.card_holder_name || data.card_holder_name.trim().length < 2) {
-        errors.push('Nome no cartão é obrigatório');
-      }
-      if (!data.card_number || data.card_number.replace(/\s/g, '').length < 13) {
-        errors.push('Número do cartão é obrigatório');
-      }
-      if (!data.card_expiry_month) {
-        errors.push('Mês de vencimento é obrigatório');
-      }
-      if (!data.card_expiry_year) {
-        errors.push('Ano de vencimento é obrigatório');
-      }
-      if (!data.card_ccv || data.card_ccv.length < 3) {
-        errors.push('CVV é obrigatório');
-      }
-      
-      if (errors.length > 0) {
-        return false;
-      }
-    }
-    return true;
-  }, {
-    message: 'Todos os dados do cartão são obrigatórios',
-    path: ['card_number']
-  }).refine((data) => {
-    // Validação condicional para senhas (apenas se não estiver logado)
-    if (!isLoggedIn) {
-      return data.password === data.password_confirmation;
+    // Validação de senhas para usuários não logados
+    if (!isLoggedIn && data.password !== data.password_confirmation) {
+      return false;
     }
     return true;
   }, {
@@ -286,6 +273,8 @@ export default function PaymentFormEnhanced({
   const finalPrice = originalPrice;
 
   const onSubmit = async (data: PaymentFormData) => {
+    console.log('📝 Form submit event disparado');
+    
     if (!selectedMemberType.plan_id) {
       toast.error('Tipo de membro selecionado não possui plano associado');
       return;
@@ -297,13 +286,12 @@ export default function PaymentFormEnhanced({
       
       if (user) {
         // Usuário logado - combinar dados do perfil com dados do formulário
-        // CORREÇÃO: Para usuários logados, usar dados do formulário se fornecidos, senão usar do perfil
         filiacaoData = {
           nome_completo: userProfile?.nome_completo || user.user_metadata?.nome_completo || user.email || '',
-          cpf: data.cpf || userProfile?.cpf || '', // Usar do formulário primeiro, depois do perfil
-          telefone: data.telefone || userProfile?.telefone || '', // Usar do formulário primeiro, depois do perfil
+          cpf: data.cpf || userProfile?.cpf || '',
+          telefone: data.telefone || userProfile?.telefone || '',
           email: user.email || '',
-          cep: data.cep || userProfile?.cep || '', // Usar do formulário primeiro, depois do perfil
+          cep: data.cep || userProfile?.cep || '',
           endereco: data.endereco || userProfile?.endereco || '',
           numero: data.numero || userProfile?.numero || '',
           complemento: data.complemento || userProfile?.complemento || '',
@@ -334,10 +322,10 @@ export default function PaymentFormEnhanced({
         // Usuário não logado - usar dados do formulário
         filiacaoData = {
           nome_completo: data.nome_completo!,
-          cpf: data.cpf!, // Já limpo pelo Zod transform
-          telefone: data.telefone!, // Já limpo pelo Zod transform
+          cpf: data.cpf!,
+          telefone: data.telefone!,
           email: data.email!,
-          cep: data.cep!, // Já limpo pelo Zod transform
+          cep: data.cep!,
           endereco: data.endereco!,
           numero: data.numero!,
           complemento: data.complemento,
@@ -345,12 +333,11 @@ export default function PaymentFormEnhanced({
           cidade: data.cidade!,
           estado: data.estado!,
           payment_method: data.payment_method,
-          // Incluir senha para criar conta
           password: data.password,
         };
       }
 
-      // Adicionar dados específicos do método de pagamento (conforme API Asaas)
+      // Adicionar dados do cartão conforme API Asaas
       if (data.payment_method === 'credit_card' && data.card_holder_name) {
         // Obter IP do cliente (necessário para API Asaas)
         let clientIp = '';
@@ -373,28 +360,25 @@ export default function PaymentFormEnhanced({
         };
 
         filiacaoData.creditCardHolderInfo = {
-          name: data.nome_completo || '',
-          email: data.email || '',
-          cpfCnpj: (data.cpf || '').replace(/\D/g, ''),
-          postalCode: (data.cep || '').replace(/\D/g, ''),
-          addressNumber: data.numero || 'S/N',
-          addressComplement: data.complemento || undefined,
-          phone: (data.telefone || '').replace(/\D/g, ''),
+          name: data.nome_completo || filiacaoData.nome_completo,
+          email: data.email || filiacaoData.email,
+          cpfCnpj: (data.cpf || filiacaoData.cpf).replace(/\D/g, ''),
+          postalCode: (data.cep || filiacaoData.cep).replace(/\D/g, ''),
+          addressNumber: data.numero || filiacaoData.numero || 'S/N',
+          addressComplement: data.complemento || filiacaoData.complemento || undefined,
+          phone: (data.telefone || filiacaoData.telefone).replace(/\D/g, ''),
           mobilePhone: undefined, // Opcional
         };
 
         filiacaoData.remoteIp = clientIp;
-
-        // DEPRECATED: Manter cardData para compatibilidade com código existente
-        filiacaoData.cardData = {
-          holderName: data.card_holder_name,
-          number: data.card_number!.replace(/\s/g, ''),
-          expiryMonth: data.card_expiry_month!,
-          expiryYear: data.card_expiry_year!,
-          ccv: data.card_ccv!,
-          installmentCount: parseInt(data.card_installments || '1')
-        };
       }
+
+      console.log('🚀 Processando filiação com dados:', {
+        nome: filiacaoData.nome_completo,
+        email: filiacaoData.email,
+        hasCard: !!filiacaoData.creditCard,
+        hasCardHolder: !!filiacaoData.creditCardHolderInfo
+      });
 
       const result = await processarFiliacaoComPagamento(filiacaoData);
       
@@ -1230,6 +1214,20 @@ export default function PaymentFormEnhanced({
           </Card>
         )}
 
+        {/* DEBUG: Estado dos termos */}
+        <Card className="border-orange-200 bg-orange-50">
+          <CardContent className="pt-6">
+            <p className="text-sm text-orange-800">
+              🔍 Estado dos termos: {JSON.stringify({
+                acceptTerms,
+                acceptPrivacy,
+                isProcessing,
+                buttonDisabled: isProcessing || !acceptTerms || !acceptPrivacy
+              })}
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Botões de Ação */}
         <div className="flex flex-col sm:flex-row gap-4 justify-end">
           <Button
@@ -1245,6 +1243,14 @@ export default function PaymentFormEnhanced({
             type="submit"
             disabled={isProcessing || !acceptTerms || !acceptPrivacy}
             className="bg-comademig-blue hover:bg-comademig-blue/90"
+            onClick={(e) => {
+              console.log('🖱️ Botão clicado! Estado:', {
+                isProcessing,
+                acceptTerms,
+                acceptPrivacy,
+                disabled: isProcessing || !acceptTerms || !acceptPrivacy
+              });
+            }}
           >
             {isProcessing ? (
               <>

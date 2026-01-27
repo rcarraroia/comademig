@@ -43,16 +43,6 @@ export interface FiliacaoPaymentData extends FiliacaoData {
   
   // Data de vencimento para boleto (se aplicável)
   dueDate?: string;
-  
-  // DEPRECATED: Manter para compatibilidade com código existente
-  cardData?: {
-    holderName: string;
-    number: string;
-    expiryMonth: string;
-    expiryYear: string;
-    ccv: string;
-    installmentCount?: number;
-  };
 }
 
 interface UseFiliacaoPaymentProps {
@@ -439,7 +429,7 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo, usePayme
       console.log('💳 PROCESSANDO PAGAMENTO INICIAL');
       console.log('💳 ========================================');
       
-      if (!data.cardData) {
+      if (!data.creditCard) {
         throw new Error('Dados do cartão são obrigatórios para filiação');
       }
 
@@ -455,11 +445,11 @@ export function useFiliacaoPayment({ selectedMemberType, affiliateInfo, usePayme
         },
         installmentCount: 1,
         creditCard: {
-          holderName: data.cardData.holderName,
-          number: data.cardData.number,
-          expiryMonth: data.cardData.expiryMonth,
-          expiryYear: data.cardData.expiryYear,
-          ccv: data.cardData.ccv,
+          holderName: data.creditCard.holderName,
+          number: data.creditCard.number,
+          expiryMonth: data.creditCard.expiryMonth,
+          expiryYear: data.creditCard.expiryYear,
+          ccv: data.creditCard.ccv,
         },
         creditCardHolderInfo: {
           name: data.nome_completo || '',
