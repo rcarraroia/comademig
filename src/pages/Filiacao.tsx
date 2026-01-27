@@ -255,6 +255,8 @@ export default function Filiacao() {
               </div>
             )}
           </div>
+            </>
+          )}
 
           {/* Formulário de Pagamento */}
           {showPaymentForm && selectedMemberType && (
