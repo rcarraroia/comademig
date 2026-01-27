@@ -281,12 +281,6 @@ export default function PaymentFormEnhanced({
     validateExpiryRealTime(cardExpiryMonth || '', cardExpiryYear || '');
   }, [cardExpiryMonth, cardExpiryYear]);
 
-  // Debug: Log do estado dos termos
-  // Controle de estado dos termos
-  React.useEffect(() => {
-    setButtonDisabled(isProcessing || !acceptTerms || !acceptPrivacy);
-  }, [acceptTerms, acceptPrivacy, isProcessing]);
-
   // Valor do plano (sem desconto PIX)
   const originalPrice = selectedMemberType.plan_value || 0;
   const finalPrice = originalPrice;
